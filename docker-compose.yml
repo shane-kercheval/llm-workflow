@@ -1,0 +1,9 @@
+version: '3'
+services:
+  bash:
+    build: .
+    working_dir: /code
+    volumes:
+      - .:/code
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t

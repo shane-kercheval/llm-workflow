@@ -1,0 +1,16 @@
+beautifulsoup4
+chromadb
+coverage
+duckduckgo-search
+faker
+openai
+markdownify
+numpy
+pydantic
+pypirc
+pytest
+python-dotenv
+PyYAML
+ruff
+tenacity
+tiktoken
