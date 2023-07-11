@@ -1,7 +1,7 @@
 """Test Session class."""
 from time import sleep
 import pytest
-from llm_workflow.base import Chain, EmbeddingRecord, LanguageModel, ExchangeRecord, Record, \
+from llm_workflow.base import Workflow, EmbeddingRecord, LanguageModel, ExchangeRecord, Record, \
     Session, UsageRecord
 
 
@@ -37,7 +37,7 @@ def test_Session():  # noqa
     assert session.response_tokens == 0
     assert len(session) == 0
 
-    session.append(chain=Chain(links=[]))
+    session.append(workflow=Workflow(tasks=[]))
     assert session('test') is None
     assert session.history == []
     assert session.usage_history == []
@@ -51,7 +51,7 @@ def test_Session():  # noqa
     assert len(session) == 1
 
     # test chain with a task that doesn't have a history property
-    session.append(chain=Chain(links=[lambda x: x]))
+    session.append(workflow=Workflow(tasks=[lambda x: x]))
     assert session('test') == 'test'
     assert session.history == []
     assert session.usage_history == []
@@ -87,7 +87,7 @@ def test_Session():  # noqa
         total_tokens=1_002,
     )
 
-    session.append(chain=Chain(links=[MockHistoricalUsageRecords(mock_id='mock_a')]))
+    session.append(workflow=Workflow(tasks=[MockHistoricalUsageRecords(mock_id='mock_a')]))
     return_value, mock_id = session(record_a)
     assert return_value == record_a
     assert mock_id == 'mock_a'
@@ -132,7 +132,7 @@ def test_Session():  # noqa
     assert len(session) == 3
 
     # add record `e` out of order; later, ensure the correct order is returned
-    session.append(chain=Chain(links=[MockHistoricalUsageRecords(mock_id='mock_b')]))
+    session.append(workflow=Workflow(tasks=[MockHistoricalUsageRecords(mock_id='mock_b')]))
     return_value, mock_id = session(record_e)
     assert return_value == record_e
     assert mock_id == 'mock_b'

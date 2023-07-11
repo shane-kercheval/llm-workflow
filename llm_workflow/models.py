@@ -1,13 +1,224 @@
 """Contains models."""
 
+from abc import ABC, abstractmethod
 from collections.abc import Callable
-import json
-from llm_workflow.base import LanguageModel, PromptModel, Document, EmbeddingRecord, EmbeddingModel, \
-    MemoryManager, ExchangeRecord, StreamingEvent
-from llm_workflow.tools import Tool
+from llm_workflow.base import CostRecord, Document, Record, RecordKeeper
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 from llm_workflow.utilities import num_tokens, num_tokens_from_messages
 from llm_workflow.internal_utilities import retry_handler
+
+
+class TokenUsageRecord(CostRecord):
+    """Represents a record associated with token usage and/or costs."""
+
+    total_tokens: int | None = None
+
+    def __str__(self) -> str:
+        return \
+            f"timestamp: {self.timestamp}; " \
+            f"cost: ${self.cost or 0:.6f}; " \
+            f"total_tokens: {self.total_tokens or 0:,}; " \
+            f"uuid: {self.uuid}"
+
+
+class ExchangeRecord(TokenUsageRecord):
+    """
+    An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input
+    (prompt) and its corresponding output (response). For example, it could represent a single
+    prompt and correpsonding response from within a larger conversation with ChatGPT. Its
+    purpose is to record details of the interaction/exchange, including the token count and
+    associated costs, if any.
+    """
+
+    prompt: str
+    response: str
+    prompt_tokens: int | None = None
+    response_tokens: int | None = None
+
+    def __str__(self) -> str:
+        return \
+            f"timestamp: {self.timestamp}; " \
+            f"prompt: \"{self.prompt.strip()[0:50]}...\"; "\
+            f"response: \"{self.response.strip()[0:50]}...\";  " \
+            f"cost: ${self.cost or 0:.6f}; " \
+            f"total_tokens: {self.total_tokens or 0:,}; " \
+            f"prompt_tokens: {self.prompt_tokens or 0:,}; " \
+            f"response_tokens: {self.response_tokens or 0:,}; " \
+            f"uuid: {self.uuid}"
+
+
+class EmbeddingRecord(TokenUsageRecord):
+    """Record associated with an embedding request."""
+
+
+class StreamingEvent(Record):
+    """Contains the information from a streaming event."""
+
+    response: str
+
+
+class MemoryManager(ABC):
+    """
+    Class that has logic to handle the memory (i.e. total context) of the messages sent to an
+    LLM.
+    """
+
+    @abstractmethod
+    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
+        """
+        Takes the hisitory of messages and returns a modified/reduced list of messages based on the
+        memory strategy.
+        """
+
+
+class LanguageModel(RecordKeeper):
+    """
+    A LanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embedding model), is a
+    class designed to be callable. Given specific inputs, such as prompts for chat-based models or
+    documents for embedding models, it generates meaningful responses, which can be in the form of
+    strings or documents.
+
+    Additionally, a LanguageModel is equipped with helpful auxiliary methods that enable
+    tracking and analysis of its usage history. These methods provide insights into
+    metrics like token consumption and associated costs. It's worth noting that not all models
+    incur direct costs, as is the case with ChatGPT; for example, offline models.
+    """
+
+    @abstractmethod
+    def __call__(self, value: object) -> object:
+        """Executes the chat request based on the value (e.g. message(s)) passed in."""
+
+    @property
+    def total_tokens(self) -> int | None:
+        """
+        Sums the `total_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.calculate_historical(name='total_tokens')
+
+    @property
+    def cost(self) -> float | None:
+        """
+        Sums the `cost` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.calculate_historical(name='cost')
+
+
+class EmbeddingModel(LanguageModel):
+    """A model that produces an embedding for any given text input."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._history: list[EmbeddingRecord] = []
+
+    @abstractmethod
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
+        """
+        Execute the embedding request.
+
+        Returns a tuple. This tuple consists of two elements:
+        1. The embedding, which are represented as a list where each item corresponds to a Document
+        and contains the embedding (a list of floats).
+        2. An `EmbeddingRecord` object, which track of costs and other relevant metadata. The
+        record is added to the object's `history`. Only the embedding is returned to the user when
+        the object is called.
+        """
+
+    def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
+        """
+        Executes the embedding request based on the document(s) provided. Returns a list of
+        embeddings corresponding to the document(s). Adds a corresponding EmbeddingRecord record
+        to the object's `history`.
+
+        Args:
+            docs:
+                Either a list of Documents, single Document, or str. Returns the embedding that
+                correspond to the doc(s).
+        """
+        if not docs:
+            return []
+        if isinstance(docs, list):
+            if isinstance(docs[0], str):
+                docs = [Document(content=x) for x in docs]
+            else:
+                assert isinstance(docs[0], Document)
+        elif isinstance(docs, Document):
+            docs = [docs]
+        elif isinstance(docs, str):
+            docs = [Document(content=docs)]
+        else:
+            raise TypeError("Invalid type.")
+
+        embedding, metadata = self._run(docs=docs)
+        self._history.append(metadata)
+        return embedding
+
+    @property
+    def history(self) -> list[EmbeddingRecord]:
+        """A list of EmbeddingRecord that correspond to each embedding request."""
+        return self._history
+
+
+class PromptModel(LanguageModel):
+    """
+    The PromptModel class represents an LLM where each exchange (from the end-user's perspective)
+    is a string input (user's prompt) and string output (model's response). For example, an
+    exchange could represent a single prompt (input) and correpsonding response (output) from a
+    ChatGPT or InstructGPT model. It provides auxiliary methods to monitor the usage history of an
+    instantiated model, including metrics like tokens used.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._history: list[ExchangeRecord] = []
+
+    @abstractmethod
+    def _run(self, prompt: str) -> ExchangeRecord:
+        """Subclasses should override this function and generate responses from the LLM."""
+
+
+    def __call__(self, prompt: str) -> str:
+        """
+        Executes a chat request based on the given prompt and returns a response.
+
+        Args:
+            prompt: The prompt or question to be sent to the model.
+        """
+        response = self._run(prompt)
+        self._history.append(response)
+        return response.response
+
+    @property
+    def history(self) -> list[ExchangeRecord]:
+        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
+        return self._history
+
+    @property
+    def previous_prompt(self) -> str | None:
+        """Returns the last/previous prompt used in chat model."""
+        return self.previous_record.prompt if self.previous_record else None
+
+    @property
+    def previous_response(self) -> str | None:
+        """Returns the last/previous response used in chat model."""
+        return self.previous_record.response if self.previous_record else None
+
+    @property
+    def prompt_tokens(self) -> int | None:
+        """
+        Sums the `prompt_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.calculate_historical(name='prompt_tokens')
+
+    @property
+    def response_tokens(self) -> int | None:
+        """
+        Sums the `response_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.calculate_historical(name='response_tokens')
 
 
 class OpenAIEmbedding(EmbeddingModel):
@@ -211,103 +422,48 @@ class OpenAIChat(PromptModel):
         return MODEL_COST_PER_TOKEN[self.model_name]
 
 
-class OpenAIToolAgent(LanguageModel):
+class ModelHistoryMixin(RecordKeeper):
     """
-    Wrapper around OpenAI "functions" (https://platform.openai.com/docs/guides/gpt/function-calling).
-
-    Decides which Tool to call.
-
-    TODO.
+    TODO: A ModelHistoryMixin is an object that aggregates the history across all associated
+    objects (e.g. across the links of a Chain object).
     """
 
-    def __init__(
-            self,
-            model_name: str,
-            tools: list[Tool],
-            system_message: str = "Decide which function to use. Only use the functions you have been provided with. Don't make assumptions about what values to plug into functions.",  # noqa
-            timeout: int = 10,
-        ) -> dict | None:
-        """
-        Args:
-            model_name:
-                e.g. 'gpt-3.5-turbo'
-            tools:
-                TODO.
-            system_message:
-                The content of the message associated with the "system" `role`.
-            timeout:
-                timeout value passed to OpenAI model.
-        """
-        super().__init__()
-        self.model_name = model_name
-        self._tools = tools
-        self._system_message = system_message
-        self._history = []
-        self.timeout = timeout
-
-
-    def __call__(self, prompt: object) -> object:
-        """TODO."""
-        import openai
-        messages = [
-            {"role": "system", "content": self._system_message},
-            {"role": "user", "content": prompt},
-        ]
-        # we want to track to track costs/etc.; but we don't need the history to build up memory
-        # essentially, for now, this class won't have any memory/context of previous questions;
-        # it's only used to decide which tools/functions to call
-        response = retry_handler()(
-                openai.ChatCompletion.create,
-                model=self.model_name,
-                messages=messages,
-                functions=[x.properties for x in self._tools],
-                temperature=0,
-                # max_tokens=self.max_tokens,
-                timeout=self.timeout,
-            )
-        prompt_tokens = response['usage'].prompt_tokens
-        completion_tokens = response['usage'].completion_tokens
-        total_tokens = response['usage'].total_tokens
-        cost = (prompt_tokens * self.cost_per_token['input']) + \
-            (completion_tokens * self.cost_per_token['output'])
-        record = ToolRecord(
-            prompt=prompt,
-            response='',
-            metadata={'model_name': self.model_name},
-            prompt_tokens=prompt_tokens,
-            response_tokens=completion_tokens,
-            total_tokens=total_tokens,
-            cost=cost,
-        )
-        self._history.append(record)
-        function_call = response["choices"][0]["message"].get('function_call')
-        if function_call:
-            function_name = function_call['name']
-            function_args = json.loads(function_call['arguments'])
-            record.response = f"tool: '{function_name}' - {function_args}"
-            record.metadata['tool_name'] = function_name
-            record.metadata['tool_args'] = function_args
-            for tool in self._tools:
-                if function_name == tool.name:
-                    return tool(**function_args)
-        return None
-
+    @property
+    def usage_history(self) -> list[TokenUsageRecord]:
+        """Returns all records of type UsageRecord."""
+        return self.history_filter(TokenUsageRecord)
 
     @property
-    def cost_per_token(self) -> dict:
-        """
-        Returns a dictionary containing 'input' and 'output' keys each containing a float
-        corresponding to the cost-per-token for the corresponding token type and model.
-        We need to dynamically look this up since the model_name can change over the course of the
-        object's lifetime.
-        """
-        return MODEL_COST_PER_TOKEN[self.model_name]
-
+    def exchange_history(self) -> list[ExchangeRecord]:
+        """Returns all records of type ExchangeRecord."""
+        return self.history_filter(ExchangeRecord)
 
     @property
-    def history(self) -> list[ExchangeRecord]:
-        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
-        return self._history
+    def embedding_history(self) -> list[EmbeddingRecord]:
+        """Returns all records of type ExchangeRecord."""
+        return self.history_filter(EmbeddingRecord)
 
-class ToolRecord(ExchangeRecord):
-    """TODO."""
+    @property
+    def cost(self) -> int | None:
+        """The total cost summed across all Record objects."""
+        return self.calculate_historical(name='cost')
+
+    @property
+    def total_tokens(self) -> int | None:
+        """The total number of tokens summed across all Record objects."""
+        return self.calculate_historical(name='total_tokens')
+
+    @property
+    def prompt_tokens(self) -> int | None:
+        """The total number of prompt tokens summed across all Record objects."""
+        return self.calculate_historical(name='prompt_tokens')
+
+    @property
+    def response_tokens(self) -> int | None:
+        """The total number of response tokens summed across all Record objects."""
+        return self.calculate_historical(name='response_tokens')
+
+    @property
+    def embedding_tokens(self) -> int | None:
+        """The total number of embedding tokens summed across all EmbeddingRecord objects."""
+        return self.calculate_historical(name='total_tokens', record_types=EmbeddingRecord)

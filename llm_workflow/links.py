@@ -12,7 +12,7 @@ import requests
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from llm_workflow.internal_utilities import retry_handler
-from llm_workflow.base import Task, Record
+from llm_workflow.base import RecordKeeper, Record
 from llm_workflow.exceptions import RequestError
 
 
@@ -23,7 +23,7 @@ class SearchRecord(Record):
     results: list[dict]
 
 
-class DuckDuckGoSearch(Task):
+class DuckDuckGoSearch(RecordKeeper):
     """
     A wrapper around DuckDuckGo web search. The object is called with a query and returns a list of
     SearchRecord objects associated with the top search results.
@@ -144,7 +144,7 @@ class StackOverflowSearchRecord(Record):
     questions: list[StackQuestion]
 
 
-class StackOverflowSearch(Task):
+class StackOverflowSearch(RecordKeeper):
     """
     Retrieves the top relevant Stack Overflow questions based on a given search query.
     The function assumes that the STACK_OVERFLOW_KEY environment variable is properly set and

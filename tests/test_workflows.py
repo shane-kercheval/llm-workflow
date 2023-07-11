@@ -1,7 +1,7 @@
 """Tests Chain functionality."""
 from time import sleep
 from llm_workflow.base import Document, LanguageModel, ExchangeRecord, Record, UsageRecord, \
-    Chain, Value
+    Workflow, Value
 from llm_workflow.internal_utilities import has_property
 from tests.conftest import MockChat, MockRandomEmbeddings
 
@@ -97,20 +97,20 @@ def test_history():  # noqa
     mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Chain(links=[mock_records, mock_wrapper, mock_records])
+    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
     assert chain.history == mock_records.records
 
     mock_records = FakeLLMNoUsage()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Chain(links=[mock_records, mock_wrapper, mock_records])
+    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
     assert chain.history == mock_records.records
 
 def test_usage_history():  # noqa
     mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Chain(links=[mock_records, mock_wrapper, mock_records])
+    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
     records = chain.usage_history
     assert len(records) == 5
     assert records[0] == mock_records.record_a
@@ -130,7 +130,7 @@ def test_usage_history_no_usage():  # noqa
     mock_records = FakeLLMNoUsage()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Chain(links=[mock_records, mock_wrapper, mock_records])
+    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
     records = chain.usage_history
     assert len(records) == 3
     assert records[0] == mock_records.record_a
@@ -144,7 +144,7 @@ def test_exchange_history():  # noqa
     mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Chain(links=[mock_records, mock_wrapper, mock_records])
+    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
     records = chain.exchange_history
 
     assert len(records) == 2
@@ -160,13 +160,13 @@ def test_exchange_history():  # noqa
 
 def test_chain_propegation():  # noqa
     # test empty chain
-    chain = Chain(links=[])
+    chain = Workflow(tasks=[])
     assert chain() is None
     assert chain('param') is None
     assert chain(value=1) is None
 
     # test chain with one link
-    chain = Chain(links=[lambda x: x * 2])
+    chain = Workflow(tasks=[lambda x: x * 2])
     assert chain(10) == 20
     assert chain([1]) == [1, 1]
 
@@ -174,19 +174,19 @@ def test_chain_propegation():  # noqa
     def add_one(value: int) -> int:
         return value + 1
 
-    chain = Chain(links=[add_one, lambda x: x * 2])
+    chain = Workflow(tasks=[add_one, lambda x: x * 2])
     assert chain(10) == 22
     assert chain(value=10) == 22
 
     # test with three links
-    chain = Chain(links=[add_one, lambda x: x * 2, add_one])
+    chain = Workflow(tasks=[add_one, lambda x: x * 2, add_one])
     assert chain(10) == 23
     assert chain(value=10) == 23
 
 def test_chain_index_len():  # noqa
-    chain = Chain(links=[])
+    chain = Workflow(tasks=[])
     assert len(chain) == 0
-    chain = Chain(links=['test'])
+    chain = Workflow(tasks=['test'])
     assert chain[0] == 'test'
 
 def test_Chain_with_MockChat():  # noqa
@@ -196,7 +196,7 @@ def test_Chain_with_MockChat():  # noqa
     second_response = "Response: " + second_prompt
 
     chat = MockChat(return_prompt="Response: ")  # this Chat returns the "Response: " + prompt
-    chain = Chain(links=[chat, lambda x: "Question: " + x, chat])
+    chain = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
     result = chain(prompt)
     # the final result should be the response returned by the second invokation of chat()
     assert result == second_response
@@ -240,7 +240,7 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
         token_counter=len,
         cost_per_token=cost_per_token,
     )
-    chain = Chain(links=[chat, lambda x: "Question: " + x, chat])
+    chain = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
     result = chain(prompt)
     # the final result should be the response returned by the second invokation of chat()
     assert result == second_response
@@ -384,7 +384,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         token_counter=len,
         cost_per_token=cost_per_token_chat,
     )
-    chain = Chain(links=[
+    chain = Workflow(tasks=[
         sleep_return,
         embeddings,
         sleep_return,
@@ -571,15 +571,15 @@ def test_Chain_with_empty_history():  # noqa
         def history(self) -> list:
             return None
 
-    chain = Chain(links=[EmptyHistory()])
+    chain = Workflow(tasks=[EmptyHistory()])
     assert chain.history == []
     assert chain.exchange_history == []
     assert chain.embedding_history == []
-    chain = Chain(links=[NoneHistory()])
+    chain = Workflow(tasks=[NoneHistory()])
     assert chain.history == []
     assert chain.exchange_history == []
     assert chain.embedding_history == []
-    chain = Chain(links=[EmptyHistory(), NoneHistory()])
+    chain = Workflow(tasks=[EmptyHistory(), NoneHistory()])
     assert chain.history == []
     assert chain.exchange_history == []
     assert chain.embedding_history == []

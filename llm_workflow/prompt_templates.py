@@ -6,11 +6,26 @@ with the vector database during object creation rather than through the `__call_
 
 If you're prompt-template is simple, just use a function (or inline lambda) in the link.
 """
-from llm_workflow.base import DocumentIndex, Record, PromptTemplate
+from abc import ABC, abstractmethod
+from llm_workflow.base import DocumentIndex, Record, RecordKeeper
 from llm_workflow.resources import PROMPT_TEMPLATE__INCLUDE_DOCUMENTS
 
 
-class DocSearchTemplate(PromptTemplate):
+class PromptTemplate(ABC):
+    """
+    A PromptTemplate is a callable object that takes a prompt (e.g. user query) as input and
+    returns a modified prompt. Each PromptTemplate is provided with the necessary information
+    during instantiation. For instance, if a template's purpose is to search for relevant
+    documents, it is given the vector database when the object is created, rather than via the
+    `__call__` method.
+    """
+
+    @abstractmethod
+    def __call__(self, prompt: str) -> str:
+        """Takes the original prompt (user inuput) and returns a modified prompt."""
+
+
+class DocSearchTemplate(RecordKeeper, PromptTemplate):
     """
     `DocSearchTemplate` is a prompt-template that, when called (`__call__`) with a prompt, searches
     for the most similar documents using the provided `DocumentIndex` object. It then includes the

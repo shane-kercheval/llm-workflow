@@ -1,13 +1,13 @@
 """Test Link."""
 import os
 import pytest
-from llm_workflow.base import EmbeddingRecord, ExchangeRecord, Task, Record, UsageRecord
+from llm_workflow.base import EmbeddingRecord, ExchangeRecord, RecordKeeper, Record, UsageRecord
 from llm_workflow.exceptions import RequestError
 from llm_workflow.links import DuckDuckGoSearch, SearchRecord, StackOverflowSearch, \
     StackOverflowSearchRecord, StackQuestion, _get_stack_overflow_answers
 
 
-class MockLink(Task):
+class MockLink(RecordKeeper):
     """Mocks a Task object."""
 
     def __init__(self) -> None:

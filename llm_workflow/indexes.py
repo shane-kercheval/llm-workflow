@@ -4,15 +4,93 @@ information from a larger collection or database. One example of an index is a d
 which stores/retrieves documents (i.e. text with metadata). One implementation of a document index
 is ChromaDB which stores/retrieves documents based on embeddings, which allow for semantic search.
 """
+from abc import ABC, abstractmethod
 from typing import TypeVar
-from llm_workflow.base import Document, DocumentIndex, EmbeddingModel, EmbeddingRecord
+from llm_workflow.base import Document, EmbeddingModel, EmbeddingRecord, RecordKeeper
 from llm_workflow.internal_utilities import create_hash
 
 
 ChromaCollection = TypeVar('ChromaCollection')
 
 
-class ChromaDocumentIndex(DocumentIndex):
+class DocumentIndex(ABC):
+    """
+    A `DocumentIndex` is a mechanism for adding and searching for `Document` objects. It can be
+    thought of as a wrapper around chromadb or any other similar index or vector database.
+
+    A `DocumentIndex` object should propagate any `total_tokens` or `total_cost` used by the
+    underlying models, such as an `EmbeddingModel`. If these metrics are not applicable, the
+    `DocumentIndex` should return `None`.
+
+    A `DocumentIndex` is callable and adds documents to the index when called with a list of
+    Document objects or searches for documents when called with a single string or Document object.
+    """
+
+    def __init__(self, n_results: int = 3) -> None:
+        """
+        Args:
+            n_results: the number of search-results (from the document index) to return.
+        """
+        super().__init__()
+        self._n_results = n_results
+
+    def __call__(
+            self,
+            value: Document | str | list[Document],
+            n_results: int | None = None) -> list[Document] | None:
+        """
+        When the object is called, it can either invoke the `add` method (if the `value` passed in
+        is a list) or the `search` method (if the `value` passed in is a string or Document). This
+        flexible functionality allows the object to be seamlessly integrated into a chain, enabling
+        the addition of documents to the index or searching for documents, based on input.
+
+        Args:
+            value:
+                The value used to determine and retrieve similar Documents.
+                Please refer to the description above for more details.
+            n_results:
+                The maximum number of results to be returned. If provided, it overrides the
+                `n_results` parameter specified during initialization (`__init__`).
+
+        Returns:
+            If `value` is a list (i.e. the `add` function is called), this method returns None.
+            If `value` is a string or Document (i.e the `search` function is called), this method
+            returns the search results.
+        """
+        if isinstance(value, list):
+            return self.add(docs=value)
+        if isinstance(value, Document | str):
+            return self.search(value=value, n_results=n_results)
+        raise TypeError("Invalid Type")
+
+    @abstractmethod
+    def add(self, docs: list[Document]) -> None:
+        """Add documents to the underlying index/database."""
+
+    @abstractmethod
+    def _search(self, doc: Document, n_results: int) -> list[Document]:
+        """Search for documents in the underlying index/database based on `doc."""
+
+    def search(
+            self,
+            value: Document | str,
+            n_results: int | None = None) -> list[Document]:
+        """
+        Search for documents in the underlying index/database.
+
+        Args:
+            value:
+                The value used to determine and retrieve similar Documents.
+            n_results:
+                The maximum number of results to be returned. If provided, it overrides the
+                `n_results` parameter specified during initialization (`__init__`).
+        """
+        if isinstance(value, str):
+            value = Document(content=value)
+        return self._search(doc=value, n_results=n_results or self._n_results)
+
+
+class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
     """
     Chroma is a document index (vector database) that which provides a way to store embeddings
     associated with Document objects and then retrieve the documents that are most similar to
