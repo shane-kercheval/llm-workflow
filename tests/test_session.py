@@ -18,7 +18,7 @@ class MockHistoricalUsageRecords(LanguageModel):
         self.records.append(record)
         return record, self.mock_id
 
-    def _get_history(self) -> list[TokenUsageRecord]:  # noqa
+    def _get_history(self) -> list[TokenUsageRecord]:
         return self.records
 
 def test_Session():  # noqa

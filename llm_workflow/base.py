@@ -129,8 +129,8 @@ class Value:
 
 class Workflow(RecordKeeper):
     """
-    A workflow object is a collection of `tasks`. Each task in the workflow is a callable, which can be
-    either a function or an object that implements the `__call__` method.
+    A workflow object is a collection of `tasks`. Each task in the workflow is a callable, which
+    can be either a function or an object that implements the `__call__` method.
 
     The output of one task serves as the input to the next task in the workflow.
 
@@ -151,12 +151,12 @@ class Workflow(RecordKeeper):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """
-        Executes the workflow by passing the provided value to the first task. The output of each task
-        is passed as the input to the next task, creating a sequential execution of all tasks in
-        the workflow.
+        Executes the workflow by passing the provided value to the first task. The output of each
+        task is passed as the input to the next task, creating a sequential execution of all tasks
+        in the workflow.
 
-        The execution continues until all tasks in the workflow have been executed. The final output
-        from the last task is then returned.
+        The execution continues until all tasks in the workflow have been executed. The final
+        output from the last task is then returned.
         """
         if not self._tasks:
             return None
@@ -168,8 +168,8 @@ class Workflow(RecordKeeper):
 
     def _get_history(self) -> list[Record]:
         """
-        Aggregates the `history` across all tasks in the workflow. This method ensures that if a task
-        is added multiple times to the workflow (e.g. a chat model with multiple steps), the
+        Aggregates the `history` across all tasks in the workflow. This method ensures that if a
+        task is added multiple times to the workflow (e.g. a chat model with multiple steps), the
         underlying Record objects associated with that task's `history` are not duplicated.
         """
         histories = [task.history() for task in self._tasks if _has_history(task)]
@@ -191,8 +191,8 @@ class Workflow(RecordKeeper):
 class Session(RecordKeeper):
     """
     A Session is used to aggregate multiple workflow objects. It provides a way to track and manage
-    multiple workflows within the same session. When calling a Session, it will execute the last workflow
-    that was added to the session.
+    multiple workflows within the same session. When calling a Session, it will execute the last
+    workflow that was added to the session.
     """
 
     def __init__(self, workflows: list[Workflow] | None = None):
@@ -200,8 +200,8 @@ class Session(RecordKeeper):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """
-        Calls/starts the workflow that was the last added to the session, passing in the corresponding
-        arguments.
+        Calls/starts the workflow that was the last added to the session, passing in the
+        corresponding arguments.
         """
         if self._workflows:
             return self._workflows[-1](*args, **kwargs)
@@ -210,8 +210,8 @@ class Session(RecordKeeper):
     def append(self, workflow: Workflow) -> None:
         """
         Add or append a new workflow object to the list of workflows in the session. If the session
-        object is called (i.e. __call__), the session will forward the call to the new workflow object
-        (i.e. the last workflow added in the list).
+        object is called (i.e. __call__), the session will forward the call to the new workflow
+        object (i.e. the last workflow added in the list).
         """
         self._workflows.append(workflow)
 
@@ -220,9 +220,9 @@ class Session(RecordKeeper):
 
     def _get_history(self) -> list[Record]:
         """
-        Aggregates the `history` across all workflow objects in the Session. This method ensures that
-        if a task is added multiple times to the Session, the underlying Record objects associated
-        with that task's `history` are not duplicated.
+        Aggregates the `history` across all workflow objects in the Session. This method ensures
+        that if a task is added multiple times to the Session, the underlying Record objects
+        associated with that task's `history` are not duplicated.
         """
         """
         Aggregates the `history` across all workflows in the session. It ensures that if the same
@@ -232,8 +232,8 @@ class Session(RecordKeeper):
         # for each history in workflow, cycle through each task's history and add to the list of
         # records if it hasn't already been added.
         workflows = [workflow for workflow in self._workflows if workflow.history()]
-        # Edge-case: if the same model is used multiple times in the same workflow or across different
-        # tasks (e.g. embedding
+        # Edge-case: if the same model is used multiple times in the same workflow or across
+        # different tasks (e.g. embedding
         # model to embed documents and then embed query to search documents) then we can't loop
         # through the workflows because we'd be double-counting the history from those objects.
         # we have to build up a history and include the objects if they aren't already

@@ -42,8 +42,8 @@ class DocumentIndex(ABC):
         """
         When the object is called, it can either invoke the `add` method (if the `value` passed in
         is a list) or the `search` method (if the `value` passed in is a string or Document). This
-        flexible functionality allows the object to be seamlessly integrated into a workflow, enabling
-        the addition of documents to the index or searching for documents, based on input.
+        flexible functionality allows the object to be seamlessly integrated into a workflow,
+        enabling the addition of documents to the index or searching for documents, based on input.
 
         Args:
             value:
