@@ -1,3 +1,8 @@
+
+
+[![test](https://github.com/shane-kercheval/llm-workflow/actions/workflows/tests.yaml/badge.svg)](https://github.com/shane-kercheval/llm-workflow/actions/workflows/tests.yaml)
+
+
 # `llm-workflow`: simple and extensible LLM workflowing
 
 A `workflow` is an object that executes a sequence of tasks referred to as `tasks`. Each `task` is a callable that can optionally track history. **The output of one `task` serves as the input to the next `task` in the workflow.** Pretty simple.
