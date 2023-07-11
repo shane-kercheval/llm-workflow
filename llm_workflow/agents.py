@@ -13,12 +13,13 @@ it's useful for a tool to track history, then it can be both.
 """
 
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 import json
 from typing import Any
 from collections.abc import Callable
 import functools
 
-from llm_workflow.base import Record
+from llm_workflow.base import Record, _has_history
 from llm_workflow.internal_utilities import has_method, retry_handler
 from llm_workflow.models import ExchangeRecord, LanguageModel
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
@@ -265,8 +266,15 @@ class OpenAIFunctionAgent(LanguageModel):
 
 
     def _get_history(self) -> list[ExchangeRecord]:
-        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
-        return self._history  # TODO: do i need to append history for tools?
+        """TODO. A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
+        histories = [tool.history() for tool in self._tools if _has_history(tool)]
+        # Concatenate all the lists into a single list
+        histories = [record for sublist in histories for record in sublist]
+        histories += self._history
+        unique_records = OrderedDict((record.uuid, record) for record in histories)
+        unique_records = list(unique_records.values())
+        return sorted(unique_records, key=lambda r: r.timestamp)
+
 
 
 # class AgentTool(Tool):
