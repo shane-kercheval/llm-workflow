@@ -51,7 +51,7 @@ class ToolBase(ABC):
 
     @property
     @abstractmethod
-    def properties(self) -> dict:
+    def variables(self) -> dict:
         """
         For example.
 
@@ -88,22 +88,22 @@ class ToolBase(ABC):
 
     @property
     @abstractmethod
-    def required(self) -> dict:
+    def required(self) -> list:
         """
         For example.
 
         TODO.
         """
 
-    @property
-    def properties(self) -> str:
-        """TODO."""
+    def to_dict(self) -> str:
+        """TODO. I don't love the dependency on OpenAI. Not sure how to deal with it."""
         return {
             'name': self.name,
             'description': self.description,
             'parameters': {
+                # this is based on OpenAI requirement; i don't love this dependency
                 "type": "object",
-                "properties": self.properties,
+                "properties": self.variables,
                 "required": self.required,
             },
         }
@@ -117,25 +117,50 @@ class Tool(ToolBase):
             callable_obj: Callable,
             name: str,
             description: str,
-            parameters: dict,
+            variables: dict,
             required: list[str] | None = None):
-        self.callable_obj = callable_obj
-        self.name = name
-        self.description = description
-        self.parameters = parameters
-        self.required = required
+        self._callable_obj = callable_obj
+        self._name = name
+        self._description = description
+        self._variables = variables
+        self._required = required
 
     def __call__(self, *args, **kwargs) -> Any:  # noqa
-        return self.callable_obj(*args, **kwargs)
+        return self._callable_obj(*args, **kwargs)
+
+    @property
+    def name(self) -> str:
+        """The name of the tool. This value will be sent to an LLM."""
+        return self._name
+
+    @property
+    def description(self) -> str:
+        """The description of the tool. This value will be sent to an LLM."""
+        return self._description
+
+    @property
+    def variables(self) -> dict:
+        """TODO."""
+        return self._variables
+
+
+    @property
+    def required(self) -> list:
+        """
+        For example.
+
+        TODO.
+        """
+        return self._required
 
     def history(self) -> list[Record]:
         """TODO. propegating history of underlying callable, if applicable."""
-        if has_method(self.callable_obj, 'history'):
-            return self.callable_obj.history()
+        if has_method(self._callable_obj, 'history'):
+            return self._callable_obj.history()
         return None
 
 
-def tool(name: str, description: str, parameters: dict, required: list[str] | None = None) -> Tool:
+def tool(name: str, description: str, variables: dict, required: list[str] | None = None) -> Tool:
     """
     TODO: Create a Tool from a function.
     We could theoretically build up parameters and required from docstrings and type-hints, but
@@ -146,7 +171,7 @@ def tool(name: str, description: str, parameters: dict, required: list[str] | No
         @functools.wraps(callable_obj)
         def wrapper(*args, **kwargs):  # noqa: ANN003, ANN002, ANN202
             return callable_obj(*args, **kwargs)
-        return Tool(wrapper, name, description, parameters, required)
+        return Tool(wrapper, name, description, variables, required)
     return decorator
 
 
@@ -199,7 +224,7 @@ class OpenAIFunctionAgent(LanguageModel):
                 openai.ChatCompletion.create,
                 model=self.model_name,
                 messages=messages,
-                functions=[x.properties for x in self._tools],
+                functions=[x.to_dict() for x in self._tools],
                 temperature=0,
                 # max_tokens=self.max_tokens,
                 timeout=self.timeout,
