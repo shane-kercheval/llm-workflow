@@ -16,7 +16,7 @@ from tests.conftest import MockChat, MockRandomEmbeddings
 
 def test_ChatModel__no_token_counter_or_costs():  # noqa
     model = MockChat(token_counter=None, cost_per_token=None)
-    assert model.previous_exchange is None
+    assert model.previous_record() is None
     assert model.previous_prompt is None
     assert model.previous_response is None
     assert model.cost == 0
@@ -32,8 +32,8 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
-    assert len(model._history) == 1
-    message = model.previous_exchange
+    assert len(model.history()) == 1
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -63,8 +63,8 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
-    assert len(model._history) == 2
-    message = model.previous_exchange
+    assert len(model.history()) == 2
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.metadata == {'model_name': 'mock'}
@@ -90,7 +90,7 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     token_counter = len
     cost_per_token = 3
     model = MockChat(token_counter=token_counter, cost_per_token=cost_per_token)
-    assert model.previous_exchange is None
+    assert model.previous_record() is None
     assert model.previous_prompt is None
     assert model.previous_response is None
     assert model.cost == 0
@@ -111,8 +111,8 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     expected_tokens = expected_prompt_tokens + expected_response_tokens
     expected_costs = expected_tokens * cost_per_token
 
-    assert len(model._history) == 1
-    message = model.previous_exchange
+    assert len(model.history()) == 1
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -151,8 +151,8 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     expected_tokens = expected_prompt_tokens + expected_response_tokens
     expected_costs = expected_tokens * cost_per_token
 
-    assert len(model._history) == 2
-    message = model.previous_exchange
+    assert len(model.history()) == 2
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -176,7 +176,7 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
 def test_OpenAIChat():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(model_name=model_name)
-    assert openai_llm.previous_exchange is None
+    assert openai_llm.previous_record() is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
@@ -198,8 +198,8 @@ def test_OpenAIChat():  # noqa
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
-    assert len(openai_llm._history) == 1
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 1
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -244,8 +244,8 @@ def test_OpenAIChat():  # noqa
     assert openai_llm._previous_memory[3]['role'] == 'user'
     assert openai_llm._previous_memory[3]['content'] == prompt
 
-    assert len(openai_llm._history) == 2
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 2
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -275,7 +275,7 @@ def test_OpenAIChat_streaming():  # noqa
 
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(model_name=model_name, streaming_callback=streaming_callback)
-    assert openai_llm.previous_exchange is None
+    assert openai_llm.previous_record() is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
@@ -298,8 +298,8 @@ def test_OpenAIChat_streaming():  # noqa
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
-    assert len(openai_llm._history) == 1
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 1
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -346,8 +346,8 @@ def test_OpenAIChat_streaming():  # noqa
     assert openai_llm._previous_memory[3]['role'] == 'user'
     assert openai_llm._previous_memory[3]['content'] == prompt
 
-    assert len(openai_llm._history) == 2
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 2
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -458,8 +458,8 @@ def test_EmbeddingModel__no_costs():  # noqa
     assert docs[0].content == doc_content_0
     assert docs[1].content == doc_content_1
 
-    assert len(model._history) == 1
-    first_record = model._history[0]
+    assert len(model.history()) == 1
+    first_record = model.history()[0]
     assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == expected_tokens
     assert first_record.cost is None
@@ -490,8 +490,8 @@ def test_EmbeddingModel__no_costs():  # noqa
     assert docs[0].content == doc_content_2
     assert docs[1].content == doc_content_3
 
-    assert len(model._history) == 2
-    first_record = model._history[0]
+    assert len(model.history()) == 2
+    first_record = model.history()[0]
     assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == previous_tokens
     assert first_record.cost is None
@@ -499,7 +499,7 @@ def test_EmbeddingModel__no_costs():  # noqa
     assert first_record.uuid == previous_record.uuid
     assert first_record.timestamp
 
-    second_record = model._history[1]
+    second_record = model.history()[1]
     assert isinstance(second_record, EmbeddingRecord)
     assert second_record.total_tokens == expected_tokens
     assert second_record.cost is None
@@ -536,8 +536,8 @@ def test_EmbeddingModel__with_costs():  # noqa
     assert docs[0].content == doc_content_0
     assert docs[1].content == doc_content_1
 
-    assert len(model._history) == 1
-    first_record = model._history[0]
+    assert len(model.history()) == 1
+    first_record = model.history()[0]
     assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == expected_tokens
     assert first_record.cost == expected_cost
@@ -571,8 +571,8 @@ def test_EmbeddingModel__with_costs():  # noqa
     assert docs[0].content == doc_content_2
     assert docs[1].content == doc_content_3
 
-    assert len(model._history) == 2
-    first_record = model._history[0]
+    assert len(model.history()) == 2
+    first_record = model.history()[0]
     assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == previous_tokens
     assert first_record.cost == previous_cost
@@ -580,7 +580,7 @@ def test_EmbeddingModel__with_costs():  # noqa
     assert first_record.uuid == previous_record.uuid
     assert first_record.timestamp
 
-    second_record = model._history[1]
+    second_record = model.history()[1]
     assert isinstance(second_record, EmbeddingRecord)
     assert second_record.total_tokens == expected_tokens
     assert second_record.cost == expected_cost
@@ -606,7 +606,7 @@ def test_OpenAIEmbedding():  # noqa
         Document(content=doc_content_1),
     ]
     embeddings = model(docs)
-    expected_cost = model._history[0].total_tokens * model.cost_per_token
+    expected_cost = model.history()[0].total_tokens * model.cost_per_token
     assert isinstance(embeddings, list)
     assert isinstance(embeddings[0][0], float)
     assert len(embeddings) == len(docs)
@@ -615,8 +615,8 @@ def test_OpenAIEmbedding():  # noqa
     assert all(isinstance(x, list) for x in embeddings)
     assert all(len(x) > 100 for x in embeddings)
 
-    assert len(model._history) == 1
-    previous_record = model._history[0]
+    assert len(model.history()) == 1
+    previous_record = model.history()[0]
     assert isinstance(previous_record, EmbeddingRecord)
     assert previous_record.total_tokens > 0
     assert previous_record.cost == expected_cost
@@ -640,7 +640,7 @@ def test_OpenAIEmbedding():  # noqa
         Document(content=doc_content_3),
     ]
     embeddings = model(docs)
-    expected_cost = model._history[1].total_tokens * model.cost_per_token
+    expected_cost = model.history()[1].total_tokens * model.cost_per_token
     assert isinstance(embeddings, list)
     assert isinstance(embeddings[0][0], float)
     assert len(embeddings) == len(docs)
@@ -648,8 +648,8 @@ def test_OpenAIEmbedding():  # noqa
     assert docs[1].content == doc_content_3
     assert all(isinstance(x, list) for x in embeddings)
 
-    assert len(model._history) == 2
-    first_record = model._history[0]
+    assert len(model.history()) == 2
+    first_record = model.history()[0]
     assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == previous_tokens
     assert first_record.cost == previous_cost
@@ -657,7 +657,7 @@ def test_OpenAIEmbedding():  # noqa
     assert first_record.timestamp == previous_record.timestamp
     assert first_record.metadata['model_name'] == 'text-embedding-ada-002'
 
-    previous_record = model._history[1]
+    previous_record = model.history()[1]
     assert isinstance(previous_record, EmbeddingRecord)
     assert previous_record.total_tokens > 0
     assert previous_record.cost == expected_cost

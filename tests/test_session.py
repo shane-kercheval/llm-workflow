@@ -26,41 +26,41 @@ def test_Session():  # noqa
     with pytest.raises(ValueError):  # noqa: PT011
         session('test')
     assert session.history() == []
-    assert session.usage_history == []
-    assert session.exchange_history == []
-    assert session.embedding_history == []
-    assert session.cost == 0
-    assert session.total_tokens == 0
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 0
-    assert session.response_tokens == 0
+    assert session.history(TokenUsageRecord) == []
+    assert session.history(ExchangeRecord) == []
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0
+    assert session.sum('total_tokens') == 0
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 0
+    assert session.sum('response_tokens') == 0
     assert len(session) == 0
 
     session.append(workflow=Workflow(tasks=[]))
     assert session('test') is None
     assert session.history() == []
-    assert session.usage_history == []
-    assert session.exchange_history == []
-    assert session.embedding_history == []
-    assert session.cost == 0
-    assert session.total_tokens == 0
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 0
-    assert session.response_tokens == 0
+    assert session.history(TokenUsageRecord) == []
+    assert session.history(ExchangeRecord) == []
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0
+    assert session.sum('total_tokens') == 0
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 0
+    assert session.sum('response_tokens') == 0
     assert len(session) == 1
 
     # test workflow with a task that doesn't have a history property
     session.append(workflow=Workflow(tasks=[lambda x: x]))
     assert session('test') == 'test'
     assert session.history() == []
-    assert session.usage_history == []
-    assert session.exchange_history == []
-    assert session.embedding_history == []
-    assert session.cost == 0
-    assert session.total_tokens == 0
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 0
-    assert session.response_tokens == 0
+    assert session.history(TokenUsageRecord) == []
+    assert session.history(ExchangeRecord) == []
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0
+    assert session.sum('total_tokens') == 0
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 0
+    assert session.sum('response_tokens') == 0
     assert len(session) == 2
 
     record_a = TokenUsageRecord(metadata={'id': 'record_a'}, total_tokens=None, cost=None)
@@ -91,14 +91,14 @@ def test_Session():  # noqa
     assert return_value == record_a
     assert mock_id == 'mock_a'
     assert session.history() == [record_a]
-    assert session.usage_history == [record_a]
-    assert session.exchange_history == []
-    assert session.embedding_history == []
-    assert session.cost == 0
-    assert session.total_tokens == 0
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 0
-    assert session.response_tokens == 0
+    assert session.history(TokenUsageRecord) == [record_a]
+    assert session.history(ExchangeRecord) == []
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0
+    assert session.sum('total_tokens') == 0
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 0
+    assert session.sum('response_tokens') == 0
     assert len(session) == 3
 
     # if we add the same record it should be ignored
@@ -106,28 +106,28 @@ def test_Session():  # noqa
     assert return_value == record_a
     assert mock_id == 'mock_a'
     assert session.history() == [record_a]
-    assert session.usage_history == [record_a]
-    assert session.exchange_history == []
-    assert session.embedding_history == []
-    assert session.cost == 0
-    assert session.total_tokens == 0
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 0
-    assert session.response_tokens == 0
+    assert session.history(TokenUsageRecord) == [record_a]
+    assert session.history(ExchangeRecord) == []
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0
+    assert session.sum('total_tokens') == 0
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 0
+    assert session.sum('response_tokens') == 0
     assert len(session) == 3
 
     return_value, mock_id = session(record_b)
     assert return_value == record_b
     assert mock_id == 'mock_a'
     assert session.history() == [record_a, record_b]
-    assert session.usage_history == [record_a, record_b]
-    assert session.exchange_history == []
-    assert session.embedding_history == []
-    assert session.cost == 0.01
-    assert session.total_tokens == 100
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 0
-    assert session.response_tokens == 0
+    assert session.history(TokenUsageRecord) == [record_a, record_b]
+    assert session.history(ExchangeRecord) == []
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0.01
+    assert session.sum('total_tokens') == 100
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 0
+    assert session.sum('response_tokens') == 0
     assert len(session) == 3
 
     # add record `e` out of order; later, ensure the correct order is returned
@@ -136,14 +136,14 @@ def test_Session():  # noqa
     assert return_value == record_e
     assert mock_id == 'mock_b'
     assert session.history() == [record_a, record_b, record_e]
-    assert session.usage_history == [record_a, record_b, record_e]
-    assert session.exchange_history == [record_e]
-    assert session.embedding_history == []
-    assert session.cost == 0.51
-    assert session.total_tokens == 203
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 34
-    assert session.response_tokens == 53
+    assert session.history(TokenUsageRecord) == [record_a, record_b, record_e]
+    assert session.history(ExchangeRecord) == [record_e]
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0.51
+    assert session.sum('total_tokens') == 203
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 34
+    assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
     # adding the same record to a new task should not double-count
@@ -151,14 +151,14 @@ def test_Session():  # noqa
     assert return_value == record_b
     assert mock_id == 'mock_b'
     assert session.history() == [record_a, record_b, record_e]
-    assert session.usage_history == [record_a, record_b, record_e]
-    assert session.exchange_history == [record_e]
-    assert session.embedding_history == []
-    assert session.cost == 0.51
-    assert session.total_tokens == 203
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 34
-    assert session.response_tokens == 53
+    assert session.history(TokenUsageRecord) == [record_a, record_b, record_e]
+    assert session.history(ExchangeRecord) == [record_e]
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0.51
+    assert session.sum('total_tokens') == 203
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 34
+    assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
     # add record `d` out of order; later, ensure the correct order is returned
@@ -166,14 +166,14 @@ def test_Session():  # noqa
     assert return_value == record_d
     assert mock_id == 'mock_b'
     assert session.history() == [record_a, record_b, record_d, record_e]
-    assert session.usage_history == [record_a, record_b, record_e]
-    assert session.exchange_history == [record_e]
-    assert session.embedding_history == []
-    assert session.cost == 0.51
-    assert session.total_tokens == 203
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 34
-    assert session.response_tokens == 53
+    assert session.history(TokenUsageRecord) == [record_a, record_b, record_e]
+    assert session.history(ExchangeRecord) == [record_e]
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0.51
+    assert session.sum('total_tokens') == 203
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 34
+    assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
     # add record `c` out of order; c should be returned before d
@@ -181,14 +181,14 @@ def test_Session():  # noqa
     assert return_value == record_c
     assert mock_id == 'mock_b'
     assert session.history() == [record_a, record_b, record_c, record_d, record_e]
-    assert session.usage_history == [record_a, record_b, record_e]
-    assert session.exchange_history == [record_e]
-    assert session.embedding_history == []
-    assert session.cost == 0.51
-    assert session.total_tokens == 203
-    assert session.embedding_tokens == 0
-    assert session.prompt_tokens == 34
-    assert session.response_tokens == 53
+    assert session.history(TokenUsageRecord) == [record_a, record_b, record_e]
+    assert session.history(ExchangeRecord) == [record_e]
+    assert session.history(EmbeddingRecord) == []
+    assert session.sum('cost') == 0.51
+    assert session.sum('total_tokens') == 203
+    assert session.sum('total_tokens', EmbeddingRecord) == 0
+    assert session.sum('prompt_tokens') == 34
+    assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
     # test EmbeddingRecord
@@ -196,12 +196,12 @@ def test_Session():  # noqa
     assert return_value == record_f
     assert mock_id == 'mock_b'
     assert session.history() == [record_a, record_b, record_c, record_d, record_e, record_f]
-    assert session.usage_history == [record_a, record_b, record_e, record_f]
-    assert session.exchange_history == [record_e]
-    assert session.embedding_history == [record_f]
-    assert session.cost == 0.51 + 0.7
-    assert session.total_tokens == 203 + 1_002
-    assert session.embedding_tokens == 1_002
-    assert session.prompt_tokens == 34
-    assert session.response_tokens == 53
+    assert session.history(TokenUsageRecord) == [record_a, record_b, record_e, record_f]
+    assert session.history(ExchangeRecord) == [record_e]
+    assert session.history(EmbeddingRecord) == [record_f]
+    assert session.sum('cost') == 0.51 + 0.7
+    assert session.sum('total_tokens') == 203 + 1_002
+    assert session.sum('total_tokens', EmbeddingRecord) == 1_002
+    assert session.sum('prompt_tokens') == 34
+    assert session.sum('response_tokens') == 53
     assert len(session) == 4

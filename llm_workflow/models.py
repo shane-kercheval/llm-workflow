@@ -195,12 +195,12 @@ class PromptModel(LanguageModel):
     @property
     def previous_prompt(self) -> str | None:
         """Returns the last/previous prompt used in chat model."""
-        return self.previous_record.prompt if self.previous_record else None
+        return self.previous_record().prompt if self.previous_record() else None
 
     @property
     def previous_response(self) -> str | None:
         """Returns the last/previous response used in chat model."""
-        return self.previous_record.response if self.previous_record else None
+        return self.previous_record().response if self.previous_record() else None
 
     @property
     def prompt_tokens(self) -> int | None:

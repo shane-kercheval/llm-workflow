@@ -129,7 +129,8 @@ class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
             doc_id = create_hash(doc.content)
             if doc_id not in existing_ids:
                 ids.append(doc_id)
-                metadatas.append(doc.metadata or {})
+                # chromadb seems to have made is so we cannot pass empty dict
+                metadatas.append(doc.metadata or {'': ''})
                 contents.append(doc.content)
                 documents.append(doc)
 

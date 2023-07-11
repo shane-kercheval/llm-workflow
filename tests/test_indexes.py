@@ -157,7 +157,7 @@ def test_chroma_add_document_without_metadata():  # noqa
     doc_index.add(docs=docs)
     collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
     assert collection_docs['documents'] == [x.content for x in docs]
-    assert collection_docs['metadatas'] == [{}, {}, {}]
+    assert collection_docs['metadatas'] == [ {'': ''},  {'': ''},  {'': ''}]
     assert len(collection_docs['ids']) == len(docs)
     assert len(collection_docs['embeddings']) == len(docs)
 
@@ -172,7 +172,7 @@ def test_chroma_add_document_without_metadata():  # noqa
     doc_index.add(docs=docs + new_docs)
     collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
     assert collection_docs['documents'] == [x.content for x in docs + new_docs]
-    assert collection_docs['metadatas'] == [{}, {}, {}, {'id': 0}, {'id': 1}]
+    assert collection_docs['metadatas'] == [ {'': ''},  {'': ''},  {'': ''}, {'id': 0}, {'id': 1}]
     assert len(collection_docs['ids']) == len(docs + new_docs)
     assert len(collection_docs['embeddings']) == len(docs + new_docs)
 

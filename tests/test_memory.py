@@ -11,7 +11,7 @@ def test_OpenAIChat__MemoryManagerMessageWindow0():  # noqa
         model_name=model_name,
         memory_manager=LastNExchangesManager(last_n_exchanges=0),
     )
-    assert openai_llm.previous_exchange is None
+    assert openai_llm.previous_record() is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
@@ -34,8 +34,8 @@ def test_OpenAIChat__MemoryManagerMessageWindow0():  # noqa
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
-    assert len(openai_llm._history) == 1
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 1
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -77,8 +77,8 @@ def test_OpenAIChat__MemoryManagerMessageWindow0():  # noqa
     assert openai_llm._previous_memory[1]['role'] == 'user'
     assert openai_llm._previous_memory[1]['content'] == prompt
 
-    assert len(openai_llm._history) == 2
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 2
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -102,7 +102,7 @@ def test_OpenAIChat__MemoryManagerMessageWindow1():  # noqa
         model_name=model_name,
         memory_manager=LastNExchangesManager(last_n_exchanges=1),
     )
-    assert openai_llm.previous_exchange is None
+    assert openai_llm.previous_record() is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
@@ -125,8 +125,8 @@ def test_OpenAIChat__MemoryManagerMessageWindow1():  # noqa
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
-    assert len(openai_llm._history) == 1
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 1
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -171,8 +171,8 @@ def test_OpenAIChat__MemoryManagerMessageWindow1():  # noqa
     assert openai_llm._previous_memory[3]['role'] == 'user'
     assert openai_llm._previous_memory[3]['content'] == prompt
 
-    assert len(openai_llm._history) == 2
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 2
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -216,8 +216,8 @@ def test_OpenAIChat__MemoryManagerMessageWindow1():  # noqa
     assert openai_llm._previous_memory[3]['content'] == prompt
     assert len(openai_llm._previous_memory) == 4
 
-    assert len(openai_llm._history) == 3
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 3
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -257,8 +257,8 @@ def test_OpenAIChat__MemoryManagerMessageWindow1():  # noqa
     # (1)system + (2)previous question + (3)previous answer + (4)new question
     assert len(openai_llm._previous_memory) == 4
 
-    assert len(openai_llm._history) == 4
-    message = openai_llm.previous_exchange
+    assert len(openai_llm.history()) == 4
+    message = openai_llm.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -279,7 +279,7 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
         model_name=model_name,
         memory_manager=TokenWindowManager(last_n_tokens=token_threshold),
     )
-    assert openai_llm.previous_exchange is None
+    assert openai_llm.previous_record() is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
@@ -296,11 +296,11 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     assert 'shane' in response.lower()
     assert isinstance(response, str)
     assert len(openai_llm._previous_memory) == 2
-    assert openai_llm.previous_exchange.total_tokens <= token_threshold
+    assert openai_llm.previous_record().total_tokens <= token_threshold
     assert openai_llm._previous_memory[0]['role'] == 'system'
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
-    assert len(openai_llm._history) == 1
+    assert len(openai_llm.history()) == 1
 
     ####
     # second interaction
@@ -311,11 +311,11 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     response = openai_llm(prompt)
     assert '42' in response.lower()
     assert len(openai_llm._previous_memory) == 4
-    assert openai_llm.previous_exchange.total_tokens <= token_threshold
+    assert openai_llm.previous_record().total_tokens <= token_threshold
     assert openai_llm._previous_memory[0]['role'] == 'system'
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
-    assert len(openai_llm._history) == 2
+    assert len(openai_llm.history()) == 2
 
     ####
     # third interaction
@@ -328,8 +328,8 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     assert 'blue' not in response.lower()
     # previous memory is still 4 since it only remembers last message + new prompt + system mesasge
     assert len(openai_llm._previous_memory) == 4
-    assert openai_llm.previous_exchange.total_tokens <= token_threshold
+    assert openai_llm.previous_record().total_tokens <= token_threshold
     assert openai_llm._previous_memory[0]['role'] == 'system'
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
-    assert len(openai_llm._history) == 3
+    assert len(openai_llm.history()) == 3
