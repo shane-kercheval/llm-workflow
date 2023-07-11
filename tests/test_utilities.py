@@ -426,7 +426,7 @@ def test_RequestError():  # noqa
     assert RequestError(status_code=response.status_code, reason=response.reason)
 
 def test_DuckDuckGoSearch():  # noqa
-    query = "What is an agent in langchain?"
+    query = "What is an agent in langworkflow?"
     search = DuckDuckGoSearch(top_n=1)
     results = search(query=query)
     assert len(results) == 1
@@ -437,7 +437,7 @@ def test_DuckDuckGoSearch():  # noqa
     assert search.history()[0].query == query
     assert search.history()[0].results == results
 
-    query = "What is langchain?"
+    query = "What is langworkflow?"
     results = search(query=query)
     assert len(results) == 1
     assert 'title' in results[0]
@@ -512,7 +512,7 @@ def test_StackOverflowSearch_caching():  # noqa
     and timestamp.
     """
     query = "This is my fake query?"
-    fake_results = [StackQuestion(question_id=1, score=1, creation_date=0, answer_count=1, title="fake", link="fake", body="<p>body</p>")]  # noqa
+    fake_results = [StackQuestion(question_id=1, score=1, creation_date=0, answer_count=1, title="fake", task="fake", body="<p>body</p>")]  # noqa
     search = StackOverflowSearch()
     # modify _history to mock a previous search based on a particular query
     search._history.append(StackOverflowSearchRecord(query=query, questions=fake_results))

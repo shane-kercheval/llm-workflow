@@ -4,7 +4,7 @@ a modified prompt. Each prompt-template class is instantiated with the necessary
 requires. For instance, if a template's purpose is to search for relevant documents, it is provided
 with the vector database during object creation rather than through the `__call__` method.
 
-If you're prompt-template is simple, just use a function (or inline lambda) in the link.
+If you're prompt-template is simple, just use a function (or inline lambda) in the task.
 """
 from abc import ABC, abstractmethod
 from llm_workflow.base import Record, RecordKeeper
@@ -77,7 +77,7 @@ class DocSearchTemplate(RecordKeeper, PromptTemplate):
         returned by this object's `history` property (e.g. underlying records from DocumentIndex
         objects; e.g. Embeddings).
         """
-        return self.calculate_historical(name='total_tokens')
+        return self.sum(name='total_tokens')
 
     @property
     def cost(self) -> float | None:
@@ -86,4 +86,4 @@ class DocSearchTemplate(RecordKeeper, PromptTemplate):
         returned by this object's `history` property (e.g. underlying records from DocumentIndex
         objects; e.g. Embeddings).
         """
-        return self.calculate_historical(name='cost')
+        return self.sum(name='cost')

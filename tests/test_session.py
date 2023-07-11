@@ -6,11 +6,11 @@ from llm_workflow.models import EmbeddingRecord, LanguageModel, ExchangeRecord, 
 
 
 class MockHistoricalUsageRecords(LanguageModel):
-    """Object used to Mock a model used in a link."""
+    """Object used to Mock a model used in a task."""
 
     def __init__(self, mock_id: str) -> None:
         super().__init__()
-        # mock_id is used to tset that the correct chain is called
+        # mock_id is used to tset that the correct workflow is called
         self.mock_id = mock_id
         self.records = []
 
@@ -49,7 +49,7 @@ def test_Session():  # noqa
     assert session.response_tokens == 0
     assert len(session) == 1
 
-    # test chain with a task that doesn't have a history property
+    # test workflow with a task that doesn't have a history property
     session.append(workflow=Workflow(tasks=[lambda x: x]))
     assert session('test') == 'test'
     assert session.history() == []

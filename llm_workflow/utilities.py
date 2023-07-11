@@ -164,7 +164,7 @@ class StackQuestion(BaseModel):
     creation_date: int
     answer_count: int
     title: str
-    link: str
+    task: str
     body: str
     text: str | None
     markdown: str | None

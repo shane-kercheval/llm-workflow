@@ -57,35 +57,35 @@ class RecordKeeper(ABC):
         When an object doesn't have any history, it should return an empty list rather than `None`.
         """
 
-    def history(self, record_types: type | tuple[type] | None = None) -> list[Record]:
+    def history(self, types: type | tuple[type] | None = None) -> list[Record]:
         """
         Returns the history (list of Records objects) associated with an object, based on the
-        `record_types` provided.
+        `types` provided.
 
         Args:
-            record_types:
+            types:
                 if None, all Record objects are returned
                 if not None, either a single type or tuple of types indicating the type of Record
-                objects to return (e.g. `UsageRecord` or `(ExchangeRecord, EmbeddingRecord)`).
+                objects to return (e.g. `TokenUsageRecord` or `(ExchangeRecord, EmbeddingRecord)`).
         """
-        if not record_types:
+        if not types:
             return self._get_history()
-        if isinstance(record_types, type | tuple):
-            return [x for x in self._get_history() if isinstance(x, record_types)]
+        if isinstance(types, type | tuple):
+            return [x for x in self._get_history() if isinstance(x, types)]
 
-        raise TypeError(f"record_types not a valid type ({type(record_types)}) ")
+        raise TypeError(f"types not a valid type ({type(types)}) ")
 
-    def previous_record(self, record_types: type | tuple[type] | None = None) -> Record | None:
+    def previous_record(self, types: type | tuple[type] | None = None) -> Record | None:
         """TODO."""
-        history = self.history(record_types=record_types)
+        history = self.history(types=types)
         if history:
             return history[-1]
         return None
 
-    def calculate_historical(
+    def sum(  # noqa: A003
             self,
             name: str,
-            record_types: type | tuple[type] | None = None) -> int | float:
+            types: type | tuple[type] | None = None) -> int | float:
         """
         For a given property `name` (e.g. `cost` or `total_tokens`), this function sums the values
         across all Record objects in the history, for any Record object that contains the property.
@@ -93,12 +93,12 @@ class RecordKeeper(ABC):
         Args:
             name:
                 the name of the property on the Record object to aggregate
-            record_types:
+            types:
                 if provided, only the Record objects in `history` with the corresponding type(s)
                 are included in the aggregation
         """
         records = [
-            x for x in self.history(record_types=record_types)
+            x for x in self.history(types=types)
             if has_property(obj=x, property_name=name)
         ]
         if records:
@@ -108,7 +108,7 @@ class RecordKeeper(ABC):
 
 class Value:
     """
-    The Value class provides a convenient caching mechanism within the chain.
+    The Value class provides a convenient caching mechanism within the workflow.
     The `Value` object is callable, allowing it to cache and return the value when provided as an
     argument. When called without a value, it retrieves and returns the cached value.
     """
@@ -129,15 +129,15 @@ class Value:
 
 class Workflow(RecordKeeper):
     """
-    A Chain object is a collection of `tasks`. Each task in the chain is a callable, which can be
+    A workflow object is a collection of `tasks`. Each task in the workflow is a callable, which can be
     either a function or an object that implements the `__call__` method.
 
-    The output of one task serves as the input to the next task in the chain.
+    The output of one task serves as the input to the next task in the workflow.
 
     Additionally, each task can track its own history, including messages sent/received and token
-    usage/costs, through a `history` property that returns a list of `Record` objects. A Chain
+    usage/costs, through a `history` property that returns a list of `Record` objects. A workflow
     aggregates and propagates the history of any task that has a `history` property, making it
-    convenient to analyze costs or explore intermediate steps in the chain.
+    convenient to analyze costs or explore intermediate steps in the workflow.
     """
 
     def __init__(self, tasks: list[Callable[[Any], Any]]):
@@ -151,11 +151,11 @@ class Workflow(RecordKeeper):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """
-        Executes the chain by passing the provided value to the first task. The output of each task
+        Executes the workflow by passing the provided value to the first task. The output of each task
         is passed as the input to the next task, creating a sequential execution of all tasks in
-        the chain.
+        the workflow.
 
-        The execution continues until all tasks in the chain have been executed. The final output
+        The execution continues until all tasks in the workflow have been executed. The final output
         from the last task is then returned.
         """
         if not self._tasks:
@@ -168,14 +168,14 @@ class Workflow(RecordKeeper):
 
     def _get_history(self) -> list[Record]:
         """
-        Aggregates the `history` across all tasks in the Chain. This method ensures that if a task
-        is added multiple times to the Chain (e.g. a chat model with multiple steps), the
+        Aggregates the `history` across all tasks in the workflow. This method ensures that if a task
+        is added multiple times to the workflow (e.g. a chat model with multiple steps), the
         underlying Record objects associated with that task's `history` are not duplicated.
         """
         histories = [task.history() for task in self._tasks if _has_history(task)]
-        # Edge-case: if the same model is used multiple times in the same chain (e.g. embedding
+        # Edge-case: if the same model is used multiple times in the same workflow (e.g. embedding
         # model to embed documents and then embed query to search documents) then we can't loop
-        # through the chains because we'd be double-counting the history from those objects.
+        # through the workflows because we'd be double-counting the history from those objects.
         # we have to build up a history and include the objects if they aren't already
         # to do this we'll use the uuid, and then sort by timestamp
         unique_records = []
@@ -190,8 +190,8 @@ class Workflow(RecordKeeper):
 
 class Session(RecordKeeper):
     """
-    A Session is used to aggregate multiple Chain objects. It provides a way to track and manage
-    multiple Chains within the same session. When calling a Session, it will execute the last chain
+    A Session is used to aggregate multiple workflow objects. It provides a way to track and manage
+    multiple workflows within the same session. When calling a Session, it will execute the last workflow
     that was added to the session.
     """
 
@@ -200,7 +200,7 @@ class Session(RecordKeeper):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """
-        Calls/starts the chain that was the last added to the session, passing in the corresponding
+        Calls/starts the workflow that was the last added to the session, passing in the corresponding
         arguments.
         """
         if self._workflows:
@@ -209,9 +209,9 @@ class Session(RecordKeeper):
 
     def append(self, workflow: Workflow) -> None:
         """
-        Add or append a new Chain object to the list of chains in the session. If the session
-        object is called (i.e. __call__), the session will forward the call to the new chain object
-        (i.e. the last chain added in the list).
+        Add or append a new workflow object to the list of workflows in the session. If the session
+        object is called (i.e. __call__), the session will forward the call to the new workflow object
+        (i.e. the last workflow added in the list).
         """
         self._workflows.append(workflow)
 
@@ -220,22 +220,22 @@ class Session(RecordKeeper):
 
     def _get_history(self) -> list[Record]:
         """
-        Aggregates the `history` across all Chain objects in the Session. This method ensures that
+        Aggregates the `history` across all workflow objects in the Session. This method ensures that
         if a task is added multiple times to the Session, the underlying Record objects associated
         with that task's `history` are not duplicated.
         """
         """
-        Aggregates the `history` across all Chains in the session. It ensures that if the same
+        Aggregates the `history` across all workflows in the session. It ensures that if the same
         object (e.g. chat model) is added multiple times to the Session, that the underlying Record
         objects associated with that object's `history` are not duplicated.
         """
-        # for each history in chain, cycle through each task's history and add to the list of
+        # for each history in workflow, cycle through each task's history and add to the list of
         # records if it hasn't already been added.
         workflows = [workflow for workflow in self._workflows if workflow.history()]
-        # Edge-case: if the same model is used multiple times in the same chain or across different
+        # Edge-case: if the same model is used multiple times in the same workflow or across different
         # tasks (e.g. embedding
         # model to embed documents and then embed query to search documents) then we can't loop
-        # through the chains because we'd be double-counting the history from those objects.
+        # through the workflows because we'd be double-counting the history from those objects.
         # we have to build up a history and include the objects if they aren't already
         # to do this we'll use the uuid, and then sort by timestamp
         unique_records = []

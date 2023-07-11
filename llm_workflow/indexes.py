@@ -42,7 +42,7 @@ class DocumentIndex(ABC):
         """
         When the object is called, it can either invoke the `add` method (if the `value` passed in
         is a list) or the `search` method (if the `value` passed in is a string or Document). This
-        flexible functionality allows the object to be seamlessly integrated into a chain, enabling
+        flexible functionality allows the object to be seamlessly integrated into a workflow, enabling
         the addition of documents to the index or searching for documents, based on input.
 
         Args:
@@ -99,10 +99,10 @@ class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
     embeddings.
 
     The `ChromaDocumentIndex` class is a wrapper around Chroma that makes it easy to work with in
-    a chain. When the `ChromaDocumentIndex` object is called (via __call__), either the `add`
+    a workflow. When the `ChromaDocumentIndex` object is called (via __call__), either the `add`
     method will be called (if the `value` passed in is a list) or the `search` method will be
     called (if the `value` passed in is a string or Document).
-    This functionality allows to object to be added to a chain and either add documents to the
+    This functionality allows to object to be added to a workflow and either add documents to the
     index or search for document in the index based on input.
     """
 
@@ -178,7 +178,7 @@ class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
         Sums the `total_tokens` values across all EmbeddingRecord objects returned by this
         object's `history` property.
         """
-        return self.calculate_historical(name='total_tokens')
+        return self.sum(name='total_tokens')
 
     @property
     def cost(self) -> float | None:
@@ -186,4 +186,4 @@ class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
         Sums the `cost` values across all EmbeddingRecord objects returned by this object's
         `history` property.
         """
-        return self.calculate_historical(name='cost')
+        return self.sum(name='cost')

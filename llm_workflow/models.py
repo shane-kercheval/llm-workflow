@@ -51,7 +51,6 @@ class EmbeddingRecord(TokenUsageRecord):
     """Record associated with an embedding request."""
 
 
-
 class StreamingEvent(Record):
     """Contains the information from a streaming event."""
 
@@ -95,7 +94,7 @@ class LanguageModel(RecordKeeper):
         Sums the `total_tokens` values across all Record objects (which contain that property)
         returned by this object's `history` property.
         """
-        return self.calculate_historical(name='total_tokens')
+        return self.sum(name='total_tokens')
 
     @property
     def cost(self) -> float | None:
@@ -103,7 +102,7 @@ class LanguageModel(RecordKeeper):
         Sums the `cost` values across all Record objects (which contain that property)
         returned by this object's `history` property.
         """
-        return self.calculate_historical(name='cost')
+        return self.sum(name='cost')
 
 
 class EmbeddingModel(LanguageModel):
@@ -209,7 +208,7 @@ class PromptModel(LanguageModel):
         Sums the `prompt_tokens` values across all Record objects (which contain that property)
         returned by this object's `history` property.
         """
-        return self.calculate_historical(name='prompt_tokens')
+        return self.sum(name='prompt_tokens')
 
     @property
     def response_tokens(self) -> int | None:
@@ -217,7 +216,7 @@ class PromptModel(LanguageModel):
         Sums the `response_tokens` values across all Record objects (which contain that property)
         returned by this object's `history` property.
         """
-        return self.calculate_historical(name='response_tokens')
+        return self.sum(name='response_tokens')
 
 
 class OpenAIEmbedding(EmbeddingModel):
@@ -421,48 +420,48 @@ class OpenAIChat(PromptModel):
         return MODEL_COST_PER_TOKEN[self.model_name]
 
 
-class ModelHistoryMixin(RecordKeeper):
-    """
-    TODO: A ModelHistoryMixin is an object that aggregates the history across all associated
-    objects (e.g. across the links of a Chain object).
-    """
+# class ModelHistoryMixin(RecordKeeper):
+#     """
+#     TODO: A ModelHistoryMixin is an object that aggregates the history across all associated
+#     objects (e.g. across the tasks of a workflow object).
+#     """
 
-    @property
-    def usage_history(self) -> list[TokenUsageRecord]:
-        """Returns all records of type UsageRecord."""
-        return self.history(TokenUsageRecord)
+#     @property
+#     def usage_history(self) -> list[TokenUsageRecord]:
+#         """Returns all records of type UsageRecord."""
+#         return self.history(TokenUsageRecord)
 
-    @property
-    def exchange_history(self) -> list[ExchangeRecord]:
-        """Returns all records of type ExchangeRecord."""
-        return self.history(ExchangeRecord)
+#     @property
+#     def exchange_history(self) -> list[ExchangeRecord]:
+#         """Returns all records of type ExchangeRecord."""
+#         return self.history(ExchangeRecord)
 
-    @property
-    def embedding_history(self) -> list[EmbeddingRecord]:
-        """Returns all records of type ExchangeRecord."""
-        return self.history(EmbeddingRecord)
+#     @property
+#     def embedding_history(self) -> list[EmbeddingRecord]:
+#         """Returns all records of type ExchangeRecord."""
+#         return self.history(EmbeddingRecord)
 
-    @property
-    def cost(self) -> int | None:
-        """The total cost summed across all Record objects."""
-        return self.calculate_historical(name='cost')
+#     @property
+#     def cost(self) -> int | None:
+#         """The total cost summed across all Record objects."""
+#         return self.sum(name='cost')
 
-    @property
-    def total_tokens(self) -> int | None:
-        """The total number of tokens summed across all Record objects."""
-        return self.calculate_historical(name='total_tokens')
+#     @property
+#     def total_tokens(self) -> int | None:
+#         """The total number of tokens summed across all Record objects."""
+#         return self.sum(name='total_tokens')
 
-    @property
-    def prompt_tokens(self) -> int | None:
-        """The total number of prompt tokens summed across all Record objects."""
-        return self.calculate_historical(name='prompt_tokens')
+#     @property
+#     def prompt_tokens(self) -> int | None:
+#         """The total number of prompt tokens summed across all Record objects."""
+#         return self.sum(name='prompt_tokens')
 
-    @property
-    def response_tokens(self) -> int | None:
-        """The total number of response tokens summed across all Record objects."""
-        return self.calculate_historical(name='response_tokens')
+#     @property
+#     def response_tokens(self) -> int | None:
+#         """The total number of response tokens summed across all Record objects."""
+#         return self.sum(name='response_tokens')
 
-    @property
-    def embedding_tokens(self) -> int | None:
-        """The total number of embedding tokens summed across all EmbeddingRecord objects."""
-        return self.calculate_historical(name='total_tokens', record_types=EmbeddingRecord)
+#     @property
+#     def embedding_tokens(self) -> int | None:
+#         """The total number of embedding tokens summed across all EmbeddingRecord objects."""
+#         return self.sum(name='total_tokens', types=EmbeddingRecord)

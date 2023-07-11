@@ -1,7 +1,7 @@
-"""Tests Chain functionality."""
+"""Tests workflow functionality."""
 from time import sleep
 from llm_workflow.base import Document, Record, Workflow, Value
-from llm_workflow.models import LanguageModel, ExchangeRecord, TokenUsageRecord
+from llm_workflow.models import EmbeddingRecord, LanguageModel, ExchangeRecord, TokenUsageRecord
 from llm_workflow.internal_utilities import has_property
 from tests.conftest import MockChat, MockRandomEmbeddings
 
@@ -85,7 +85,6 @@ def test_Value():  # noqa
 def test_has_property():  # noqa
     chat = MockChat()
     lambda_func = lambda x: x  # noqa
-    chat.total_tokens
     assert has_property(obj=chat, property_name='total_tokens')
     assert not has_property(obj=lambda_func, property_name='total_tokens')
     assert not has_property(obj=chat, property_name='does_not_have')
@@ -95,21 +94,21 @@ def test_history():  # noqa
     mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
-    assert chain.history() == mock_records.records
+    workflow = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
+    assert workflow.history() == mock_records.records
 
     mock_records = FakeLLMNoUsage()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
-    assert chain.history() == mock_records.records
+    workflow = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
+    assert workflow.history() == mock_records.records
 
 def test_usage_history():  # noqa
     mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
-    records = chain.usage_history
+    workflow = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
+    records = workflow.history(types=TokenUsageRecord)
     assert len(records) == 5
     assert records[0] == mock_records.record_a
     assert records[1] == mock_records.record_b
@@ -117,10 +116,10 @@ def test_usage_history():  # noqa
     assert records[3] == mock_records.record_c
     assert records[4] == mock_records.record_g
 
-    assert chain.total_tokens == mock_records.record_a.total_tokens + \
+    assert workflow.sum('total_tokens') == mock_records.record_a.total_tokens + \
         mock_records.record_b.total_tokens + \
         mock_records.record_c.total_tokens
-    assert chain.cost == mock_records.record_a.cost + \
+    assert workflow.sum('cost') == mock_records.record_a.cost + \
         mock_records.record_b.cost + \
         mock_records.record_c.cost
 
@@ -128,78 +127,78 @@ def test_usage_history_no_usage():  # noqa
     mock_records = FakeLLMNoUsage()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
-    records = chain.usage_history
+    workflow = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
+    records = workflow.history(TokenUsageRecord)
     assert len(records) == 3
     assert records[0] == mock_records.record_a
     assert records[1] == mock_records.record_b
     assert records[2] == mock_records.record_c
 
-    assert chain.total_tokens == 0
-    assert chain.cost == 0
+    assert workflow.sum('total_tokens') == 0
+    assert workflow.sum('cost') == 0
 
 def test_exchange_history():  # noqa
     mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
-    chain = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
-    records = chain.exchange_history
+    workflow = Workflow(tasks=[mock_records, mock_wrapper, mock_records])
+    records = workflow.history(ExchangeRecord)
 
     assert len(records) == 2
     assert records[0] == mock_records.record_f
     assert records[1] == mock_records.record_g
 
-    assert chain.total_tokens == mock_records.record_a.total_tokens + \
+    assert workflow.sum('total_tokens') == mock_records.record_a.total_tokens + \
         mock_records.record_b.total_tokens + \
         mock_records.record_c.total_tokens
-    assert chain.cost == mock_records.record_a.cost + \
+    assert workflow.sum('cost') == mock_records.record_a.cost + \
         mock_records.record_b.cost + \
         mock_records.record_c.cost
 
-def test_chain_propegation():  # noqa
-    # test empty chain
-    chain = Workflow(tasks=[])
-    assert chain() is None
-    assert chain('param') is None
-    assert chain(value=1) is None
+def test_workflow_propegation():  # noqa
+    # test empty workflow
+    workflow = Workflow(tasks=[])
+    assert workflow() is None
+    assert workflow('param') is None
+    assert workflow(value=1) is None
 
-    # test chain with one link
-    chain = Workflow(tasks=[lambda x: x * 2])
-    assert chain(10) == 20
-    assert chain([1]) == [1, 1]
+    # test workflow with one task
+    workflow = Workflow(tasks=[lambda x: x * 2])
+    assert workflow(10) == 20
+    assert workflow([1]) == [1, 1]
 
-    # test chain with two links and test args/kwargs
+    # test workflow with two tasks and test args/kwargs
     def add_one(value: int) -> int:
         return value + 1
 
-    chain = Workflow(tasks=[add_one, lambda x: x * 2])
-    assert chain(10) == 22
-    assert chain(value=10) == 22
+    workflow = Workflow(tasks=[add_one, lambda x: x * 2])
+    assert workflow(10) == 22
+    assert workflow(value=10) == 22
 
-    # test with three links
-    chain = Workflow(tasks=[add_one, lambda x: x * 2, add_one])
-    assert chain(10) == 23
-    assert chain(value=10) == 23
+    # test with three tasks
+    workflow = Workflow(tasks=[add_one, lambda x: x * 2, add_one])
+    assert workflow(10) == 23
+    assert workflow(value=10) == 23
 
-def test_chain_index_len():  # noqa
-    chain = Workflow(tasks=[])
-    assert len(chain) == 0
-    chain = Workflow(tasks=['test'])
-    assert chain[0] == 'test'
+def test_workflow_index_len():  # noqa
+    workflow = Workflow(tasks=[])
+    assert len(workflow) == 0
+    workflow = Workflow(tasks=['test'])
+    assert workflow[0] == 'test'
 
-def test_Chain_with_MockChat():  # noqa
+def test_workflow_with_MockChat():  # noqa
     prompt = "Here's a question."
     first_response = "Response: " + prompt
     second_prompt = "Question: " + first_response
     second_response = "Response: " + second_prompt
 
     chat = MockChat(return_prompt="Response: ")  # this Chat returns the "Response: " + prompt
-    chain = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
-    result = chain(prompt)
+    workflow = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
+    result = workflow(prompt)
     # the final result should be the response returned by the second invokation of chat()
     assert result == second_response
 
-    # check that the prompts/responses got propegated through the chain
+    # check that the prompts/responses got propegated through the workflow
     assert len(chat.history()) == 2
     assert chat.history()[0].prompt == prompt
     assert chat.history()[0].response == first_response
@@ -219,13 +218,13 @@ def test_Chain_with_MockChat():  # noqa
     assert chat.total_tokens == 0
     assert chat.cost == 0
 
-    assert chain.embedding_tokens == 0
-    assert chain.prompt_tokens == 0
-    assert chain.response_tokens == 0
-    assert chain.total_tokens == 0
-    assert chain.cost == 0
+    assert workflow.sum('total_tokens', types=EmbeddingRecord) == 0
+    assert workflow.sum('prompt_tokens') == 0
+    assert workflow.sum('response_tokens') == 0
+    assert workflow.sum('total_tokens') == 0
+    assert workflow.sum('cost') == 0
 
-def test_Chain_with_MockChat_tokens_costs():  # noqa
+def test_workflow_with_MockChat_tokens_costs():  # noqa
     prompt = "Here's a question."
     first_response = "Response: " + prompt
     second_prompt = "Question: " + first_response
@@ -238,12 +237,12 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
         token_counter=len,
         cost_per_token=cost_per_token,
     )
-    chain = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
-    result = chain(prompt)
+    workflow = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
+    result = workflow(prompt)
     # the final result should be the response returned by the second invokation of chat()
     assert result == second_response
 
-    # check that the prompts/responses got propegated through the chain
+    # check that the prompts/responses got propegated through the workflow
     assert len(chat.history()) == 2
     assert chat.history()[0].prompt == prompt
     assert chat.history()[0].response == first_response
@@ -263,15 +262,15 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
     assert chat.total_tokens == chat.history()[0].total_tokens + chat.history()[1].total_tokens
     assert chat.cost == chat.history()[0].cost + chat.history()[1].cost
 
-    # because the `chat` model is included twice in the chain; this check ensures we are not
+    # because the `chat` model is included twice in the workflow; this check ensures we are not
     # double-counting the totals
-    assert chain.prompt_tokens == chat.prompt_tokens
-    assert chain.response_tokens == chat.response_tokens
-    assert chain.total_tokens == chat.total_tokens
-    assert chain.cost == chat.cost
+    assert workflow.sum('prompt_tokens') == chat.prompt_tokens
+    assert workflow.sum('response_tokens') == chat.response_tokens
+    assert workflow.sum('total_tokens') == chat.total_tokens
+    assert workflow.sum('cost') == chat.cost
 
     new_prompt = "New Prompt"
-    result = chain(new_prompt)
+    result = workflow(new_prompt)
     new_first_response = "Response: " + new_prompt
     new_second_prompt = "Question: " + new_first_response
     new_second_response = "Response: " + new_second_prompt
@@ -321,19 +320,19 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
         chat.history()[2].cost + \
         chat.history()[3].cost
 
-    # because the `chat` model is included twice in the chain; this check ensures we are not
+    # because the `chat` model is included twice in the workflow; this check ensures we are not
     # double-counting the totals
-    assert chain.prompt_tokens == chat.prompt_tokens
-    assert chain.response_tokens == chat.response_tokens
-    assert chain.total_tokens == chat.total_tokens
-    assert chain.cost == chat.cost
+    assert workflow.sum('prompt_tokens') == chat.prompt_tokens
+    assert workflow.sum('response_tokens') == chat.response_tokens
+    assert workflow.sum('total_tokens') == chat.total_tokens
+    assert workflow.sum('cost') == chat.cost
 
-def test_Chain_with_MockChat_MockEmbeddings():  # noqa
+def test_workflow_with_MockChat_MockEmbeddings():  # noqa
     """
     This is an unrealistic but useful test where we are using an embeddings model and a chat
-    model in a chain multiple times; helper functions are used to change the output of the
+    model in a workflow multiple times; helper functions are used to change the output of the
     embeddings model to the input of the chat model and vice versa; this is demonstrating/testing
-    the extensibility of the chain.
+    the extensibility of the workflow.
     """  # noqa: D404
     cost_per_token_chat = 15
     cost_per_token_embedding = 7
@@ -346,14 +345,14 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
 
     def list_docs_to_prompt(docs: list[Document]) -> str:
         """
-        This isn't an example of how a chain would actually be used, but simply a way to mimic
+        This isn't an example of how a workflow would actually be used, but simply a way to mimic
         fowarding information from one step to another.
         """  # noqa: D404
         return ' '.join([x.content for x in docs])
 
     def prompt_to_list_docs(prompt: str) -> list[Document]:
         """
-        This isn't an example of how a chain would actually be used, but simply a way to mimic
+        This isn't an example of how a workflow would actually be used, but simply a way to mimic
         fowarding information from one step to another.
         """  # noqa: D404
         docs = [Document(content=x) for x in prompt.split(' ')]
@@ -362,7 +361,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
 
     def embeddings_to_docs(embeddings: list[list[float]]) -> list[Document]:
         """
-        This isn't an example of how a chain would actually be used, but simply a way to mimic
+        This isn't an example of how a workflow would actually be used, but simply a way to mimic
         fowarding information from one step to another.
         """  # noqa: D404
         temp_docs = cache_list_docs['cache']
@@ -382,7 +381,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         token_counter=len,
         cost_per_token=cost_per_token_chat,
     )
-    chain = Workflow(tasks=[
+    workflow = Workflow(tasks=[
         sleep_return,
         embeddings,
         sleep_return,
@@ -396,7 +395,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         embeddings_to_docs,
         list_docs_to_prompt,
         chat])
-    result = chain(docs)
+    result = workflow(docs)
 
     ####
     # Test chat model
@@ -409,7 +408,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
 
     # the final result should be the response returned by the second invokation of chat()
     assert result == second_response
-    # check that the prompts/responses got propegated through the chain
+    # check that the prompts/responses got propegated through the workflow
     assert len(chat.history()) == 2
     assert chat.history()[0].prompt == initial_prompt
     assert chat.history()[0].response == first_response
@@ -442,26 +441,26 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     assert embeddings.cost == embeddings.history()[0].cost + embeddings.history()[1].cost
 
     ####
-    # Test chain
+    # Test workflow
     ####
-    # because the `chat` model is included twice in the chain; this check ensures we are not
+    # because the `chat` model is included twice in the workflow; this check ensures we are not
     # double-counting the totals
-    assert chain.history() == [embeddings.history()[0], chat.history()[0], embeddings.history()[1], chat.history()[1]]  # noqa
-    assert chain.exchange_history == chat.history()
-    assert chain.embedding_history == embeddings.history()
-    assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
-    assert chain.embedding_tokens == embeddings.total_tokens
-    assert chain.cost == chat.cost + embeddings.cost
+    assert workflow.history() == [embeddings.history()[0], chat.history()[0], embeddings.history()[1], chat.history()[1]]  # noqa
+    assert workflow.history(ExchangeRecord) == chat.history()
+    assert workflow.history(EmbeddingRecord) == embeddings.history()
+    assert workflow.sum('total_tokens') == chat.total_tokens + embeddings.total_tokens
+    assert workflow.sum('total_tokens', types=EmbeddingRecord) == embeddings.total_tokens
+    assert workflow.sum('cost') == chat.cost + embeddings.cost
 
     ####
-    # Test using the same chain again
+    # Test using the same workflow again
     ####
     new_docs = [
         Document(content="Doc CC"),
         Document(content="Doc DD"),
     ]
     cache_list_docs = {'cache': new_docs}
-    new_result = chain(new_docs)
+    new_result = workflow(new_docs)
     ####
     # Test chat model
     ####
@@ -472,7 +471,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
 
     # the final result should be the response returned by the second invokation of chat()
     assert new_result == new_second_response
-    # check that the prompts/responses got propegated through the chain
+    # check that the prompts/responses got propegated through the workflow
     assert len(chat.history()) == 4
     # these should not have changed from last time
     assert chat.history()[0].prompt == initial_prompt
@@ -544,21 +543,21 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         embeddings.history()[3].cost
 
     ####
-    # Test chain
+    # Test workflow
     ####
-    # because the `chat` model is included twice in the chain; this check ensures we are not
+    # because the `chat` model is included twice in the workflow; this check ensures we are not
     # double-counting the totals
-    assert chain.history() == [
+    assert workflow.history() == [
         embeddings.history()[0], chat.history()[0], embeddings.history()[1], chat.history()[1],
         embeddings.history()[2], chat.history()[2], embeddings.history()[3], chat.history()[3],
     ]
-    assert chain.exchange_history == chat.history()
-    assert chain.embedding_history == embeddings.history()
-    assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
-    assert chain.embedding_tokens == embeddings.total_tokens
-    assert chain.cost == chat.cost + embeddings.cost
+    assert workflow.history(ExchangeRecord) == chat.history()
+    assert workflow.history(EmbeddingRecord) == embeddings.history()
+    assert workflow.sum('total_tokens') == chat.total_tokens + embeddings.total_tokens
+    assert workflow.sum('total_tokens', types=EmbeddingRecord) == embeddings.total_tokens
+    assert workflow.sum('cost') == chat.cost + embeddings.cost
 
-def test_Chain_with_empty_history():  # noqa
+def test_workflow_with_empty_history():  # noqa
     class EmptyHistory:
         def history(self) -> list:
             return []
@@ -567,15 +566,15 @@ def test_Chain_with_empty_history():  # noqa
         def history(self) -> list:
             return None
 
-    chain = Workflow(tasks=[EmptyHistory()])
-    assert chain.history() == []
-    assert chain.exchange_history == []
-    assert chain.embedding_history == []
-    chain = Workflow(tasks=[NoneHistory()])
-    assert chain.history() == []
-    assert chain.exchange_history == []
-    assert chain.embedding_history == []
-    chain = Workflow(tasks=[EmptyHistory(), NoneHistory()])
-    assert chain.history() == []
-    assert chain.exchange_history == []
-    assert chain.embedding_history == []
+    workflow = Workflow(tasks=[EmptyHistory()])
+    assert workflow.history() == []
+    assert workflow.history(ExchangeRecord) == []
+    assert workflow.history(EmbeddingRecord) == []
+    workflow = Workflow(tasks=[NoneHistory()])
+    assert workflow.history() == []
+    assert workflow.history(ExchangeRecord) == []
+    assert workflow.history(EmbeddingRecord) == []
+    workflow = Workflow(tasks=[EmptyHistory(), NoneHistory()])
+    assert workflow.history() == []
+    assert workflow.history(ExchangeRecord) == []
+    assert workflow.history(EmbeddingRecord) == []

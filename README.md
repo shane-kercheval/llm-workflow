@@ -1,8 +1,8 @@
-# `llm-chain`: simple and extensible LLM chaining
+# `llm-workflow`: simple and extensible LLM workflowing
 
-A `chain` is an object that executes a sequence of tasks referred to as `links`. Each `link` is a callable that can optionally track history. **The output of one `link` serves as the input to the next `link` in the chain.** Pretty simple.
+A `workflow` is an object that executes a sequence of tasks referred to as `tasks`. Each `task` is a callable that can optionally track history. **The output of one `task` serves as the input to the next `task` in the workflow.** Pretty simple.
 
-The purpose of this library is to offer a simple pattern for developing LLM workflows (chains). First, it reduces the need for users to write repetitive/boilerplate code. Second, by establishing a standardized interface for links (e.g. specifying how a task tracks history), a chain can serve as a means of aggregating information from all links, such as token usage, costs, and more. Additionally, this approach enables us to examine each step within the chain and within a specific link, making the workflow transparent and facilitating debugging and comprehension.
+The purpose of this library is to offer a simple pattern for developing LLM workflows (workflows). First, it reduces the need for users to write repetitive/boilerplate code. Second, by establishing a standardized interface for tasks (e.g. specifying how a task tracks history), a workflow can serve as a means of aggregating information from all tasks, such as token usage, costs, and more. Additionally, this approach enables us to examine each step within the workflow and within a specific task, making the workflow transparent and facilitating debugging and comprehension.
 
 ---
 
@@ -14,7 +14,7 @@ Here's the user's original prompt:
 prompt = "create a function to mask all emails from a string value"
 ```
 
-The `prompt` variable is passed to the `chain` object, which gets passed to the first task (the `prompt_template` function).
+The `prompt` variable is passed to the `workflow` object, which gets passed to the first task (the `prompt_template` function).
 
 ```python
 prompt_enhancer = OpenAIChat(...)
@@ -26,32 +26,32 @@ def prompt_template(user_prompt: str) -> str:
         f"requirements that should be followed:\n\n```{user_prompt}```"
 
 def prompt_extract_code(_) -> str:
-    # `_` signals that we are ignoring the input (from the previous link)
+    # `_` signals that we are ignoring the input (from the previous task)
     return "Return only the primary code of interest from the previous answer, "\
         "including docstrings, but without any text/response."
 
-chain = Chain(links=[
+workflow = workflow(tasks=[
     prompt_template,      # modifies the user's prompt
     prompt_enhancer,      # returns an improved version of the user's prompt
     chat_assistant,       # returns the chat response based on the improved prompt
     prompt_extract_code,  # prompt to ask the model to extract only the relevant code
     chat_assistant,       # returns only the relevant code from the model's last response
 ])
-response = chain(prompt)
+response = workflow(prompt)
 
 print(response)               # ```python\n def mask_email_addresses(string): ...
-print(chain.cost)             # 0.0034
-print(chain.total_tokens)     # 1961
-print(chain.prompt_tokens)    # 1104
-print(chain.response_tokens)  # 857
-print(chain.history())          # list of Record objects containing prompt/response/usage
+print(workflow.sum('cost'))             # 0.0034
+print(workflow.sum('total_tokens'))     # 1961
+print(workflow.sum('prompt_tokens'))    # 1104
+print(workflow.sum('response_tokens'))  # 857
+print(workflow.history())          # list of Record objects containing prompt/response/usage
 ```
 
 See `Examples` section below for full output and explanation.
 
 ---
 
-Note: Since the goal of this library is to provide a simple pattern for chaining, some of the classes provided in this library (e.g. `OpenAIEmbedding` or `ChromaDocumentIndex`) are nothing more than simple wrappers that implement the interface necessary to track history in a consistent way, allowing the chain to aggregate the history across all links. This makes it easy for people to create their own wrappers and workflows.
+Note: Since the goal of this library is to provide a simple pattern for workflowing, some of the classes provided in this library (e.g. `OpenAIEmbedding` or `ChromaDocumentIndex`) are nothing more than simple wrappers that implement the interface necessary to track history in a consistent way, allowing the workflow to aggregate the history across all tasks. This makes it easy for people to create their own wrappers and workflows.
 
 See examples below.
 
@@ -62,7 +62,7 @@ See examples below.
 **Note: This package is tested on Python versions `3.10` and `3.11`**
 
 ```commandline
-pip install llm-chain
+pip install llm-workflow
 ```
 
 ## API Keys
@@ -96,16 +96,16 @@ load_dotenv()  # sets any environment variables from the .env file
 
 ## Example 1
 
-Here's the full example from the snippet above (alternatively, see [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)). Note that this example is **not** meant to provide prompt-engineering best practices, it's simply to show how chaining works in this library.
+Here's the full example from the snippet above (alternatively, see [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb)). Note that this example is **not** meant to provide prompt-engineering best practices, it's simply to show how workflowing works in this library.
 
-- first link: defines a prompt-template that takes the user's prompt, and creates a new prompt asking a chat model to improve the prompt (within the context of creating python code)
-- second link: the `prompt_enhancer` model takes the modified prompt and improves the prompt
-- third link: the `chat_assistant` model takes the response from the last model (which is an improved prompt) and returns the request
-- fourth link: ignores the response from the chat model; creates a new prompt asking the chat model to extract the relevant code created in the previous response
-- fifth link: the chat model, which internally maintains the history of messages, returns only the relevant code from the previous response.
+- first task: defines a prompt-template that takes the user's prompt, and creates a new prompt asking a chat model to improve the prompt (within the context of creating python code)
+- second task: the `prompt_enhancer` model takes the modified prompt and improves the prompt
+- third task: the `chat_assistant` model takes the response from the last model (which is an improved prompt) and returns the request
+- fourth task: ignores the response from the chat model; creates a new prompt asking the chat model to extract the relevant code created in the previous response
+- fifth task: the chat model, which internally maintains the history of messages, returns only the relevant code from the previous response.
 
 ```python
-from llm_workflow.base import Chain
+from llm_workflow.base import workflow
 from llm_workflow.models import OpenAIChat
 
 prompt_enhancer = OpenAIChat(model_name='gpt-3.5-turbo')
@@ -118,15 +118,15 @@ def prompt_template(user_prompt: str) -> str:
         f"requirements that should be followed:\n\n```{user_prompt}```"
 
 def prompt_extract_code(_) -> str:
-    # `_` signals that we are ignoring the input (from the previous link)
+    # `_` signals that we are ignoring the input (from the previous task)
     return "Return only the primary code of interest from the previous answer, "\
         "including docstrings, but without any text/response."
 
-# The only requirement for the list of links is that each item/link is a
-# callable where the output of one task matches the input of the next link.
-# The input to the chain is passed to the first link;
-# the output of the last task is returned by the chain.
-chain = Chain(links=[
+# The only requirement for the list of tasks is that each item/task is a
+# callable where the output of one task matches the input of the next task.
+# The input to the workflow is passed to the first task;
+# the output of the last task is returned by the workflow.
+workflow = workflow(tasks=[
     prompt_template,      # modifies the user's prompt
     prompt_enhancer,      # returns an improved version of the user's prompt
     chat_assistant,       # returns the chat response based on the improved prompt
@@ -134,11 +134,11 @@ chain = Chain(links=[
     chat_assistant,       # returns only the function from the model's last response
 ])
 prompt = "create a function to mask all emails from a string value"
-response = chain(prompt)
+response = workflow(prompt)
 print(response)
 ```
 
-The output of the chain (`response`):
+The output of the workflow (`response`):
 
 ```python
 import re
@@ -168,13 +168,13 @@ def mask_email_addresses(string):
     return masked_string
 ```
 
-Total costs/tokens for all activity in the chain:
+Total costs/tokens for all activity in the workflow:
 
 ```python
-print(f"Cost:             ${chain.cost:.4f}")
-print(f"Total Tokens:      {chain.total_tokens:,}")
-print(f"Prompt Tokens:     {chain.prompt_tokens:,}")
-print(f"Response Tokens:   {chain.response_tokens:,}")
+print(f"Cost:             ${workflow.sum('cost'):.4f}")
+print(f"Total Tokens:      {workflow.sum('total_tokens'):,}")
+print(f"Prompt Tokens:     {workflow.sum('prompt_tokens'):,}")
+print(f"Response Tokens:   {workflow.sum('response_tokens'):,}")
 ```
 
 Output:
@@ -186,14 +186,14 @@ Prompt Tokens:    1,104
 Response Tokens:  857
 ```
 
-We can view the history of the chain (i.e. the aggregated history across all links) with the `chain.history()` property. 
+We can view the history of the workflow (i.e. the aggregated history across all tasks) with the `workflow.history()` property. 
 
-In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `chain.history()` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (`prompt`) and its corresponding output (`response`), along with other properties like `cost` and `token_tokens`.
+In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `workflow.history()` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (`prompt`) and its corresponding output (`response`), along with other properties like `cost` and `token_tokens`.
 
-We can view the response we received from the `prompt_enhancer` model by looking at the first record's `response` property (or the second record's `prompt` property since the chain passes the output of `prompt_enhancer` as the input to the `chat_assistant`):
+We can view the response we received from the `prompt_enhancer` model by looking at the first record's `response` property (or the second record's `prompt` property since the workflow passes the output of `prompt_enhancer` as the input to the `chat_assistant`):
 
 ```python
-print(chain.history()[0].response)
+print(workflow.history()[0].response)
 ```
 
 Output:
@@ -227,7 +227,7 @@ We could also view the original response from the `chat_assistant` model.
 
 
 ```python
-mprint(chain.history()[1].response)
+mprint(workflow.history()[1].response)
 ```
 
 Output:
@@ -281,17 +281,17 @@ The function is properly documented with a clear and concise description, input 
 To use this function, you can call it with a string as an argument and it will return the modified string with masked email addresses.
 ```
 
-The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `mask_email_addresses` function. The `response` object should match the `response` value in the last record (`chain.history()[-1].response`).
+The final response returned by the `chat_assistant` (and by the `workflow` object) returns only the `mask_email_addresses` function. The `response` object should match the `response` value in the last record (`workflow.history()[-1].response`).
 
 ```python
-assert response == chain.history()[-1].response  # passes
+assert response == workflow.history()[-1].response  # passes
 ```
 
 ---
 
 ## Example 2
 
-Here's an example of using a chain to perform the following series of tasks:
+Here's an example of using a workflow to perform the following series of tasks:
 
 - Ask a question.
 - Perform a web search based on the question.
@@ -301,14 +301,14 @@ Here's an example of using a chain to perform the following series of tasks:
 - Create a prompt that includes the original question and the most relevant chunks.
 - Send the prompt to the chat model.
 
-**Again, the key concept of a chain is simply that the output of one task is the input of the next link.** So, in the code below, you can replace any step with your own implementation as long as the input/output matches the task you replace.
+**Again, the key concept of a workflow is simply that the output of one task is the input of the next task.** So, in the code below, you can replace any step with your own implementation as long as the input/output matches the task you replace.
 
-Something that may not be immediately obvious is the usage of the `Value` object, below. It serves as a convenient caching mechanism within the chain. The `Value` object is callable, allowing it to cache and return the value when provided as an argument. When called without a value, it retrieves and returns the cached value. In the example below, the `Value` object is used to cache the original question, pass it to the web search (i.e. the `duckduckgo_search` object), and subsequently reintroduce the question into the chain (i.e. into the `prompt_template` object).
+Something that may not be immediately obvious is the usage of the `Value` object, below. It serves as a convenient caching mechanism within the workflow. The `Value` object is callable, allowing it to cache and return the value when provided as an argument. When called without a value, it retrieves and returns the cached value. In the example below, the `Value` object is used to cache the original question, pass it to the web search (i.e. the `duckduckgo_search` object), and subsequently reintroduce the question into the workflow (i.e. into the `prompt_template` object).
 
-See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an in-depth explanation.
+See [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb) for an in-depth explanation.
 
 ```python
-from llm_workflow.base import Document, Chain, Value
+from llm_workflow.base import Document, workflow, Value
 from llm_workflow.models import OpenAIEmbedding, OpenAIChat
 from llm_workflow.tools import DuckDuckGoSearch, scrape_url, split_documents
 from llm_workflow.indexes import ChromaDocumentIndex
@@ -334,8 +334,8 @@ def scrape_urls(search_results):
 
 question = Value()  # Value is a caching/reinjection mechanism; see note above
 
-# each task is a callable where the output of one task is the input to the next link
-chain = Chain(links=[
+# each task is a callable where the output of one task is the input to the next task
+workflow = workflow(tasks=[
     question,
     duckduckgo_search,
     scrape_urls,
@@ -345,7 +345,7 @@ chain = Chain(links=[
     prompt_template,
     chat_model,
 ])
-chain("What is ChatGPT?")
+workflow("What is ChatGPT?")
 ```
 
 Response:
@@ -357,11 +357,11 @@ ChatGPT is an AI chatbot that is driven by AI technology and is a natural langua
 We can also track costs:
 
 ```python
-print(f"Cost:            ${chain.cost:.4f}")
-print(f"Total Tokens:     {chain.total_tokens:,}")
-print(f"Prompt Tokens:    {chain.prompt_tokens:,}")
-print(f"Response Tokens:  {chain.response_tokens:,}")
-print(f"Embedding Tokens: {chain.embedding_tokens:,}")
+print(f"Cost:            ${workflow.sum('cost'):.4f}")
+print(f"Total Tokens:     {workflow.sum('total_tokens'):,}")
+print(f"Prompt Tokens:    {workflow.sum('prompt_tokens'):,}")
+print(f"Response Tokens:  {workflow.sum('response_tokens'):,}")
+print(f"Embedding Tokens: {workflow.sum('total_tokens', types=EmbeddingRecord):,}")
 ```
 
 Output:
@@ -374,22 +374,22 @@ Response Tokens:  97
 Embedding Tokens: 15,604
 ```
 
-Additionally, we can track the history of the chain with the `chain.history()` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
+Additionally, we can track the history of the workflow with the `workflow.history()` property. See [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb) for an example.
 
 ---
 
 ## Notebooks
 
-- [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)
-- [openai_chat.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/openai_chat.ipynb)
-- [indexes.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/indexes.ipynb)
-- [prompt_templates.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/prompt_templates.ipynb)
-- [memory.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/memory.ipynb)
-- [duckduckgo-web-search.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/duckduckgo-web-search.ipynb)
-- [scraping-urls.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/scraping-urls.ipynb)
-- [splitting-documents.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/splitting-documents.ipynb)
-- [search-stack-overflow.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/search-stack-overflow.ipynb)
-- [conversation-between-models.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/conversation-between-models.ipynb)
+- [workflows.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb)
+- [openai_chat.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/openai_chat.ipynb)
+- [indexes.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/indexes.ipynb)
+- [prompt_templates.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/prompt_templates.ipynb)
+- [memory.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/memory.ipynb)
+- [duckduckgo-web-search.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/duckduckgo-web-search.ipynb)
+- [scraping-urls.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/scraping-urls.ipynb)
+- [splitting-documents.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/splitting-documents.ipynb)
+- [search-stack-overflow.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/search-stack-overflow.ipynb)
+- [conversation-between-models.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/conversation-between-models.ipynb)
 
 ---
 

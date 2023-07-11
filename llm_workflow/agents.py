@@ -1,5 +1,5 @@
 """
-Contains helper functions and classes that can be used within a Chain.
+Contains helper functions and classes that can be used within a workflow.
 
 
 
@@ -8,11 +8,11 @@ A Tool is meant to be used by an LLM, so it returns a string (which can be fed b
 
 
 
-Any callable can be passed to a chain, so a "tool" in this file can be a simple function, or it can
+Any callable can be passed to a workflow, so a "tool" in this file can be a simple function, or it can
 be a `Tool` class. A `Tool` class has a `name` and `description` that is potentially sent to an LLM
 (e.g. OpenAI "functions") to describe when the tool should be used.
 
-Some classes can be both Links and Tools. A `Link` is simply a callable that tracks history. So if
+Some classes can be both tasks and Tools. A `task` is simply a callable that tracks history. So if
 it's useful for a tool to track history, then it can be both.
 """
 
