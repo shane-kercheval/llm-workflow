@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from dotenv import load_dotenv
 
-from llm_workflow.base import PromptModel, Document, EmbeddingRecord, EmbeddingModel, \
-    ExchangeRecord
+from llm_workflow.base import Document
+from llm_workflow.models import EmbeddingModel, EmbeddingRecord, ExchangeRecord, PromptModel
 
 load_dotenv()
 

@@ -1,8 +1,8 @@
 """test llm_workflow/vector_db/chroma.db."""
 import chromadb
 import pytest
-from llm_workflow.base import Document, DocumentIndex, Record
-from llm_workflow.indexes import ChromaDocumentIndex
+from llm_workflow.base import Document, Record
+from llm_workflow.indexes import ChromaDocumentIndex, DocumentIndex
 from tests.conftest import MockABCDEmbeddings, MockRandomEmbeddings
 
 
@@ -17,7 +17,6 @@ class MockIndex(DocumentIndex):  # noqa
     def _search(self, doc: Document, n_results: int = 3) -> list[Document]:  # noqa
         return self.documents[0:n_results]
 
-    @property
     def history(self) -> list[Record]:  # noqa
         return [Record()]
 
@@ -34,7 +33,7 @@ def test_base_index():  # noqa
     # test `call()` when passing Document which should call `search_documents()`
     return_value = mock_index(Document(content='doc'))
     assert return_value == documents_to_add
-    assert len(mock_index.history)
+    assert len(mock_index.history())
 
 def test_base_index_n_results():  # noqa
     """Test n_results when passed into __init__ vs __call__/search."""
@@ -194,7 +193,7 @@ def test_chroma_search_with_document_and_str(fake_docs_abcd):  # noqa
     chroma_db._emb_model._next_lookup_index = 1
     str_results = chroma_db.search(value=fake_docs_abcd[1].content)  # pass string
     assert doc_results == str_results
-    assert chroma_db.history[1].metadata == chroma_db.history[2].metadata
+    assert chroma_db.history()[1].metadata == chroma_db.history()[2].metadata
 
 def test_chroma_without_collection_or_embeddings_model():  # noqa
     chroma_db = ChromaDocumentIndex(collection=None, embeddings_model=None)
@@ -215,7 +214,7 @@ def test_chroma_without_collection_or_embeddings_model():  # noqa
     chroma_db.add(docs=docs)
     assert chroma_db.total_tokens == 0
     assert chroma_db.cost == 0
-    assert chroma_db.history == []
+    assert chroma_db.history() == []
 
     # verify documents and embeddings where added to collection
     collection_docs = chroma_db._collection.get(include = ['documents', 'metadatas', 'embeddings'])
@@ -233,4 +232,4 @@ def test_chroma_without_collection_or_embeddings_model():  # noqa
     assert results[0].metadata['distance'] < 1
     assert chroma_db.total_tokens == 0
     assert chroma_db.cost == 0
-    assert chroma_db.history == []
+    assert chroma_db.history() == []

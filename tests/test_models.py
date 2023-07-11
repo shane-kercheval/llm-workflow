@@ -1,8 +1,15 @@
 """tests llm_workflow/models.py."""
 import pytest
-from llm_workflow.base import Document, EmbeddingModel, EmbeddingRecord, ExchangeRecord, Record, \
-    StreamingEvent, UsageRecord
-from llm_workflow.models import OpenAIChat, OpenAIEmbedding
+from llm_workflow.base import Document, Record
+from llm_workflow.models import (
+    EmbeddingModel,
+    EmbeddingRecord,
+    ExchangeRecord,
+    OpenAIChat,
+    OpenAIEmbedding,
+    StreamingEvent,
+    TokenUsageRecord,
+)
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 from tests.conftest import MockChat, MockRandomEmbeddings
 
@@ -408,25 +415,25 @@ def test_EmbeddingModel__called_with_different_types():  # noqa
     expected_value = [Document(content=value)]
     result = embeddings(docs=value)
     assert result == expected_value
-    assert embeddings.history[0].metadata == {'content': expected_value}
+    assert embeddings.history()[0].metadata == {'content': expected_value}
 
     value = 'Document value'
     expected_value = [Document(content=value)]
     result = embeddings(docs=Document(content=value))
     assert result == expected_value
-    assert embeddings.history[1].metadata == {'content': expected_value}
+    assert embeddings.history()[1].metadata == {'content': expected_value}
 
     value = ['string value 1', 'string value 2']
     expected_value = [Document(content=x) for x in value]
     result = embeddings(docs=value)
     assert result == expected_value
-    assert embeddings.history[2].metadata == {'content': expected_value}
+    assert embeddings.history()[2].metadata == {'content': expected_value}
 
     value = [Document(content='document value 1'), Document(content='document value 2')]
     expected_value = value
     result = embeddings(docs=value)
     assert result == expected_value
-    assert embeddings.history[3].metadata == {'content': expected_value}
+    assert embeddings.history()[3].metadata == {'content': expected_value}
 
 def test_EmbeddingModel__no_costs():  # noqa
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)
@@ -666,15 +673,15 @@ def test_Records_to_string():  # noqa
     assert 'timestamp: ' in str(Record())
     assert 'uuid: ' in str(Record())
 
-    assert 'timestamp: ' in str(UsageRecord())
-    assert 'uuid: ' in str(UsageRecord())
-    assert 'cost: ' in str(UsageRecord())
-    assert 'total_tokens: ' in str(UsageRecord())
+    assert 'timestamp: ' in str(TokenUsageRecord())
+    assert 'uuid: ' in str(TokenUsageRecord())
+    assert 'cost: ' in str(TokenUsageRecord())
+    assert 'total_tokens: ' in str(TokenUsageRecord())
 
-    assert 'timestamp: ' in str(UsageRecord(total_tokens=1000, cost=1.5))
-    assert 'uuid: ' in str(UsageRecord(total_tokens=1000, cost=1.5))
-    assert 'cost: $1.5' in str(UsageRecord(total_tokens=1000, cost=1.5))
-    assert 'total_tokens: 1,000' in str(UsageRecord(total_tokens=1000, cost=1.5))
+    assert 'timestamp: ' in str(TokenUsageRecord(total_tokens=1000, cost=1.5))
+    assert 'uuid: ' in str(TokenUsageRecord(total_tokens=1000, cost=1.5))
+    assert 'cost: $1.5' in str(TokenUsageRecord(total_tokens=1000, cost=1.5))
+    assert 'total_tokens: 1,000' in str(TokenUsageRecord(total_tokens=1000, cost=1.5))
 
     assert 'timestamp: ' in str(ExchangeRecord(prompt='prompt', response='response'))
     assert 'prompt: "prompt' in str(ExchangeRecord(prompt='prompt', response='response'))

@@ -44,7 +44,7 @@ print(chain.cost)             # 0.0034
 print(chain.total_tokens)     # 1961
 print(chain.prompt_tokens)    # 1104
 print(chain.response_tokens)  # 857
-print(chain.history)          # list of Record objects containing prompt/response/usage
+print(chain.history())          # list of Record objects containing prompt/response/usage
 ```
 
 See `Examples` section below for full output and explanation.
@@ -186,14 +186,14 @@ Prompt Tokens:    1,104
 Response Tokens:  857
 ```
 
-We can view the history of the chain (i.e. the aggregated history across all links) with the `chain.history` property. 
+We can view the history of the chain (i.e. the aggregated history across all links) with the `chain.history()` property. 
 
-In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `chain.history` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (`prompt`) and its corresponding output (`response`), along with other properties like `cost` and `token_tokens`.
+In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `chain.history()` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (`prompt`) and its corresponding output (`response`), along with other properties like `cost` and `token_tokens`.
 
 We can view the response we received from the `prompt_enhancer` model by looking at the first record's `response` property (or the second record's `prompt` property since the chain passes the output of `prompt_enhancer` as the input to the `chat_assistant`):
 
 ```python
-print(chain.history[0].response)
+print(chain.history()[0].response)
 ```
 
 Output:
@@ -227,7 +227,7 @@ We could also view the original response from the `chat_assistant` model.
 
 
 ```python
-mprint(chain.history[1].response)
+mprint(chain.history()[1].response)
 ```
 
 Output:
@@ -281,10 +281,10 @@ The function is properly documented with a clear and concise description, input 
 To use this function, you can call it with a string as an argument and it will return the modified string with masked email addresses.
 ```
 
-The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `mask_email_addresses` function. The `response` object should match the `response` value in the last record (`chain.history[-1].response`).
+The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `mask_email_addresses` function. The `response` object should match the `response` value in the last record (`chain.history()[-1].response`).
 
 ```python
-assert response == chain.history[-1].response  # passes
+assert response == chain.history()[-1].response  # passes
 ```
 
 ---
@@ -374,7 +374,7 @@ Response Tokens:  97
 Embedding Tokens: 15,604
 ```
 
-Additionally, we can track the history of the chain with the `chain.history` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
+Additionally, we can track the history of the chain with the `chain.history()` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
 
 ---
 

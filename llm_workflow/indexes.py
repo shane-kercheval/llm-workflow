@@ -6,7 +6,8 @@ is ChromaDB which stores/retrieves documents based on embeddings, which allow fo
 """
 from abc import ABC, abstractmethod
 from typing import TypeVar
-from llm_workflow.base import Document, EmbeddingModel, EmbeddingRecord, RecordKeeper
+from llm_workflow.base import Document, RecordKeeper
+from llm_workflow.models import EmbeddingModel, EmbeddingRecord
 from llm_workflow.internal_utilities import create_hash
 
 
@@ -167,10 +168,9 @@ class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
             ))
         return similar_docs
 
-    @property
-    def history(self) -> list[EmbeddingRecord]:
+    def _get_history(self) -> list[EmbeddingRecord]:
         """Propagates the history of any underlying models (e.g. embeddings model)."""
-        return self._emb_model.history if self._emb_model else []
+        return self._emb_model.history() if self._emb_model else []
 
     @property
     def total_tokens(self) -> int | None:

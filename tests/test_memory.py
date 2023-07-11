@@ -1,8 +1,7 @@
 """tests llm_workflow/memory.py."""
 
-from llm_workflow.base import ExchangeRecord
 from llm_workflow.memory import LastNExchangesManager, TokenWindowManager
-from llm_workflow.models import OpenAIChat
+from llm_workflow.models import OpenAIChat, ExchangeRecord
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 
 

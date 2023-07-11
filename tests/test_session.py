@@ -1,8 +1,8 @@
 """Test Session class."""
 from time import sleep
 import pytest
-from llm_workflow.base import Workflow, EmbeddingRecord, LanguageModel, ExchangeRecord, Record, \
-    Session, UsageRecord
+from llm_workflow.base import Workflow, Record, Session
+from llm_workflow.models import EmbeddingRecord, LanguageModel, ExchangeRecord, TokenUsageRecord
 
 
 class MockHistoricalUsageRecords(LanguageModel):
@@ -18,15 +18,14 @@ class MockHistoricalUsageRecords(LanguageModel):
         self.records.append(record)
         return record, self.mock_id
 
-    @property
-    def history(self) -> list[UsageRecord]:  # noqa
+    def _get_history(self) -> list[TokenUsageRecord]:  # noqa
         return self.records
 
 def test_Session():  # noqa
     session = Session()
     with pytest.raises(ValueError):  # noqa: PT011
         session('test')
-    assert session.history == []
+    assert session.history() == []
     assert session.usage_history == []
     assert session.exchange_history == []
     assert session.embedding_history == []
@@ -39,7 +38,7 @@ def test_Session():  # noqa
 
     session.append(workflow=Workflow(tasks=[]))
     assert session('test') is None
-    assert session.history == []
+    assert session.history() == []
     assert session.usage_history == []
     assert session.exchange_history == []
     assert session.embedding_history == []
@@ -53,7 +52,7 @@ def test_Session():  # noqa
     # test chain with a task that doesn't have a history property
     session.append(workflow=Workflow(tasks=[lambda x: x]))
     assert session('test') == 'test'
-    assert session.history == []
+    assert session.history() == []
     assert session.usage_history == []
     assert session.exchange_history == []
     assert session.embedding_history == []
@@ -64,9 +63,9 @@ def test_Session():  # noqa
     assert session.response_tokens == 0
     assert len(session) == 2
 
-    record_a = UsageRecord(metadata={'id': 'record_a'}, total_tokens=None, cost=None)
+    record_a = TokenUsageRecord(metadata={'id': 'record_a'}, total_tokens=None, cost=None)
     sleep(0.001)
-    record_b = UsageRecord(metadata={'id': 'record_b'}, total_tokens=100, cost=0.01)
+    record_b = TokenUsageRecord(metadata={'id': 'record_b'}, total_tokens=100, cost=0.01)
     sleep(0.001)
     record_c = Record(metadata={'id': 'record_d'})
     sleep(0.001)
@@ -91,7 +90,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_a)
     assert return_value == record_a
     assert mock_id == 'mock_a'
-    assert session.history == [record_a]
+    assert session.history() == [record_a]
     assert session.usage_history == [record_a]
     assert session.exchange_history == []
     assert session.embedding_history == []
@@ -106,7 +105,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_a)
     assert return_value == record_a
     assert mock_id == 'mock_a'
-    assert session.history == [record_a]
+    assert session.history() == [record_a]
     assert session.usage_history == [record_a]
     assert session.exchange_history == []
     assert session.embedding_history == []
@@ -120,7 +119,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_b)
     assert return_value == record_b
     assert mock_id == 'mock_a'
-    assert session.history == [record_a, record_b]
+    assert session.history() == [record_a, record_b]
     assert session.usage_history == [record_a, record_b]
     assert session.exchange_history == []
     assert session.embedding_history == []
@@ -136,7 +135,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_e)
     assert return_value == record_e
     assert mock_id == 'mock_b'
-    assert session.history == [record_a, record_b, record_e]
+    assert session.history() == [record_a, record_b, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
     assert session.embedding_history == []
@@ -151,7 +150,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_b)
     assert return_value == record_b
     assert mock_id == 'mock_b'
-    assert session.history == [record_a, record_b, record_e]
+    assert session.history() == [record_a, record_b, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
     assert session.embedding_history == []
@@ -166,7 +165,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_d)
     assert return_value == record_d
     assert mock_id == 'mock_b'
-    assert session.history == [record_a, record_b, record_d, record_e]
+    assert session.history() == [record_a, record_b, record_d, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
     assert session.embedding_history == []
@@ -181,7 +180,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_c)
     assert return_value == record_c
     assert mock_id == 'mock_b'
-    assert session.history == [record_a, record_b, record_c, record_d, record_e]
+    assert session.history() == [record_a, record_b, record_c, record_d, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
     assert session.embedding_history == []
@@ -196,7 +195,7 @@ def test_Session():  # noqa
     return_value, mock_id = session(record_f)
     assert return_value == record_f
     assert mock_id == 'mock_b'
-    assert session.history == [record_a, record_b, record_c, record_d, record_e, record_f]
+    assert session.history() == [record_a, record_b, record_c, record_d, record_e, record_f]
     assert session.usage_history == [record_a, record_b, record_e, record_f]
     assert session.exchange_history == [record_e]
     assert session.embedding_history == [record_f]

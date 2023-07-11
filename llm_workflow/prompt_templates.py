@@ -7,7 +7,8 @@ with the vector database during object creation rather than through the `__call_
 If you're prompt-template is simple, just use a function (or inline lambda) in the link.
 """
 from abc import ABC, abstractmethod
-from llm_workflow.base import DocumentIndex, Record, RecordKeeper
+from llm_workflow.base import Record, RecordKeeper
+from llm_workflow.indexes import DocumentIndex
 from llm_workflow.resources import PROMPT_TEMPLATE__INCLUDE_DOCUMENTS
 
 
@@ -65,10 +66,9 @@ class DocSearchTemplate(RecordKeeper, PromptTemplate):
             replace('{{documents}}', doc_string).\
             replace('{{prompt}}', prompt)
 
-    @property
-    def history(self) -> list[Record]:
+    def _get_history(self) -> list[Record]:
         """Propagate the history from the underlying DocumentIndex object."""
-        return self._doc_index.history
+        return self._doc_index.history()
 
     @property
     def total_tokens(self) -> int | None:

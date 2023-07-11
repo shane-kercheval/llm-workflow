@@ -6,7 +6,7 @@ from uuid import uuid4
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from llm_workflow.internal_utilities import has_property
+from llm_workflow.internal_utilities import has_method, has_property
 
 
 class Record(BaseModel):
@@ -50,35 +50,37 @@ class Document(BaseModel):
 class RecordKeeper(ABC):
     """A RecordKeeper is an object that tracks history i.e. `Record` objects."""
 
-    @property
     @abstractmethod
-    def history(self) -> list[Record]:
+    def _get_history(self) -> list[Record]:
         """
         Each inheriting class needs to implement the ability to track history.
         When an object doesn't have any history, it should return an empty list rather than `None`.
         """
 
-    def previous_record(self) -> Record | None:
-        """TODO."""
-        if self.history:
-            return self.history[-1]
-        return None
-
-    def history_filter(self, record_types: type | tuple[type] | None = None) -> list[Record]:
+    def history(self, record_types: type | tuple[type] | None = None) -> list[Record]:
         """
-        Returns the history (list of Records objects) associated with an object based on the
+        Returns the history (list of Records objects) associated with an object, based on the
         `record_types` provided.
 
         Args:
-            record_types: either a single type or tuple of types indicating the type of Record
-            objects to return (e.g. `UsageRecord` or `(ExchangeRecord, EmbeddingRecord)`).
+            record_types:
+                if None, all Record objects are returned
+                if not None, either a single type or tuple of types indicating the type of Record
+                objects to return (e.g. `UsageRecord` or `(ExchangeRecord, EmbeddingRecord)`).
         """
         if not record_types:
-            return self.history
+            return self._get_history()
         if isinstance(record_types, type | tuple):
-            return [x for x in self.history if isinstance(x, record_types)]
+            return [x for x in self._get_history() if isinstance(x, record_types)]
 
         raise TypeError(f"record_types not a valid type ({type(record_types)}) ")
+
+    def previous_record(self, record_types: type | tuple[type] | None = None) -> Record | None:
+        """TODO."""
+        history = self.history(record_types=record_types)
+        if history:
+            return history[-1]
+        return None
 
     def calculate_historical(
             self,
@@ -96,7 +98,7 @@ class RecordKeeper(ABC):
                 are included in the aggregation
         """
         records = [
-            x for x in self.history_filter(record_types=record_types)
+            x for x in self.history(record_types=record_types)
             if has_property(obj=x, property_name=name)
         ]
         if records:
@@ -164,14 +166,13 @@ class Workflow(RecordKeeper):
                 result = task(result)
         return result
 
-    @property
-    def history(self) -> list[Record]:
+    def _get_history(self) -> list[Record]:
         """
         Aggregates the `history` across all tasks in the Chain. This method ensures that if a task
         is added multiple times to the Chain (e.g. a chat model with multiple steps), the
         underlying Record objects associated with that task's `history` are not duplicated.
         """
-        histories = [task.history for task in self._tasks if _has_history(task)]
+        histories = [task.history() for task in self._tasks if _has_history(task)]
         # Edge-case: if the same model is used multiple times in the same chain (e.g. embedding
         # model to embed documents and then embed query to search documents) then we can't loop
         # through the chains because we'd be double-counting the history from those objects.
@@ -217,8 +218,7 @@ class Session(RecordKeeper):
     def __len__(self) -> int:
         return len(self._workflows)
 
-    @property
-    def history(self) -> list[Record]:
+    def _get_history(self) -> list[Record]:
         """
         Aggregates the `history` across all Chain objects in the Session. This method ensures that
         if a task is added multiple times to the Session, the underlying Record objects associated
@@ -231,7 +231,7 @@ class Session(RecordKeeper):
         """
         # for each history in chain, cycle through each task's history and add to the list of
         # records if it hasn't already been added.
-        chains = [chain for chain in self._workflows if chain.history]
+        workflows = [workflow for workflow in self._workflows if workflow.history()]
         # Edge-case: if the same model is used multiple times in the same chain or across different
         # tasks (e.g. embedding
         # model to embed documents and then embed query to search documents) then we can't loop
@@ -240,8 +240,8 @@ class Session(RecordKeeper):
         # to do this we'll use the uuid, and then sort by timestamp
         unique_records = []
         unique_uuids = set()
-        for chain in chains:
-            for record in chain.history:
+        for workflow in workflows:
+            for record in workflow.history():
                 if record.uuid not in unique_uuids:
                     unique_records.append(record)
                     unique_uuids |= {record.uuid}
@@ -253,7 +253,7 @@ def _has_history(obj: object) -> bool:
     For a given object `obj`, return True if that object has a `history` method and if the
     history has any Record objects.
     """
-    return has_property(obj, 'history') and \
-        isinstance(obj.history, list) and \
-        len(obj.history) > 0 and \
-        isinstance(obj.history[0], Record)
+    return has_method(obj, 'history') and \
+        isinstance(obj.history(), list) and \
+        len(obj.history()) > 0 and \
+        isinstance(obj.history()[0], Record)

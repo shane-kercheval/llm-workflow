@@ -4,11 +4,29 @@ import re
 import pytest
 import openai
 import requests
-from llm_workflow.base import Document
+import os
 from llm_workflow.exceptions import RequestError
-from llm_workflow.internal_utilities import Timer, create_hash, has_method, has_property, \
-    retry_handler
-from llm_workflow.utilities import num_tokens, num_tokens_from_messages, scrape_url, split_documents
+from llm_workflow.base import Document
+from llm_workflow.internal_utilities import (
+    create_hash,
+    has_method,
+    has_property,
+    retry_handler,
+    Timer,
+)
+from llm_workflow.utilities import (
+    DuckDuckGoSearch,
+    StackOverflowSearchRecord,
+    StackQuestion,
+    _get_stack_overflow_answers,
+    num_tokens,
+    num_tokens_from_messages,
+    scrape_url,
+    SearchRecord,
+    split_documents,
+    StackOverflowSearch,
+)
+
 
 def test_timer_seconds():  # noqa
     with Timer() as timer:
@@ -406,3 +424,106 @@ def test_scrape_url_404():  # noqa
 def test_RequestError():  # noqa
     response = requests.get("https://example.com/asdf")
     assert RequestError(status_code=response.status_code, reason=response.reason)
+
+def test_DuckDuckGoSearch():  # noqa
+    query = "What is an agent in langchain?"
+    search = DuckDuckGoSearch(top_n=1)
+    results = search(query=query)
+    assert len(results) == 1
+    assert 'title' in results[0]
+    assert 'href' in results[0]
+    assert 'body' in results[0]
+    assert len(search.history()) == 1
+    assert search.history()[0].query == query
+    assert search.history()[0].results == results
+
+    query = "What is langchain?"
+    results = search(query=query)
+    assert len(results) == 1
+    assert 'title' in results[0]
+    assert 'href' in results[0]
+    assert 'body' in results[0]
+    assert len(search.history()) == 2
+    assert search.history()[1].query == query
+    assert search.history()[1].results == results
+
+def test_DuckDuckGoSearch_caching():  # noqa
+    """
+    Test that searching DuckDuckGo based on same query returns same results with different uuid and
+    timestamp.
+    """
+    query = "This is my fake query?"
+    fake_results = [{'title': "fake results"}]
+    search = DuckDuckGoSearch(top_n=1)
+    # modify _history to mock a previous search based on a particular query
+    search._history.append(SearchRecord(query=query, results=fake_results))
+    response = search(query)
+    assert response == fake_results
+    assert len(search.history()) == 2
+    assert search.history()[0].query == search.history()[1].query
+    assert search.history()[0].results == search.history()[1].results
+    assert search.history()[0].uuid != search.history()[1].uuid
+
+def test_StackOverflowSearch():  # noqa
+    # not sure how to test this in a way that won't break if the response from stack overflow
+    # changes in the future
+    # TODO: I don't want to make the tests fail when running on github workflows or someone is
+    # building locally; but approach this will silently skip tests which is not ideal
+    if os.getenv('STACK_OVERFLOW_KEY', None):
+        # this question gets over 25K upvotes and has many answers; let's make sure we get the
+        # expected number of questions/answers
+        question = "Why is processing a sorted array faster than processing an unsorted array?"
+        search = StackOverflowSearch(max_questions=1, max_answers=1)
+        results = search(query=question)
+        assert results
+        assert len(results) == 1
+        assert results[0].title == question
+        assert results[0].answer_count > 1
+        assert len(results[0].answers) == 1
+        # check that the body of the question contains html but the text/markdown does not
+        assert '<p>' in results[0].body
+        assert len(results[0].body) > 100
+        assert '<p>' not in results[0].text
+        assert len(results[0].text) > 100
+        assert '<p>' not in results[0].markdown
+        assert len(results[0].markdown) > 100
+        # check that the body of the answer contains html but the text/markdown does not
+        assert '<p>' in results[0].answers[0].body
+        assert len(results[0].answers[0].body) > 100
+        assert '<p>' not in results[0].answers[0].text
+        assert len(results[0].answers[0].text) > 100
+        assert '<p>' not in results[0].answers[0].markdown
+        assert len(results[0].answers[0].markdown) > 100
+
+        question = "getting segmentation fault in linux"
+        search = StackOverflowSearch(max_questions=2, max_answers=2)
+        results = search(query=question)
+        assert results
+        assert len(results) > 1
+        assert any(x for x in results if x.answer_count > 0)
+
+        # make sure the function doesn't fail when there are no matches/results
+        search = StackOverflowSearch(max_questions=2, max_answers=2)
+        assert search(query="asdfasdfasdfasdflkasdfljsadlkfjasdlkfja") == []
+
+def test_StackOverflowSearch_caching():  # noqa
+    """
+    Test that searching Stack Overflow based on same query returns same results with different uuid
+    and timestamp.
+    """
+    query = "This is my fake query?"
+    fake_results = [StackQuestion(question_id=1, score=1, creation_date=0, answer_count=1, title="fake", link="fake", body="<p>body</p>")]  # noqa
+    search = StackOverflowSearch()
+    # modify _history to mock a previous search based on a particular query
+    search._history.append(StackOverflowSearchRecord(query=query, questions=fake_results))
+    response = search(query)
+    assert response == fake_results
+    assert len(search.history()) == 2
+    assert search.history()[0].query == search.history()[1].query
+    assert search.history()[0].questions == search.history()[1].questions
+    assert search.history()[0].uuid != search.history()[1].uuid
+
+def test__get_stack_overflow_answers_404():  # noqa
+     if os.getenv('STACK_OVERFLOW_KEY', None):
+        with pytest.raises(RequestError):
+            _ = _get_stack_overflow_answers(question_id='asdf')

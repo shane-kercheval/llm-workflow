@@ -23,7 +23,7 @@ from collections.abc import Callable
 import functools
 
 from llm_workflow.base import Record
-from llm_workflow.internal_utilities import has_property, retry_handler
+from llm_workflow.internal_utilities import has_method, retry_handler
 from llm_workflow.models import ExchangeRecord, LanguageModel
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 
@@ -128,11 +128,10 @@ class Tool(ToolBase):
     def __call__(self, *args, **kwargs) -> Any:  # noqa
         return self.callable_obj(*args, **kwargs)
 
-    @property
     def history(self) -> list[Record]:
-        """TODO."""
-        if has_property(self.callable_obj, 'history'):
-            return self.callable_obj.history
+        """TODO. propegating history of underlying callable, if applicable."""
+        if has_method(self.callable_obj, 'history'):
+            return self.callable_obj.history()
         return None
 
 
@@ -151,9 +150,7 @@ def tool(name: str, description: str, parameters: dict, required: list[str] | No
     return decorator
 
 
-
-
-class OpenAIToolAgent(LanguageModel):
+class OpenAIFunctionAgent(LanguageModel):
     """
     Wrapper around OpenAI "functions" (https://platform.openai.com/docs/guides/gpt/function-calling).
 
@@ -246,8 +243,7 @@ class OpenAIToolAgent(LanguageModel):
         return MODEL_COST_PER_TOKEN[self.model_name]
 
 
-    @property
-    def history(self) -> list[ExchangeRecord]:
+    def _get_history(self) -> list[ExchangeRecord]:
         """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
         return self._history  # TODO: do i need to append history for tools?
 

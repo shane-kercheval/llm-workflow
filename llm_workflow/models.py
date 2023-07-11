@@ -51,6 +51,7 @@ class EmbeddingRecord(TokenUsageRecord):
     """Record associated with an embedding request."""
 
 
+
 class StreamingEvent(Record):
     """Contains the information from a streaming event."""
 
@@ -154,8 +155,7 @@ class EmbeddingModel(LanguageModel):
         self._history.append(metadata)
         return embedding
 
-    @property
-    def history(self) -> list[EmbeddingRecord]:
+    def _get_history(self) -> list[EmbeddingRecord]:
         """A list of EmbeddingRecord that correspond to each embedding request."""
         return self._history
 
@@ -189,8 +189,7 @@ class PromptModel(LanguageModel):
         self._history.append(response)
         return response.response
 
-    @property
-    def history(self) -> list[ExchangeRecord]:
+    def _get_history(self) -> list[ExchangeRecord]:
         """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
         return self._history
 
@@ -342,7 +341,7 @@ class OpenAIChat(PromptModel):
         """
         import openai
         # build up messages from history
-        memory = self.history.copy()
+        memory = self.history().copy()
         if self._memory_manager:
             memory = self._memory_manager(history=memory)
 
@@ -431,17 +430,17 @@ class ModelHistoryMixin(RecordKeeper):
     @property
     def usage_history(self) -> list[TokenUsageRecord]:
         """Returns all records of type UsageRecord."""
-        return self.history_filter(TokenUsageRecord)
+        return self.history(TokenUsageRecord)
 
     @property
     def exchange_history(self) -> list[ExchangeRecord]:
         """Returns all records of type ExchangeRecord."""
-        return self.history_filter(ExchangeRecord)
+        return self.history(ExchangeRecord)
 
     @property
     def embedding_history(self) -> list[EmbeddingRecord]:
         """Returns all records of type ExchangeRecord."""
-        return self.history_filter(EmbeddingRecord)
+        return self.history(EmbeddingRecord)
 
     @property
     def cost(self) -> int | None:
