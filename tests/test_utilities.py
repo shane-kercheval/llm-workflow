@@ -117,11 +117,11 @@ def test_has_method_has_property():  # noqa
             self.variable_c = 'c'
 
         def method_a(self) -> str:
-            return 'a'
+            """Not Needed."""
 
         @property
         def property_b(self) -> str:
-            return 'b'
+            """Not Needed."""
 
     assert has_method(Fake(), 'method_a')
     assert not has_method(Fake(), 'property_b')

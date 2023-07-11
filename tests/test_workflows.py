@@ -29,8 +29,8 @@ class FakeLLM(LanguageModel):
             self.record_e, self.record_g,
         ]
 
-    def __call__(self, value: object) -> object:  # noqa
-        return super().__call__(value)
+    def __call__(self, value: object) -> object:
+        """Not needed."""
 
     def _get_history(self) -> list[Record]:
         """Return mock history."""
@@ -54,8 +54,8 @@ class FakeLLMNoUsage(LanguageModel):
         self.record_e = Record(metadata={'id': 'record_e'})
         self.records = [self.record_a, self.record_b, self.record_d, self.record_c, self.record_e]
 
-    def __call__(self, value: object) -> object:  # noqa
-        return super().__call__(value)
+    def __call__(self, value: object) -> object:
+        """Not needed."""
 
     def _get_history(self) -> list[Record]:
         """Return mock history."""
@@ -68,8 +68,8 @@ class MockHistoryWrapper:
     def __init__(self, hist_obj: LanguageModel) -> None:
         self._hist_obj = hist_obj
 
-    def __call__(self, value: object) -> object:  # noqa
-        return super().__call__(value)
+    def __call__(self, value: object) -> object:
+        """Not needed."""
 
     def history(self) -> list[Record]:
         """Return mock history."""
