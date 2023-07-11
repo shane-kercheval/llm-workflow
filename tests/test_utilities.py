@@ -512,15 +512,15 @@ def test_StackOverflowSearch_caching():  # noqa
     and timestamp.
     """
     query = "This is my fake query?"
-    fake_results = [StackQuestion(question_id=1, score=1, creation_date=0, answer_count=1, title="fake", task="fake", body="<p>body</p>")]  # noqa
+    fake_results = [StackQuestion(question_id=1, score=1, creation_date=0, answer_count=1, title="fake", link="fake", body="<p>body</p>")]  # noqa
     search = StackOverflowSearch()
     # modify _history to mock a previous search based on a particular query
-    search._history.append(StackOverflowSearchRecord(query=query, questions=fake_results))
+    search._history.append(StackOverflowSearchRecord(query=query, results=fake_results))
     response = search(query)
     assert response == fake_results
     assert len(search.history()) == 2
     assert search.history()[0].query == search.history()[1].query
-    assert search.history()[0].questions == search.history()[1].questions
+    assert search.history()[0].results == search.history()[1].results
     assert search.history()[0].uuid != search.history()[1].uuid
 
 def test__get_stack_overflow_answers_404():  # noqa

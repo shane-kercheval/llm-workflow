@@ -164,7 +164,7 @@ class StackQuestion(BaseModel):
     creation_date: int
     answer_count: int
     title: str
-    task: str
+    link: str
     body: str
     text: str | None
     markdown: str | None
@@ -234,9 +234,9 @@ class StackOverflowSearch(RecordKeeper):
                 # timestamp
                 self._history.append(StackOverflowSearchRecord(
                     query=query,
-                    questions=search.questions.copy(),
+                    results=search.results.copy(),
                 ))
-                return search.questions
+                return search.results
 
         params = {
             'site': 'stackoverflow',
@@ -265,7 +265,7 @@ class StackOverflowSearch(RecordKeeper):
                 )
         self._history.append(StackOverflowSearchRecord(
             query=query,
-            questions=questions,
+            results=questions,
         ))
         return questions
 
