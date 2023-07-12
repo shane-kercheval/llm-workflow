@@ -146,7 +146,7 @@ class Tool(ToolBase):
         return self._required
 
     def history(self) -> list[Record]:
-        """TODO. propegating history of underlying callable, if applicable."""
+        """Returns the history of the underlying callable object, if applicable."""
         if has_method(self._callable_obj, 'history'):
             return self._callable_obj.history()
         return None
@@ -198,7 +198,7 @@ class OpenAIFunctionAgent(LanguageModel):
             model_name:
                 e.g. 'gpt-3.5-turbo'
             tools:
-                TODO.
+                a list of Tool objects (created with the `Tool` class or `tool` decorator).
             system_message:
                 The content of the message associated with the "system" `role`.
             timeout:
@@ -213,7 +213,11 @@ class OpenAIFunctionAgent(LanguageModel):
 
 
     def __call__(self, prompt: object) -> object:
-        """TODO."""
+        """
+        Uses the OpenAI "functions" api to decide which tool to call based on the `prompt`. The
+        selected tool (which is a callable) is called and passed the arguments determined by
+        OpenAI. The response from the tool is retuned by the agent object.
+        """
         import openai
         messages = [
             {"role": "system", "content": self._system_message},

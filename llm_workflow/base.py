@@ -25,13 +25,13 @@ class Record(BaseModel):
 
 
 class CostRecord(Record):
-    """TODO: different type makes it convenient to filter for specific types of records."""
+    """A Record object that tracks cost."""
 
     cost: float | None = None
 
 
 class SearchRecord(Record):
-    """TODO: different type makes it convenient to filter for specific types of records."""
+    """A Record object associated with a search query (e.g. web-search, Stack Overflow search)."""
 
     query: str
     results: list | None = None
@@ -76,7 +76,10 @@ class RecordKeeper(ABC):
         raise TypeError(f"types not a valid type ({type(types)}) ")
 
     def previous_record(self, types: type | tuple[type] | None = None) -> Record | None:
-        """TODO."""
+        """
+        Returns the last/previous Record object in the history. If the object does not have any
+        history, None is returned.
+        """
         history = self.history(types=types)
         if history:
             return history[-1]
