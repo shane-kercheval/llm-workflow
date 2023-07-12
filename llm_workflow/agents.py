@@ -1,15 +1,8 @@
 """
-TODO.
-Contains helper functions and classes that can be used within a workflow.
+An Agent is an LLM that is given a set of tools and decides how to respond based on those tools.
 
-A Tool is meant to be used by an LLM, so it returns a string (which can be fed back into
-
-Any callable can be passed to a workflow, so a "tool" in this file can be a simple function, or it
-ca be a `Tool` class. A `Tool` class has a `name` and `description` that is potentially sent to an
-LLM (e.g. OpenAI "functions") to describe when the tool should be used.
-
-Some classes can be both tasks and Tools. A `task` is simply a callable that tracks history. So if
-it's useful for a tool to track history, then it can be both.
+Currently, the only agent in this library is the OpenAIFunctionAgent class, which wraps the logic
+for OpenAI's "functions".
 """
 
 from abc import ABC, abstractmethod
@@ -28,7 +21,7 @@ from llm_workflow.resources import MODEL_COST_PER_TOKEN
 class ToolBase(ABC):
     """
     A tool is a callable object that has a name, description, and other properties that describe
-    the tool. The name and description may be passed to an LLM (e.g. OpenAI "functions") and,
+    the tool. The name, description, etc., may be passed to an LLM (e.g. OpenAI "functions") and,
     therefore, should be a useful description for the LLM.
     """
 
@@ -48,78 +41,68 @@ class ToolBase(ABC):
 
     @property
     @abstractmethod
-    def variables(self) -> dict:
+    def inputs(self) -> dict:
         """
-        For example.
+        Property that describes the inputs of the tool.
 
-            "type": "object",
-            "properties": {
-                "location": {
+        For example:
+
+            {
+                "variable_a": {
                     "type": "string",
-                    "description": "The city and state, e.g. San Francisco, CA",
+                    "description": "This is a description of variable_a.",
                 },
-                "format": {
+                "variable_b": {
                     "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "The temperature unit to use. Infer this from the users location.",
+                    "enum": ["option_a", "option_b"],
+                    "description": "This is a description of variable_b.",
                 },
-            },
-            "required": ["location", "format"],
-        }
-        # {
-        #     "type": "object",
-        #     "properties": {
-        #         "location": {
-        #             "type": "string",
-        #             "description": "The city and state, e.g. San Francisco, CA",
-        #         },
-        #         "format": {
-        #             "type": "string",
-        #             "enum": ["celsius", "fahrenheit"],
-        #             "description": "The temperature unit to use. Infer this from the users location.",
-        #         },
-        #     },
-        #     "required": ["location", "format"],
-        # }
-        """  # noqa: E501
+            }
+        """
 
     @property
     @abstractmethod
     def required(self) -> list:
-        """
-        For example.
-
-        TODO.
-        """
+        """Returns a list of inputs that are required."""
 
     def to_dict(self) -> str:
-        """TODO. I don't love the dependency on OpenAI. Not sure how to deal with it."""
+        """
+        Returns a dictionary with properties that describe the tool.
+        Currently this dictinoary is in a formated expected by OpenAI "functions" API. The
+        dependency to OpenAI is not ideal.
+        """
         return {
             'name': self.name,
             'description': self.description,
             'parameters': {
                 # this is based on OpenAI requirement; i don't love this dependency
                 "type": "object",
-                "properties": self.variables,
+                "properties": self.inputs,
                 "required": self.required,
             },
         }
 
 
 class Tool(ToolBase):
-    """Class for wrapping an existing callable object."""
+    """
+    A tool is a callable object that has a name, description, and other properties that describe
+    the tool. The name, description, etc., may be passed to an LLM (e.g. OpenAI "functions") and,
+    therefore, should be a useful description for the LLM.
+
+    This class wraps a callable object.
+    """
 
     def __init__(
             self,
             callable_obj: Callable,
             name: str,
             description: str,
-            variables: dict,
+            inputs: dict,
             required: list[str] | None = None):
         self._callable_obj = callable_obj
         self._name = name
         self._description = description
-        self._variables = variables
+        self._inputs = inputs
         self._required = required
 
     def __call__(self, *args, **kwargs) -> Any:  # noqa
@@ -136,39 +119,52 @@ class Tool(ToolBase):
         return self._description
 
     @property
-    def variables(self) -> dict:
-        """TODO."""
-        return self._variables
+    def inputs(self) -> dict:
+        """
+        Property that describes the inputs of the tool.
+
+        For example:
+
+            {
+                "variable_a": {
+                    "type": "string",
+                    "description": "This is a description of variable_a.",
+                },
+                "variable_b": {
+                    "type": "string",
+                    "enum": ["option_a", "option_b"],
+                    "description": "This is a description of variable_b.",
+                },
+            }
+        """
+        return self._inputs
 
 
     @property
     def required(self) -> list:
-        """
-        For example.
-
-        TODO.
-        """
+        """Returns a list of inputs that are required."""
         return self._required
 
     def history(self) -> list[Record]:
-        """TODO. propegating history of underlying callable, if applicable."""
+        """Returns the history of the underlying callable object, if applicable."""
         if has_method(self._callable_obj, 'history'):
             return self._callable_obj.history()
         return None
 
 
-def tool(name: str, description: str, variables: dict, required: list[str] | None = None) -> Tool:
+def tool(name: str, description: str, inputs: dict, required: list[str] | None = None) -> Tool:
     """
-    TODO: Create a Tool from a function.
-    We could theoretically build up parameters and required from docstrings and type-hints, but
-    that seems unreliable and more confusing for the end user in terms of the function's
-    requirements, and doesn't work for fuctions we don't define (e.g. we're importing).
+    A tool is a callable object that has a name, description, and other properties that describe
+    the tool. The name, description, etc., may be passed to an LLM (e.g. OpenAI "functions") and,
+    therefore, should be a useful description for the LLM.
+
+    This decorator wraps a callable object.
     """
     def decorator(callable_obj: Callable):  # noqa: ANN202
         @functools.wraps(callable_obj)
         def wrapper(*args, **kwargs):  # noqa: ANN003, ANN002, ANN202
             return callable_obj(*args, **kwargs)
-        return Tool(wrapper, name, description, variables, required)
+        return Tool(wrapper, name, description, inputs, required)
     return decorator
 
 
@@ -176,9 +172,18 @@ class OpenAIFunctionAgent(LanguageModel):
     """
     Wrapper around OpenAI "functions" (https://platform.openai.com/docs/guides/gpt/function-calling).
 
-    Decides which Tool to call.
+    From OpenAI:
 
-    TODO.
+        "Developers can now describe functions to gpt-4-0613 and gpt-3.5-turbo-0613, and have the
+        model intelligently choose to output a JSON object containing arguments to call those
+        functions. This is a new way to more reliably connect GPT's capabilities with external
+        tools and APIs.
+
+    This class uses the OpenAI "functions" api to decide which tool to use; the selected tool
+    (which is a callable) is called and passed the arguments determined by OpenAI.
+    The response from the tool is retuned by the agent object.
+
+    See this notebooks for an example: https://github.com/shane-kercheval/llm-workflow/blob/main/examples/agents.ipynb
     """
 
     def __init__(
@@ -193,7 +198,7 @@ class OpenAIFunctionAgent(LanguageModel):
             model_name:
                 e.g. 'gpt-3.5-turbo'
             tools:
-                TODO.
+                a list of Tool objects (created with the `Tool` class or `tool` decorator).
             system_message:
                 The content of the message associated with the "system" `role`.
             timeout:
@@ -208,7 +213,11 @@ class OpenAIFunctionAgent(LanguageModel):
 
 
     def __call__(self, prompt: object) -> object:
-        """TODO."""
+        """
+        Uses the OpenAI "functions" api to decide which tool to call based on the `prompt`. The
+        selected tool (which is a callable) is called and passed the arguments determined by
+        OpenAI. The response from the tool is retuned by the agent object.
+        """
         import openai
         messages = [
             {"role": "system", "content": self._system_message},
@@ -265,8 +274,17 @@ class OpenAIFunctionAgent(LanguageModel):
         return MODEL_COST_PER_TOKEN[self.model_name]
 
 
-    def _get_history(self) -> list[ExchangeRecord]:
-        """TODO. A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
+    def _get_history(self) -> list[Record]:
+        """
+        Returns a list of Records corresponding to any OpenAI call as well as any Record object
+        associated with the underlying tools' history.
+
+        NOTE: the entire history of each tool is included. If you pass the OpenAIFunctionAgent
+        object a tool that was previously used (i.e. the tool "object" was instantiated and called
+        and has resulting history), that history will be included, even though it is not directly
+        related to the use of the Agent. As a best practice, you should only include tool objects
+        that have not been previously instantiated/used.
+        """
         histories = [tool.history() for tool in self._tools if _has_history(tool)]
         # Concatenate all the lists into a single list
         histories = [record for sublist in histories for record in sublist]
@@ -274,32 +292,3 @@ class OpenAIFunctionAgent(LanguageModel):
         unique_records = OrderedDict((record.uuid, record) for record in histories)
         unique_records = list(unique_records.values())
         return sorted(unique_records, key=lambda r: r.timestamp)
-
-
-
-# class AgentTool(Tool):
-#     """
-#     An AgentTool is a specific type of Tool that is used by an Agent. Therefore, the inputs must
-#     be a string (so that the agent can pass it )
-#     """
-
-# class DataChat()??? Data Agent?  has a dataset, and extracts context for
-
-# class CustomTool(Tool):
-#     """TODO."""
-
-#     def __init__(self, name: str, description: str, func: Callable, properties: dict) -> None:
-#         super().__init__()
-
-
-# a Tool can have any inputs and any outputs
-
-# "ChatTool" (AgentTool?) can only have string inputs and a single string output
-# Why? Because a ChatTool is used by an Agent and so needs to be able to pass the tool inputs
-# (strings) and must be able to use the output, which is a string
-
-# class DuckDuckGoSearch(AgentTool):
-#     """Does a web-search, and returns the the most relevant chunks as a string. TODO."""
-
-#     def  __init__(self) -> None:
-#         super().__init__()

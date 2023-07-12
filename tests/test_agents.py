@@ -6,9 +6,6 @@ from llm_workflow.base import Record
 from llm_workflow.models import ExchangeRecord
 
 
-def test_tool():  # noqa
-    pass  # TODO
-
 def test_OpenAIToolAgent__Tool_class():  # noqa
     class FakeWeatherAPI:
         def __init__(self) -> None:
@@ -44,7 +41,7 @@ def test_OpenAIToolAgent__Tool_class():  # noqa
         callable_obj=FakeWeatherAPI(),
         name="ask_weather",
         description="Use this function to answer questions about the weather for a particular city.",  # noqa
-        variables={
+        inputs={
             'location': {
                 'type': 'string',
                 'description': "The city and state, e.g. San Francisco, CA",
@@ -62,7 +59,7 @@ def test_OpenAIToolAgent__Tool_class():  # noqa
         callable_obj=FakeStockAPI(),
         name="ask_stock_price",
         description="Use this function to answer questions about the the stock price for a particular stock symbol.",  # noqa
-        variables={
+        inputs={
             'symbol': {
                 'type': 'string',
                 'description': "The stock symbol, e.g. 'AAPL'",
@@ -141,7 +138,7 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     @tool(
         name="ask_weather",
         description="Use this function to answer questions about the weather for a particular city.",  # noqa
-        variables={
+        inputs={
             'location': {
                 'type': 'string',
                 'description': "The city and state, e.g. San Francisco, CA",
@@ -160,7 +157,7 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     @tool(
         name="ask_stock_price",
         description="Use this function to answer questions about the the stock price for a particular stock symbol.",  # noqa
-        variables={
+        inputs={
             'symbol': {
                 'type': 'string',
                 'description': "The stock symbol, e.g. 'AAPL'",

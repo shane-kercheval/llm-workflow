@@ -1,11 +1,11 @@
 
-"""Helper functions and classes."""
+"""Helper functions and classes that are not intended to be used externally."""
+
 import inspect
 import datetime
 import hashlib
 from collections.abc import Callable
 import tenacity
-
 
 
 class Timer:

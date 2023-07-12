@@ -1,4 +1,5 @@
 """Contains all base and foundational classes."""
+
 from abc import ABC, abstractmethod
 from typing import Any
 from collections.abc import Callable
@@ -10,7 +11,7 @@ from llm_workflow.internal_utilities import has_method, has_property
 
 
 class Record(BaseModel):
-    """Used to track the history of a task or task."""
+    """Used to track the history of a task."""
 
     uuid: str = Field(default_factory=lambda: str(uuid4()))
     timestamp: str = Field(
@@ -25,13 +26,13 @@ class Record(BaseModel):
 
 
 class CostRecord(Record):
-    """TODO: different type makes it convenient to filter for specific types of records."""
+    """A Record object that tracks cost."""
 
     cost: float | None = None
 
 
 class SearchRecord(Record):
-    """TODO: different type makes it convenient to filter for specific types of records."""
+    """A Record object associated with a search query (e.g. web-search, Stack Overflow search)."""
 
     query: str
     results: list | None = None
@@ -68,15 +69,19 @@ class RecordKeeper(ABC):
                 if not None, either a single type or tuple of types indicating the type of Record
                 objects to return (e.g. `TokenUsageRecord` or `(ExchangeRecord, EmbeddingRecord)`).
         """
+        history = self._get_history() or []  # ensure empty list is returned instead of None
         if not types:
-            return self._get_history()
+            return history
         if isinstance(types, type | tuple):
-            return [x for x in self._get_history() if isinstance(x, types)]
+            return [x for x in history if isinstance(x, types)]
 
         raise TypeError(f"types not a valid type ({type(types)}) ")
 
     def previous_record(self, types: type | tuple[type] | None = None) -> Record | None:
-        """TODO."""
+        """
+        Returns the last/previous Record object in the history. If the object does not have any
+        history, None is returned.
+        """
         history = self.history(types=types)
         if history:
             return history[-1]
@@ -135,8 +140,8 @@ class Workflow(RecordKeeper):
     The output of one task serves as the input to the next task in the workflow.
 
     Additionally, each task can track its own history, including messages sent/received and token
-    usage/costs, through a `history` property that returns a list of `Record` objects. A workflow
-    aggregates and propagates the history of any task that has a `history` property, making it
+    usage/costs, through a `history()` method that returns a list of `Record` objects. A workflow
+    aggregates and propagates the history of any task that has a `history()` method, making it
     convenient to analyze costs or explore intermediate steps in the workflow.
     """
 
@@ -223,11 +228,6 @@ class Session(RecordKeeper):
         Aggregates the `history` across all workflow objects in the Session. This method ensures
         that if a task is added multiple times to the Session, the underlying Record objects
         associated with that task's `history` are not duplicated.
-        """
-        """
-        Aggregates the `history` across all workflows in the session. It ensures that if the same
-        object (e.g. chat model) is added multiple times to the Session, that the underlying Record
-        objects associated with that object's `history` are not duplicated.
         """
         # for each history in workflow, cycle through each task's history and add to the list of
         # records if it hasn't already been added.

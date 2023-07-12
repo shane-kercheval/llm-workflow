@@ -1,6 +1,5 @@
 """Contains definitions of exceptions/errors."""
 
-
 class RequestError(Exception):
     """Class that wraps an error when using requests.get()."""
 

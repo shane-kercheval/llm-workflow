@@ -1,4 +1,5 @@
 """Misc helper functions and classes."""
+
 from datetime import datetime
 from functools import cache
 from itertools import islice
@@ -142,7 +143,6 @@ class StackAnswer(BaseModel):
         super().__init__(**data)
         self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
         self.markdown = html_to_markdown(self.body)
-
 
     @validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805

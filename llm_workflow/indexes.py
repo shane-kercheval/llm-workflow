@@ -4,6 +4,7 @@ information from a larger collection or database. One example of an index is a d
 which stores/retrieves documents (i.e. text with metadata). One implementation of a document index
 is ChromaDB which stores/retrieves documents based on embeddings, which allow for semantic search.
 """
+
 from abc import ABC, abstractmethod
 from typing import TypeVar
 from llm_workflow.base import Document, RecordKeeper
