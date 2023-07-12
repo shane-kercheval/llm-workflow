@@ -1,12 +1,33 @@
 """Helper methods for notebooks."""
 from IPython.display import display, Markdown
-from llm_workflow.base import ExchangeRecord
+from llm_workflow.base import Workflow
+from llm_workflow.models import ExchangeRecord, EmbeddingRecord
 
 
 def usage_string(
         obj: object,
         cost_precision: int = 5) -> str:
     """Returns a friendly string containing cost/usage."""
+    if isinstance(obj, Workflow):
+        value = ""
+        cost = obj.sum('cost')
+        total_tokens = obj.sum('total_tokens')
+        prompt_tokens = obj.sum('prompt_tokens')
+        response_tokens = obj.sum('response_tokens')
+        embedding_tokens = obj.sum('total_tokens', EmbeddingRecord)
+        if cost:
+            value += f"Cost:              ${cost:.{cost_precision}f}\n"
+        if total_tokens:
+            value += f"Total Tokens:       {total_tokens:,}\n"
+        if prompt_tokens:
+            value += f"Prompt Tokens:      {prompt_tokens:,}\n"
+        if response_tokens:
+            value += f"Response Tokens:    {response_tokens:,}\n"
+        if embedding_tokens:
+            value += f"Embedding Tokens:   {embedding_tokens:,}\n"
+
+        return value
+
     value = ""
     if getattr(obj, 'cost') and obj.cost:
         value += f"Cost:              ${obj.cost:.{cost_precision}f}\n"
