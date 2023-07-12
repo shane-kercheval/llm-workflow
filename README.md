@@ -42,12 +42,12 @@ workflow = Workflow(tasks=[
 ])
 response = workflow(prompt)
 
-print(response)               # ```python\n def mask_email_addresses(string): ...
+print(response)                         # ```python\n def mask_email_addresses(string): ...
 print(workflow.sum('cost'))             # 0.0034
 print(workflow.sum('total_tokens'))     # 1961
 print(workflow.sum('prompt_tokens'))    # 1104
 print(workflow.sum('response_tokens'))  # 857
-print(workflow.history())          # list of Record objects containing prompt/response/usage
+print(workflow.history())               # list of Record objects containing prompt/response/usage
 ```
 
 See `Examples` section below for full output and explanation.
@@ -72,7 +72,7 @@ pip install llm-workflow
 
 - **Any code in this library that uses OpenAI assumes that the `OPENAI_API_KEY` environment variable is set to a 
 valid OpenAI API key. This includes many of the notebooks in the `examples` directory.**
-- The `llm_workflow.utilities.search_stack_overflow()` function assumes that the `STACK_OVERFLOW_KEY` environment variable is set. To use that function, you must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`) to set the environment variable.
+- The `llm_workflow.utilities.StackOverflowSearch` class assumes that the `STACK_OVERFLOW_KEY` environment variable is set. To use that class, you must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`) to set the environment variable.
 
 Here are two ways you can set environment variables directly in Python:
 
@@ -81,7 +81,7 @@ import os
 os.environ['OPENAI_API_KEY'] = 'sk-...'
 ```
 
-Or you can create a file named `.env` (in your project/notebook directory) that contains the key(s) and value(s) in the format below, and use the `dotenv` library and `load_dotenv` function.
+Or you can create a file named `.env` (in your project/notebook directory) that contains the key(s) and value(s) in the format below, and use the `dotenv` library and `load_dotenv` function to load the keys/values as environment variables.
 
 ```
 OPENAI_API_KEY=sk-...
