@@ -5,7 +5,7 @@ from llm_workflow.models import OpenAIChat, ExchangeRecord
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 
 
-def test_OpenAIChat__MemoryManagerMessageWindow0():  # noqa
+def test_OpenAIChat__LastNExchangesManager0():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
@@ -96,7 +96,7 @@ def test_OpenAIChat__MemoryManagerMessageWindow0():  # noqa
     assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
     assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
-def test_OpenAIChat__MemoryManagerMessageWindow1():  # noqa
+def test_OpenAIChat__LastNExchangesManager1():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
