@@ -1,6 +1,6 @@
 """Helper methods for notebooks."""
 from IPython.display import display, Markdown
-from llm_workflow.base import Workflow
+from llm_workflow.base import RecordKeeper
 from llm_workflow.models import ExchangeRecord, EmbeddingRecord
 
 
@@ -8,7 +8,7 @@ def usage_string(
         obj: object,
         cost_precision: int = 5) -> str:
     """Returns a friendly string containing cost/usage."""
-    if isinstance(obj, Workflow):
+    if isinstance(obj, RecordKeeper):
         value = ""
         cost = obj.sum('cost')
         total_tokens = obj.sum('total_tokens')
