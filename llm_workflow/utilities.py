@@ -144,7 +144,6 @@ class StackAnswer(BaseModel):
         self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
         self.markdown = html_to_markdown(self.body)
 
-
     @validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
         """Convert from string to datetime."""
