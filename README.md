@@ -400,9 +400,8 @@ Additionally, we can track the history of the workflow with the `workflow.histor
 
 # Possible Features
 
-- [ ] Add `metadata` property to OpenAIChat which gets passed to the ExchangeRecord that are created
-- [ ] Explore OpenAI functions
-- [ ] Explore 'agents'
+- [ ] Add `metadata` property to OpenAIChat which gets passed to the ExchangeRecord that are created (so that user can pass metadata)
+- [ ] Explore adding additional 'agents'
 - [ ] Create PDF-Loader
 - [ ] create additional prompt-templates
 
