@@ -6,6 +6,7 @@ with the vector database during object creation rather than through the `__call_
 
 If you're prompt-template is simple, just use a function (or inline lambda) in the task.
 """
+
 from abc import ABC, abstractmethod
 from llm_workflow.base import Record, RecordKeeper
 from llm_workflow.indexes import DocumentIndex

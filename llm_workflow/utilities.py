@@ -1,4 +1,5 @@
 """Misc helper functions and classes."""
+
 from datetime import datetime
 from functools import cache
 from itertools import islice

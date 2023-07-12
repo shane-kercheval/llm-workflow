@@ -16,6 +16,7 @@ underlying model.
 These classes can be used with, for example, the OpenAIChat model by passing a MemoryManager object
 to the memory_manager variable when initializing the model object.
 """
+
 from llm_workflow.models import MemoryManager, ExchangeRecord
 
 
