@@ -1,17 +1,15 @@
-
-
 [![test](https://github.com/shane-kercheval/llm-workflow/actions/workflows/tests.yaml/badge.svg)](https://github.com/shane-kercheval/llm-workflow/actions/workflows/tests.yaml)
+![PyPI](https://img.shields.io/pypi/v/llm-workflow)
 
+# llm-workflow
 
-# `llm-workflow`: simple and extensible LLM workflowing
+A `workflow` is an object that executes a sequence of tasks. Each `task` is a callable that can optionally track history. **The output of one task serves as the input to the next task in the workflow.** Pretty simple.
 
-A `workflow` is an object that executes a sequence of tasks referred to as `tasks`. Each `task` is a callable that can optionally track history. **The output of one `task` serves as the input to the next `task` in the workflow.** Pretty simple.
-
-The purpose of this library is to offer a simple pattern for developing LLM workflows (workflows). First, it reduces the need for users to write repetitive/boilerplate code. Second, by establishing a standardized interface for tasks (e.g. specifying how a task tracks history), a workflow can serve as a means of aggregating information from all tasks, such as token usage, costs, and more. Additionally, this approach enables us to examine each step within the workflow and within a specific task, making the workflow transparent and facilitating debugging and comprehension.
+The purpose of this library is to offer a simple pattern for developing LLM workflows. First, it reduces the need for users to write repetitive/boilerplate code. Second, by establishing a standardized interface for tasks (e.g. specifying how a task tracks history), a workflow can serve as a means of aggregating information from all tasks, such as token usage, costs, and more. Additionally, this approach enables us to examine each step within the workflow and within a specific task, making the workflow transparent and facilitating debugging and comprehension.
 
 ---
 
-Here's an example of a simple "prompt enhancer", where the first OpenAI model enhances the user's prompt and the second OpenAI model provides a response based on the enhanced prompt. This example is described in greater detail in the `Examples` section below and the corresponding notebook.
+Here's an example of a simple "prompt enhancer". The user provides a prompt; the first OpenAI model enhances the user's prompt and the second OpenAI model provides a response based on the enhanced prompt. This example is described in greater detail in the `Examples` section below and the corresponding notebook.
 
 Here's the user's original prompt:
 
@@ -35,7 +33,7 @@ def prompt_extract_code(_) -> str:
     return "Return only the primary code of interest from the previous answer, "\
         "including docstrings, but without any text/response."
 
-workflow = workflow(tasks=[
+workflow = Workflow(tasks=[
     prompt_template,      # modifies the user's prompt
     prompt_enhancer,      # returns an improved version of the user's prompt
     chat_assistant,       # returns the chat response based on the improved prompt
@@ -44,19 +42,19 @@ workflow = workflow(tasks=[
 ])
 response = workflow(prompt)
 
-print(response)               # ```python\n def mask_email_addresses(string): ...
+print(response)                         # ```python\n def mask_email_addresses(string): ...
 print(workflow.sum('cost'))             # 0.0034
 print(workflow.sum('total_tokens'))     # 1961
 print(workflow.sum('prompt_tokens'))    # 1104
 print(workflow.sum('response_tokens'))  # 857
-print(workflow.history())          # list of Record objects containing prompt/response/usage
+print(workflow.history())               # list of Record objects containing prompt/response/usage
 ```
 
 See `Examples` section below for full output and explanation.
 
 ---
 
-Note: Since the goal of this library is to provide a simple pattern for workflowing, some of the classes provided in this library (e.g. `OpenAIEmbedding` or `ChromaDocumentIndex`) are nothing more than simple wrappers that implement the interface necessary to track history in a consistent way, allowing the workflow to aggregate the history across all tasks. This makes it easy for people to create their own wrappers and workflows.
+Note: Since the goal of this library is to provide a simple pattern for creating workflows and tracking history, some of the classes provided in this library (e.g. `OpenAIEmbedding` or `ChromaDocumentIndex`) are nothing more than simple wrappers that implement the interface necessary to track history in a consistent way, allowing the workflow to aggregate the history across all tasks. This makes it easy for people to create their own wrappers and workflows.
 
 See examples below.
 
@@ -74,7 +72,7 @@ pip install llm-workflow
 
 - **Any code in this library that uses OpenAI assumes that the `OPENAI_API_KEY` environment variable is set to a 
 valid OpenAI API key. This includes many of the notebooks in the `examples` directory.**
-- The `llm_workflow.utils.search_stack_overflow()` function assumes that the `STACK_OVERFLOW_KEY` environment variable is set. To use that function, you must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`) to set the environment variable.
+- The `llm_workflow.utilities.StackOverflowSearch` class assumes that the `STACK_OVERFLOW_KEY` environment variable is set. To use that class, you must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`) to set the environment variable.
 
 Here are two ways you can set environment variables directly in Python:
 
@@ -83,7 +81,7 @@ import os
 os.environ['OPENAI_API_KEY'] = 'sk-...'
 ```
 
-Or you can create a file named `.env` (in your project/notebook directory) that contains the key(s) and value(s) in the format below, and use the `dotenv` library and `load_dotenv` function.
+Or you can create a file named `.env` (in your project/notebook directory) that contains the key(s) and value(s) in the format below, and use the `dotenv` library and `load_dotenv` function to load the keys/values as environment variables.
 
 ```
 OPENAI_API_KEY=sk-...
@@ -101,7 +99,7 @@ load_dotenv()  # sets any environment variables from the .env file
 
 ## Example 1
 
-Here's the full example from the snippet above (alternatively, see [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb)). Note that this example is **not** meant to provide prompt-engineering best practices, it's simply to show how workflowing works in this library.
+Here's the full example from the snippet above (alternatively, see [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb)). Note that this example is **not** meant to provide prompt-engineering best practices, it's simply to show how workflows work in this library.
 
 - first task: defines a prompt-template that takes the user's prompt, and creates a new prompt asking a chat model to improve the prompt (within the context of creating python code)
 - second task: the `prompt_enhancer` model takes the modified prompt and improves the prompt
@@ -110,7 +108,7 @@ Here's the full example from the snippet above (alternatively, see [this noteboo
 - fifth task: the chat model, which internally maintains the history of messages, returns only the relevant code from the previous response.
 
 ```python
-from llm_workflow.base import workflow
+from llm_workflow.base import Workflow
 from llm_workflow.models import OpenAIChat
 
 prompt_enhancer = OpenAIChat(model_name='gpt-3.5-turbo')
@@ -131,7 +129,7 @@ def prompt_extract_code(_) -> str:
 # callable where the output of one task matches the input of the next task.
 # The input to the workflow is passed to the first task;
 # the output of the last task is returned by the workflow.
-workflow = workflow(tasks=[
+workflow = Workflow(tasks=[
     prompt_template,      # modifies the user's prompt
     prompt_enhancer,      # returns an improved version of the user's prompt
     chat_assistant,       # returns the chat response based on the improved prompt
@@ -191,7 +189,7 @@ Prompt Tokens:    1,104
 Response Tokens:  857
 ```
 
-We can view the history of the workflow (i.e. the aggregated history across all tasks) with the `workflow.history()` property. 
+We can view the history of the workflow (i.e. the aggregated history across all tasks) with the `workflow.history()` method. 
 
 In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `workflow.history()` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (`prompt`) and its corresponding output (`response`), along with other properties like `cost` and `token_tokens`.
 
@@ -313,9 +311,9 @@ Something that may not be immediately obvious is the usage of the `Value` object
 See [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb) for an in-depth explanation.
 
 ```python
-from llm_workflow.base import Document, workflow, Value
+from llm_workflow.base import Document, Workflow, Value
 from llm_workflow.models import OpenAIEmbedding, OpenAIChat
-from llm_workflow.tools import DuckDuckGoSearch, scrape_url, split_documents
+from llm_workflow.utilities import DuckDuckGoSearch, scrape_url, split_documents
 from llm_workflow.indexes import ChromaDocumentIndex
 from llm_workflow.prompt_templates import DocSearchTemplate
 
@@ -340,7 +338,7 @@ def scrape_urls(search_results):
 question = Value()  # Value is a caching/reinjection mechanism; see note above
 
 # each task is a callable where the output of one task is the input to the next task
-workflow = workflow(tasks=[
+workflow = Workflow(tasks=[
     question,
     duckduckgo_search,
     scrape_urls,
@@ -366,6 +364,7 @@ print(f"Cost:            ${workflow.sum('cost'):.4f}")
 print(f"Total Tokens:     {workflow.sum('total_tokens'):,}")
 print(f"Prompt Tokens:    {workflow.sum('prompt_tokens'):,}")
 print(f"Response Tokens:  {workflow.sum('response_tokens'):,}")
+# to get the number of embedding tokens, sum `total_tokens` across only EmbeddingRecord objects
 print(f"Embedding Tokens: {workflow.sum('total_tokens', types=EmbeddingRecord):,}")
 ```
 
@@ -387,6 +386,7 @@ Additionally, we can track the history of the workflow with the `workflow.histor
 
 - [workflows.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb)
 - [openai_chat.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/openai_chat.ipynb)
+- [agents.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/agents.ipynb)
 - [indexes.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/indexes.ipynb)
 - [prompt_templates.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/prompt_templates.ipynb)
 - [memory.ipynb](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/memory.ipynb)
