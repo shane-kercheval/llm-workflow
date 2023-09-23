@@ -5,6 +5,7 @@ which stores/retrieves documents (i.e. text with metadata). One implementation o
 is ChromaDB which stores/retrieves documents based on embeddings, which allow for semantic search.
 """
 
+from uuid import uuid4
 from abc import ABC, abstractmethod
 from typing import TypeVar
 from llm_workflow.base import Document, RecordKeeper
@@ -114,7 +115,7 @@ class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
             n_results: int = 3) -> None:
         import chromadb
         super().__init__(n_results=n_results)
-        self._collection = collection or chromadb.Client().create_collection('temp')
+        self._collection = collection or chromadb.Client().create_collection(str(uuid4()))
         self._emb_model = embeddings_model
 
     def add(self, docs: list[Document]) -> None:
