@@ -1,6 +1,7 @@
 """test llm_workflow/vector_db/chroma.db."""
 import chromadb
 import pytest
+from uuid import uuid4
 from llm_workflow.base import Document, Record
 from llm_workflow.indexes import ChromaDocumentIndex, DocumentIndex
 from tests.conftest import MockABCDEmbeddings, MockRandomEmbeddings
@@ -62,7 +63,7 @@ def test_base_index_n_results():  # noqa
 def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     embeddings_model = MockABCDEmbeddings()
     client = chromadb.Client()
-    collection = client.create_collection("test")
+    collection = client.create_collection(str(uuid4()))
     chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
     assert chroma_db.total_tokens == 0
     assert chroma_db.cost == 0
@@ -182,7 +183,7 @@ def test_chroma_add_document_without_metadata():  # noqa
 def test_chroma_search_with_document_and_str(fake_docs_abcd):  # noqa
     embeddings_model = MockABCDEmbeddings()
     client = chromadb.Client()
-    collection = client.create_collection("test")
+    collection = client.create_collection(str(uuid4()))
     chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
     chroma_db.add(docs=fake_docs_abcd)
     # we don't need to test that the results are in the correct order; that is done above
