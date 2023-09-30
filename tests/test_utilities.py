@@ -5,6 +5,7 @@ import pytest
 import openai
 import requests
 import os
+from unittest.mock import patch
 from llm_workflow.exceptions import RequestError
 from llm_workflow.base import Document
 from llm_workflow.internal_utilities import (
@@ -13,6 +14,7 @@ from llm_workflow.internal_utilities import (
     has_property,
     retry_handler,
     Timer,
+    query_hugging_face_endpoint,
 )
 from llm_workflow.utilities import (
     DuckDuckGoSearch,
@@ -527,3 +529,12 @@ def test__get_stack_overflow_answers_404():  # noqa
      if os.getenv('STACK_OVERFLOW_KEY', None):
         with pytest.raises(RequestError):
             _ = _get_stack_overflow_answers(question_id='asdf')
+
+def test_query_hugging_face_endpoint(fake_retry_handler, fake_hugging_face_response):  # noqa
+    with patch('llm_workflow.internal_utilities.requests.post', return_value=fake_hugging_face_response) as mock_post:  # noqa
+        with patch('llm_workflow.internal_utilities.retry_handler', return_value=fake_retry_handler) as mock_retry_handler:  # noqa
+            endpoint_url = "https://fake.url"
+            payload = {"text": "hello"}
+            response = query_hugging_face_endpoint(endpoint_url, payload)
+            assert isinstance(response, list)
+            assert 'generated_text' in response[0]

@@ -30,9 +30,9 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[-1]['role'] == 'user'
-    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[-1]['role'] == 'user'
+    assert openai_llm._previous_messages[-1]['content'] == prompt
 
     assert len(openai_llm.history()) == 1
     message = openai_llm.previous_record()
@@ -71,11 +71,11 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    assert len(openai_llm._previous_memory) == 2  # system/user
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[0]['content'] == 'You are a helpful assistant.'
-    assert openai_llm._previous_memory[1]['role'] == 'user'
-    assert openai_llm._previous_memory[1]['content'] == prompt
+    assert len(openai_llm._previous_messages) == 2  # system/user
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert openai_llm._previous_messages[1]['role'] == 'user'
+    assert openai_llm._previous_messages[1]['content'] == prompt
 
     assert len(openai_llm.history()) == 2
     message = openai_llm.previous_record()
@@ -121,9 +121,9 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[-1]['role'] == 'user'
-    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[-1]['role'] == 'user'
+    assert openai_llm._previous_messages[-1]['content'] == prompt
 
     assert len(openai_llm.history()) == 1
     message = openai_llm.previous_record()
@@ -162,14 +162,14 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[0]['content'] == 'You are a helpful assistant.'
-    assert openai_llm._previous_memory[1]['role'] == 'user'
-    assert openai_llm._previous_memory[1]['content'] == previous_prompt
-    assert openai_llm._previous_memory[2]['role'] == 'assistant'
-    assert openai_llm._previous_memory[2]['content'] == previous_response
-    assert openai_llm._previous_memory[3]['role'] == 'user'
-    assert openai_llm._previous_memory[3]['content'] == prompt
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert openai_llm._previous_messages[1]['role'] == 'user'
+    assert openai_llm._previous_messages[1]['content'] == previous_prompt
+    assert openai_llm._previous_messages[2]['role'] == 'assistant'
+    assert openai_llm._previous_messages[2]['content'] == previous_response
+    assert openai_llm._previous_messages[3]['role'] == 'user'
+    assert openai_llm._previous_messages[3]['content'] == prompt
 
     assert len(openai_llm.history()) == 2
     message = openai_llm.previous_record()
@@ -205,16 +205,16 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     # previous memory is the input to ChatGPT
     # The last message should contain shane, but not this one
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[0]['content'] == 'You are a helpful assistant.'
-    assert openai_llm._previous_memory[1]['role'] == 'user'
-    assert openai_llm._previous_memory[1]['content'] == previous_prompt
-    assert openai_llm._previous_memory[2]['role'] == 'assistant'
-    assert openai_llm._previous_memory[2]['content'] == previous_response
-    assert 'shane' in openai_llm._previous_memory[2]['content'].lower()
-    assert openai_llm._previous_memory[3]['role'] == 'user'
-    assert openai_llm._previous_memory[3]['content'] == prompt
-    assert len(openai_llm._previous_memory) == 4
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert openai_llm._previous_messages[1]['role'] == 'user'
+    assert openai_llm._previous_messages[1]['content'] == previous_prompt
+    assert openai_llm._previous_messages[2]['role'] == 'assistant'
+    assert openai_llm._previous_messages[2]['content'] == previous_response
+    assert 'shane' in openai_llm._previous_messages[2]['content'].lower()
+    assert openai_llm._previous_messages[3]['role'] == 'user'
+    assert openai_llm._previous_messages[3]['content'] == prompt
+    assert len(openai_llm._previous_messages) == 4
 
     assert len(openai_llm.history()) == 3
     message = openai_llm.previous_record()
@@ -245,17 +245,17 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[0]['content'] == 'You are a helpful assistant.'
-    assert openai_llm._previous_memory[1]['role'] == 'user'
-    assert openai_llm._previous_memory[1]['content'] == previous_prompt
-    assert openai_llm._previous_memory[2]['role'] == 'assistant'
-    assert openai_llm._previous_memory[2]['content'] == previous_response
-    assert openai_llm._previous_memory[3]['role'] == 'user'
-    assert openai_llm._previous_memory[3]['content'] == prompt
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert openai_llm._previous_messages[1]['role'] == 'user'
+    assert openai_llm._previous_messages[1]['content'] == previous_prompt
+    assert openai_llm._previous_messages[2]['role'] == 'assistant'
+    assert openai_llm._previous_messages[2]['content'] == previous_response
+    assert openai_llm._previous_messages[3]['role'] == 'user'
+    assert openai_llm._previous_messages[3]['content'] == prompt
     # still 4 because we are only keeping 1 message
     # (1)system + (2)previous question + (3)previous answer + (4)new question
-    assert len(openai_llm._previous_memory) == 4
+    assert len(openai_llm._previous_messages) == 4
 
     assert len(openai_llm.history()) == 4
     message = openai_llm.previous_record()
@@ -295,11 +295,11 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     response = openai_llm(prompt)
     assert 'shane' in response.lower()
     assert isinstance(response, str)
-    assert len(openai_llm._previous_memory) == 2
+    assert len(openai_llm._previous_messages) == 2
     assert openai_llm.previous_record().total_tokens <= token_threshold
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[-1]['role'] == 'user'
-    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[-1]['role'] == 'user'
+    assert openai_llm._previous_messages[-1]['content'] == prompt
     assert len(openai_llm.history()) == 1
 
     ####
@@ -310,11 +310,11 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     prompt = "What is my favorite number?"
     response = openai_llm(prompt)
     assert '42' in response.lower()
-    assert len(openai_llm._previous_memory) == 4
+    assert len(openai_llm._previous_messages) == 4
     assert openai_llm.previous_record().total_tokens <= token_threshold
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[-1]['role'] == 'user'
-    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[-1]['role'] == 'user'
+    assert openai_llm._previous_messages[-1]['content'] == prompt
     assert len(openai_llm.history()) == 2
 
     ####
@@ -327,9 +327,9 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
 
     assert 'blue' not in response.lower()
     # previous memory is still 4 since it only remembers last message + new prompt + system mesasge
-    assert len(openai_llm._previous_memory) == 4
+    assert len(openai_llm._previous_messages) == 4
     assert openai_llm.previous_record().total_tokens <= token_threshold
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[-1]['role'] == 'user'
-    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert openai_llm._previous_messages[0]['role'] == 'system'
+    assert openai_llm._previous_messages[-1]['role'] == 'user'
+    assert openai_llm._previous_messages[-1]['content'] == prompt
     assert len(openai_llm.history()) == 3

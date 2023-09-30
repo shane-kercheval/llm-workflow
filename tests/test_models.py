@@ -1,17 +1,20 @@
 """tests llm_workflow/models.py."""
 import pytest
+from transformers import AutoTokenizer
 from llm_workflow.base import Document, Record
 from llm_workflow.models import (
     EmbeddingModel,
     EmbeddingRecord,
     ExchangeRecord,
+    HuggingFaceEndpointChat,
+    llama_message_formatter,
     OpenAIChat,
     OpenAIEmbedding,
     StreamingEvent,
     TokenUsageRecord,
 )
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
-from tests.conftest import MockChat, MockRandomEmbeddings
+from tests.conftest import MockChat, MockRandomEmbeddings, is_endpoint_available
 
 
 def test_ChatModel__no_token_counter_or_costs():  # noqa
@@ -175,31 +178,32 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
 
 def test_OpenAIChat():  # noqa
     model_name = 'gpt-3.5-turbo'
-    openai_llm = OpenAIChat(model_name=model_name)
-    assert openai_llm.previous_record() is None
-    assert openai_llm.previous_prompt is None
-    assert openai_llm.previous_response is None
-    assert openai_llm.cost == 0
-    assert openai_llm.total_tokens == 0
-    assert openai_llm.prompt_tokens == 0
-    assert openai_llm.response_tokens == 0
+    model = OpenAIChat(model_name=model_name)
+    assert len(model.history()) == 0
+    assert model.previous_record() is None
+    assert model.previous_prompt is None
+    assert model.previous_response is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.prompt_tokens == 0
+    assert model.response_tokens == 0
 
     ####
     # first interaction
     ####
     prompt = "This is a question."
-    response = openai_llm(prompt)
+    response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[0]['content'] == 'You are a helpful assistant.'
-    assert openai_llm._previous_memory[-1]['role'] == 'user'
-    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert model._previous_messages[0]['role'] == 'system'
+    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[-1]['role'] == 'user'
+    assert model._previous_messages[-1]['content'] == prompt
 
-    assert len(openai_llm.history()) == 1
-    message = openai_llm.previous_record()
+    assert len(model.history()) == 1
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -211,13 +215,13 @@ def test_OpenAIChat():  # noqa
     assert message.uuid
     assert message.timestamp
 
-    assert openai_llm.previous_prompt == prompt
-    assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.cost == message.cost
-    assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.prompt_tokens == message.prompt_tokens
-    assert openai_llm.response_tokens == message.response_tokens
+    assert model.previous_prompt == prompt
+    assert model.previous_response == response
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
+    assert model.cost == message.cost
+    assert model.total_tokens == message.total_tokens
+    assert model.prompt_tokens == message.prompt_tokens
+    assert model.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
@@ -231,21 +235,21 @@ def test_OpenAIChat():  # noqa
     # second interaction
     ####
     prompt = "This is another question."
-    response = openai_llm(prompt)
+    response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[1]['role'] == 'user'
-    assert openai_llm._previous_memory[1]['content'] == previous_prompt
-    assert openai_llm._previous_memory[2]['role'] == 'assistant'
-    assert openai_llm._previous_memory[2]['content'] == previous_response
-    assert openai_llm._previous_memory[3]['role'] == 'user'
-    assert openai_llm._previous_memory[3]['content'] == prompt
+    assert model._previous_messages[0]['role'] == 'system'
+    assert model._previous_messages[1]['role'] == 'user'
+    assert model._previous_messages[1]['content'] == previous_prompt
+    assert model._previous_messages[2]['role'] == 'assistant'
+    assert model._previous_messages[2]['content'] == previous_response
+    assert model._previous_messages[3]['role'] == 'user'
+    assert model._previous_messages[3]['content'] == prompt
 
-    assert len(openai_llm.history()) == 2
-    message = openai_llm.previous_record()
+    assert len(model.history()) == 2
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -258,13 +262,13 @@ def test_OpenAIChat():  # noqa
     assert message.uuid != previous_message.uuid
     assert message.timestamp
 
-    assert openai_llm.previous_prompt == prompt
-    assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.cost == previous_cost + message.cost
-    assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
-    assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
+    assert model.previous_prompt == prompt
+    assert model.previous_response == response
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
+    assert model.cost == previous_cost + message.cost
+    assert model.total_tokens == previous_total_tokens + message.total_tokens
+    assert model.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert model.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat_streaming():  # noqa
     """Test the same thing as above but for streaming. All usage and history should be the same."""
@@ -274,32 +278,32 @@ def test_OpenAIChat_streaming():  # noqa
         callback_response += record.response
 
     model_name = 'gpt-3.5-turbo'
-    openai_llm = OpenAIChat(model_name=model_name, streaming_callback=streaming_callback)
-    assert openai_llm.previous_record() is None
-    assert openai_llm.previous_prompt is None
-    assert openai_llm.previous_response is None
-    assert openai_llm.cost == 0
-    assert openai_llm.total_tokens == 0
-    assert openai_llm.prompt_tokens == 0
-    assert openai_llm.response_tokens == 0
+    model = OpenAIChat(model_name=model_name, streaming_callback=streaming_callback)
+    assert model.previous_record() is None
+    assert model.previous_prompt is None
+    assert model.previous_response is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.prompt_tokens == 0
+    assert model.response_tokens == 0
 
     ####
     # first interaction
     ####
     prompt = "This is a question."
-    response = openai_llm(prompt)
+    response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
     assert response == callback_response
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[0]['content'] == 'You are a helpful assistant.'
-    assert openai_llm._previous_memory[-1]['role'] == 'user'
-    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert model._previous_messages[0]['role'] == 'system'
+    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[-1]['role'] == 'user'
+    assert model._previous_messages[-1]['content'] == prompt
 
-    assert len(openai_llm.history()) == 1
-    message = openai_llm.previous_record()
+    assert len(model.history()) == 1
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -311,13 +315,13 @@ def test_OpenAIChat_streaming():  # noqa
     assert message.uuid
     assert message.timestamp
 
-    assert openai_llm.previous_prompt == prompt
-    assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.cost == message.cost
-    assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.prompt_tokens == message.prompt_tokens
-    assert openai_llm.response_tokens == message.response_tokens
+    assert model.previous_prompt == prompt
+    assert model.previous_response == response
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
+    assert model.cost == message.cost
+    assert model.total_tokens == message.total_tokens
+    assert model.prompt_tokens == message.prompt_tokens
+    assert model.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
@@ -332,22 +336,22 @@ def test_OpenAIChat_streaming():  # noqa
     ####
     callback_response = ''
     prompt = "This is another question."
-    response = openai_llm(prompt)
+    response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
     assert response == callback_response
 
     # previous memory is the input to ChatGPT
-    assert openai_llm._previous_memory[0]['role'] == 'system'
-    assert openai_llm._previous_memory[1]['role'] == 'user'
-    assert openai_llm._previous_memory[1]['content'] == previous_prompt
-    assert openai_llm._previous_memory[2]['role'] == 'assistant'
-    assert openai_llm._previous_memory[2]['content'] == previous_response
-    assert openai_llm._previous_memory[3]['role'] == 'user'
-    assert openai_llm._previous_memory[3]['content'] == prompt
+    assert model._previous_messages[0]['role'] == 'system'
+    assert model._previous_messages[1]['role'] == 'user'
+    assert model._previous_messages[1]['content'] == previous_prompt
+    assert model._previous_messages[2]['role'] == 'assistant'
+    assert model._previous_messages[2]['content'] == previous_response
+    assert model._previous_messages[3]['role'] == 'user'
+    assert model._previous_messages[3]['content'] == prompt
 
-    assert len(openai_llm.history()) == 2
-    message = openai_llm.previous_record()
+    assert len(model.history()) == 2
+    message = model.previous_record()
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
@@ -360,13 +364,13 @@ def test_OpenAIChat_streaming():  # noqa
     assert message.uuid != previous_message.uuid
     assert message.timestamp
 
-    assert openai_llm.previous_prompt == prompt
-    assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.cost == previous_cost + message.cost
-    assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
-    assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
+    assert model.previous_prompt == prompt
+    assert model.previous_response == response
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
+    assert model.cost == previous_cost + message.cost
+    assert model.total_tokens == previous_total_tokens + message.total_tokens
+    assert model.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert model.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     """
@@ -706,3 +710,196 @@ def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation(
     assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-3.5-turbo']
     model.model_name = 'gpt-4'
     assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4']
+
+def test_HuggingFaceEndpointChat():  # noqa
+    import os
+    endpoint = os.getenv('HUGGING_FACE_ENDPOINT_LLAMA2_7B')
+    if is_endpoint_available(endpoint):
+        # tokenizer = AutoTokenizer.from_pretrained(
+        #     "meta-llama/Llama-2-7b-chat-hf",
+        #     token=os.getenv('HUGGING_FACE_API_KEY'),
+        # )
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
+
+        callback_response = ''
+        def streaming_callback(record: StreamingEvent) -> None:
+            nonlocal callback_response
+            callback_response += record.response
+
+        model = HuggingFaceEndpointChat(
+            endpoint_url=endpoint,
+            tokenizer=tokenizer,
+            streaming_callback=streaming_callback,
+        )
+        assert len(model.history()) == 0
+        assert model.previous_record() is None
+        assert model.previous_prompt is None
+        assert model.previous_response is None
+        assert model.cost == 0
+        assert model.total_tokens == 0
+        assert model.prompt_tokens == 0
+        assert model.response_tokens == 0
+
+        prompt = "My name is Shane. What's your name?"
+        response = model(prompt)
+        assert isinstance(response, str)
+        assert len(response) > 0
+        assert response == callback_response
+        assert len(model.history()) == 1
+        message = model.previous_record()
+        assert isinstance(message, ExchangeRecord)
+        assert message.prompt == prompt
+        assert message.response == response
+        history = model.history()
+        assert history[0].prompt == prompt
+        assert history[0].response == response
+        assert message.metadata['endpoint_url'] == endpoint
+        assert '[INST]' in message.metadata['messages']
+        assert '[/INST]' in message.metadata['messages']
+        assert '<<SYS>>' in message.metadata['messages']
+        assert '<</SYS>>' in message.metadata['messages']
+        assert prompt in message.metadata['messages']
+        assert message.cost is None
+        assert message.prompt_tokens > 0
+        assert message.response_tokens > 0
+        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.uuid
+        assert message.timestamp
+        assert model.cost == 0
+        assert model.sum(name='cost') == 0
+        assert model.sum(name='total_tokens') == message.total_tokens
+
+        previous_tokens = message.total_tokens
+        previous_prompt = prompt
+        previous_response = response
+        callback_response = ''
+        prompt = "What is my name?"
+        response = model(prompt)
+        assert isinstance(response, str)
+        assert len(response) > 0
+        assert 'Shane' in response
+        assert response == callback_response
+        assert len(model.history()) == 2
+        message = model.previous_record()
+        assert isinstance(message, ExchangeRecord)
+        assert message.prompt == prompt
+        assert message.response == response
+        history = model.history()
+        assert history[0].prompt == previous_prompt
+        assert history[0].response == previous_response
+        assert history[1].prompt == prompt
+        assert history[1].response == response
+        assert message.metadata['endpoint_url'] == endpoint
+        assert '[INST]' in message.metadata['messages']
+        assert '[/INST]' in message.metadata['messages']
+        assert '<<SYS>>' in message.metadata['messages']
+        assert '<</SYS>>' in message.metadata['messages']
+        assert prompt in message.metadata['messages']
+        assert message.cost is None
+        assert message.prompt_tokens > 0
+        assert message.response_tokens > 0
+        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.uuid
+        assert message.timestamp
+        assert model.cost == 0
+        assert model.sum(name='cost') == 0
+        assert model.sum(name='total_tokens') == message.total_tokens + previous_tokens
+
+
+
+def test_HuggingFaceEndpointChat__timeout():  # noqa
+    import os
+    endpoint = os.getenv('HUGGING_FACE_ENDPOINT_LLAMA2_7B')
+    if is_endpoint_available(endpoint):
+        # tokenizer = AutoTokenizer.from_pretrained(
+        #     "meta-llama/Llama-2-7b-chat-hf",
+        #     token=os.getenv('HUGGING_FACE_API_KEY'),
+        # )
+        tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
+
+        callback_response = ''
+        callback_count = 0
+        def streaming_callback(record: StreamingEvent) -> None:
+            nonlocal callback_response
+            callback_response += record.response
+
+        model = HuggingFaceEndpointChat(
+            endpoint_url=endpoint,
+            tokenizer=tokenizer,
+            streaming_callback=streaming_callback,
+            # timeout=1,
+        )
+        assert len(model.history()) == 0
+        assert model.previous_record() is None
+        assert model.previous_prompt is None
+        assert model.previous_response is None
+        assert model.cost == 0
+        assert model.total_tokens == 0
+        assert model.prompt_tokens == 0
+        assert model.response_tokens == 0
+
+        prompt = "Write a poem about a dog."
+        response = model(prompt)
+        assert False
+        assert isinstance(response, str)
+        assert len(response) > 0
+        assert response == callback_response
+        assert len(model.history()) == 1
+        message = model.previous_record()
+        assert isinstance(message, ExchangeRecord)
+        assert message.prompt == prompt
+        assert message.response == response
+        history = model.history()
+        assert history[0].prompt == prompt
+        assert history[0].response == response
+        assert message.metadata['endpoint_url'] == endpoint
+        assert '[INST]' in message.metadata['messages']
+        assert '[/INST]' in message.metadata['messages']
+        assert '<<SYS>>' in message.metadata['messages']
+        assert '<</SYS>>' in message.metadata['messages']
+        assert prompt in message.metadata['messages']
+        assert message.cost is None
+        assert message.prompt_tokens > 0
+        assert message.response_tokens > 0
+        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.uuid
+        assert message.timestamp
+        assert model.cost == 0
+        assert model.sum(name='cost') == 0
+        assert model.sum(name='total_tokens') == message.total_tokens
+
+
+
+
+
+def test_llama_message_formatter():  # noqa
+    assert llama_message_formatter(system_message=None, messages=[]) == ''
+
+    message = llama_message_formatter(
+        system_message=None,
+        messages=[
+            ExchangeRecord(prompt='a', response='b'),
+            ExchangeRecord(prompt='c', response='d'),
+        ],
+    )
+    expected_value = '[INST] a [/INST]\nb\n[INST] c [/INST]\nd\n'
+    assert message == expected_value
+
+    message = llama_message_formatter(
+        system_message='system',
+        messages=[
+            ExchangeRecord(prompt='a', response='b'),
+            ExchangeRecord(prompt='c', response='d'),
+        ],
+    )
+    assert message == '[INST] <<SYS>> system <</SYS>> [/INST]\n' + expected_value
+
+    message = llama_message_formatter(
+        system_message='system',
+        messages=[
+            ExchangeRecord(prompt='a', response='b'),
+            ExchangeRecord(prompt='c', response='d'),
+        ],
+        prompt='e',
+    )
+    assert message == '[INST] <<SYS>> system <</SYS>> [/INST]\n' + expected_value + '[INST] e [/INST]\n'  # noqa

@@ -5,6 +5,9 @@ import inspect
 import datetime
 import hashlib
 from collections.abc import Callable
+import os
+from transformers import PreTrainedTokenizer
+import requests
 import tenacity
 
 
@@ -89,3 +92,33 @@ def has_method(obj: object, method_name: str) -> bool:
     if inspect.isfunction(obj):
         return False
     return hasattr(obj, method_name) and callable(getattr(obj.__class__, method_name, None))
+
+
+def query_hugging_face_endpoint(
+        endpoint_url: str,
+        payload: dict,
+        ) -> dict:
+    """TODO."""
+    headers = {
+        "Authorization": f"Bearer {os.getenv('HUGGING_FACE_API_KEY')}",
+        "Content-Type": "application/json",
+    }
+    repsonse = retry_handler()(
+        requests.post,
+        endpoint_url,
+        headers=headers,
+        json=payload,
+    )
+    return repsonse.json()
+
+# # create custom type called PreTrainedTokenizer for type hinting
+# PreTrainedTokenizer = TypeVar('PreTrainedTokenizer')
+
+def calculate_num_tokens_hugging_face(
+        value: str,
+        tokenizer: PreTrainedTokenizer,
+        device: str = 'cpu',
+        ) -> int:
+    """TODO."""
+    tokens = tokenizer([value], return_tensors="pt").to(device)
+    return len(tokens['input_ids'][0])
