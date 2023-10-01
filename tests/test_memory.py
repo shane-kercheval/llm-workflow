@@ -1,7 +1,13 @@
 """tests llm_workflow/memory.py."""
 
-from llm_workflow.memory import LastNExchangesManager, TokenWindowManager
-from llm_workflow.models import OpenAIChat, ExchangeRecord
+from llm_workflow.memory import (
+    LastNExchangesManager,
+    MessageFormatterMaxTokensMemoryManager,
+    TokenWindowManager,
+)
+from llm_workflow.models import ExchangeRecord
+from llm_workflow.openai import OpenAIChat
+from llm_workflow.hugging_face import llama_message_formatter
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 
 
@@ -333,3 +339,160 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     assert openai_llm._previous_messages[-1]['role'] == 'user'
     assert openai_llm._previous_messages[-1]['content'] == prompt
     assert len(openai_llm.history()) == 3
+
+def test_MessageFormatterMaxTokensMemoryManager():  # noqa
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=1000,
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message='system message',
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt='new prompt',
+    )
+    assert len(messages) == 4
+    expected_system_message = '[INST] <<SYS>> system message <</SYS>> [/INST]\n'
+    expected_history_1 = '[INST] prompt a [/INST]\nresponse a\n'
+    expected_history_2 = '[INST] prompt b [/INST]\nresponse b\n'
+    expected_new_prompt = '[INST] new prompt [/INST]\n'
+    assert messages[0] == expected_system_message
+    assert messages[1] == expected_history_1
+    assert messages[2] == expected_history_2
+    assert messages[3] == expected_new_prompt
+
+    # test edge case that if we don't have enough tokens for expected_history, none are added
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=len(expected_system_message) + len(expected_history_1) + len(expected_new_prompt) - 1,  # noqa
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message='system message',
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt='new prompt',
+    )
+    assert len(messages) == 2
+    assert messages[0] == expected_system_message
+    assert messages[1] == expected_new_prompt
+
+    # test that if we have exactly enough tokens for expected_history, then the latest one is added
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=len(expected_system_message) + len(expected_history_1) + len(expected_new_prompt),  # noqa
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message='system message',
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt='new prompt',
+    )
+    assert len(messages) == 3
+    assert messages[0] == expected_system_message
+    assert messages[1] == expected_history_2
+    assert messages[2] == expected_new_prompt
+
+    # test that if we have don't have enough for both histories, then the latest one is added
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=len(expected_system_message) + len(expected_history_1) + \
+            len(expected_history_2) + len(expected_new_prompt) - 1,
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message='system message',
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt='new prompt',
+    )
+    assert len(messages) == 3
+    assert messages[0] == expected_system_message
+    assert messages[1] == expected_history_2
+    assert messages[2] == expected_new_prompt
+
+    # test that if we have exactly enough for both histories, then both are added
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=len(expected_system_message) + len(expected_history_1) + \
+            len(expected_history_2) + len(expected_new_prompt),
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message='system message',
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt='new prompt',
+    )
+    assert len(messages) == 4
+    assert messages[0] == expected_system_message
+    assert messages[1] == expected_history_1
+    assert messages[2] == expected_history_2
+    assert messages[3] == expected_new_prompt
+
+def test_MessageFormatterMaxTokensMemoryManager__no_system_message__no_prompt():  # noqa
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=1000,
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message=None,
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt=None,
+    )
+    assert len(messages) == 2
+    expected_history_1 = '[INST] prompt a [/INST]\nresponse a\n'
+    expected_history_2 = '[INST] prompt b [/INST]\nresponse b\n'
+    assert messages[0] == expected_history_1
+    assert messages[1] == expected_history_2
+
+    # test edge case that if we don't have enough tokens for expected_history, none are added
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=len(expected_history_1) + len(expected_history_2) - 1,
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message=None,
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt=None,
+    )
+    assert len(messages) == 1
+    assert messages[0] == expected_history_2
+
+    # test that if we have exactly enough tokens for expected_history, then both are added
+    memory_manager = MessageFormatterMaxTokensMemoryManager(
+        last_n_tokens=len(expected_history_1) + len(expected_history_2) ,
+        calculate_num_tokens=lambda x: len(x),
+        message_formatter=llama_message_formatter,
+    )
+    messages = memory_manager(
+        system_message=None,
+        history=[
+            ExchangeRecord(prompt='prompt a', response='response a'),
+            ExchangeRecord(prompt='prompt b', response='response b'),
+        ],
+        prompt=None,
+    )
+    assert len(messages) == 2
+    assert messages[0] == expected_history_1
+    assert messages[1] == expected_history_2

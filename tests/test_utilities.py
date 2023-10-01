@@ -2,10 +2,8 @@
 from time import sleep
 import re
 import pytest
-import openai
 import requests
 import os
-from unittest.mock import patch
 from llm_workflow.exceptions import RequestError
 from llm_workflow.base import Document
 from llm_workflow.internal_utilities import (
@@ -14,15 +12,12 @@ from llm_workflow.internal_utilities import (
     has_property,
     retry_handler,
     Timer,
-    query_hugging_face_endpoint,
 )
 from llm_workflow.utilities import (
     DuckDuckGoSearch,
     StackOverflowSearchRecord,
     StackQuestion,
     _get_stack_overflow_answers,
-    num_tokens,
-    num_tokens_from_messages,
     scrape_url,
     SearchRecord,
     split_documents,
@@ -49,60 +44,6 @@ def test_create_hash():  # noqa
     assert value_a != value_b
     value_c = create_hash('Test value 1')
     assert value_c == value_a
-
-def test_num_tokens():  # noqa
-    assert num_tokens(model_name='gpt-3.5-turbo', value="This should be six tokens.") == 6
-
-def test_num_tokens_from_messages():  # noqa
-    # copied from https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-    example_messages = [
-        {
-            "role": "system",
-            "content": "You are a helpful, pattern-following assistant that translates corporate jargon into plain English.",  # noqa
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "New synergies will help drive top-line growth.",
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Things working well together will increase revenue.",
-        },
-        {
-            "role": "system",
-            "name": "example_user",
-            "content": "Let's circle back when we have more bandwidth to touch base on opportunities for increased leverage.",  # noqa
-        },
-        {
-            "role": "system",
-            "name": "example_assistant",
-            "content": "Let's talk later when we're less busy about how to do better.",
-        },
-        {
-            "role": "user",
-            "content": "This late pivot means we don't have time to boil the ocean for the client deliverable.",  # noqa
-        },
-    ]
-    model_name = 'gpt-3.5-turbo'
-    response = openai.ChatCompletion.create(
-        model=model_name,
-        messages=example_messages,
-        temperature=0,
-        max_tokens=1,  # we're only counting input tokens here, so let's not waste tokens on output
-    )
-    expected_value = response["usage"]["prompt_tokens"]
-    actual_value = num_tokens_from_messages(model_name=model_name, messages=example_messages)
-    assert expected_value == actual_value
-
-    # above we checked that the numbers match exactly from what OpenAI returns;
-    # here, let's just check that the other models run and return >0 to avoid API calls
-    assert num_tokens_from_messages(model_name='gpt-3.5-turbo-0301', messages=example_messages) > 0
-    assert num_tokens_from_messages(model_name='gpt-4', messages=example_messages) > 0
-    assert num_tokens_from_messages(model_name='gpt-4-0314', messages=example_messages) > 0
-    with pytest.raises(NotImplementedError):
-        num_tokens_from_messages(model_name='<not implemented>', messages=example_messages)
 
 def test_retry_handler():  # noqa
     r = retry_handler()
@@ -529,12 +470,3 @@ def test__get_stack_overflow_answers_404():  # noqa
      if os.getenv('STACK_OVERFLOW_KEY', None):
         with pytest.raises(RequestError):
             _ = _get_stack_overflow_answers(question_id='asdf')
-
-def test_query_hugging_face_endpoint(fake_retry_handler, fake_hugging_face_response):  # noqa
-    with patch('llm_workflow.internal_utilities.requests.post', return_value=fake_hugging_face_response) as mock_post:  # noqa
-        with patch('llm_workflow.internal_utilities.retry_handler', return_value=fake_retry_handler) as mock_retry_handler:  # noqa
-            endpoint_url = "https://fake.url"
-            payload = {"text": "hello"}
-            response = query_hugging_face_endpoint(endpoint_url, payload)
-            assert isinstance(response, list)
-            assert 'generated_text' in response[0]
