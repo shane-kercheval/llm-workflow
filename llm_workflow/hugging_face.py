@@ -149,9 +149,10 @@ class HuggingFaceEndpointChat(PromptModel):
         # build up messages from history
         history = self.history().copy()
         if self._memory_manager:
-            history = self._memory_manager(history=history)
+            self._previous_messages = self._memory_manager(self._system_message, history, prompt)
+        else:
+            self._previous_messages = self._message_formatter(self._system_message, history, prompt)  # noqa
 
-        self._previous_messages = self._message_formatter(self._system_message, history, prompt)
         messages = ''.join(self._previous_messages)
         response = ""
         start = time.time()
