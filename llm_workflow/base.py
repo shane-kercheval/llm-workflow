@@ -45,7 +45,7 @@ class Document(BaseModel):
     """
 
     content: str
-    metadata: dict | None
+    metadata: dict | None = None
 
 
 class RecordKeeper(ABC):

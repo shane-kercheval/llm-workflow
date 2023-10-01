@@ -109,7 +109,7 @@ Here's the full example from the snippet above (alternatively, see [this noteboo
 
 ```python
 from llm_workflow.base import Workflow
-from llm_workflow.models import OpenAIChat
+from llm_workflow.openai import OpenAIChat
 
 prompt_enhancer = OpenAIChat(model_name='gpt-3.5-turbo')
 # different model/object, therefore different message history (i.e. conversation)
@@ -312,7 +312,7 @@ See [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/ex
 
 ```python
 from llm_workflow.base import Document, Workflow, Value
-from llm_workflow.models import OpenAIEmbedding, OpenAIChat
+from llm_workflow.openai import OpenAIEmbedding, OpenAIChat
 from llm_workflow.utilities import DuckDuckGoSearch, scrape_url, split_documents
 from llm_workflow.indexes import ChromaDocumentIndex
 from llm_workflow.prompt_templates import DocSearchTemplate

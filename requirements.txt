@@ -14,3 +14,7 @@ PyYAML
 ruff
 tenacity
 tiktoken
+transformers
+torch
+torchvision
+torchaudio

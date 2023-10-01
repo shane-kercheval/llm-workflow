@@ -1,10 +1,13 @@
 """Configures the pytests."""
 from collections.abc import Callable
+import pytest
+import requests
 import random
 from faker import Faker
 import numpy as np
-import pytest
 from dotenv import load_dotenv
+from unittest.mock import MagicMock
+
 
 from llm_workflow.base import Document
 from llm_workflow.models import EmbeddingModel, EmbeddingRecord, ExchangeRecord, PromptModel
@@ -121,3 +124,53 @@ class MockABCDEmbeddings(EmbeddingModel):
             cost=cost,
             metadata={'content': [x.content for x in docs]},
         )
+
+
+class FakeRetryHandler:
+    """A fake retry handler used for unit tests."""
+
+    def __call__(self, f, *args, **kwargs):  # noqa
+        return f(*args, **kwargs)
+
+
+@pytest.fixture()
+def fake_retry_handler():  # noqa
+    return FakeRetryHandler()
+
+
+@pytest.fixture()
+def fake_hugging_face_response_json():  # noqa
+    fake = Faker()
+    num_words = fake.random_int(min=8, max=10)
+    if num_words == 8:
+        return [{
+            'generated_text': "",
+        }]
+
+    return [{
+        'generated_text': " ".join(fake.words(nb=num_words)),
+    }]
+
+
+@pytest.fixture()
+def fake_hugging_face_response(fake_hugging_face_response_json):  # noqa
+    response = MagicMock()
+    response.json.return_value = fake_hugging_face_response_json
+    return response
+
+
+
+def is_endpoint_available(url: str) -> bool:
+    """Returns True if the endpoint is available."""
+    available = False
+    try:
+        response = requests.head(url, timeout=5)  # You can use GET or HEAD method
+        # checking if we get a response code of 2xx or 3xx
+        available = 200 <= response.status_code <= 401
+    except requests.RequestException:
+        pass
+
+    if not available:
+        print('Endpoint Not available.')
+
+    return available
