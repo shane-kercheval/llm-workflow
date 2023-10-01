@@ -131,9 +131,9 @@ class StackAnswer(BaseModel):
     is_accepted: bool
     score: int
     body: str
-    text: str | None
-    markdown: str | None
     creation_date: int
+    text: str | None = None
+    markdown: str | None = None
 
     def __init__(self, **data):  # noqa
         from bs4 import BeautifulSoup
@@ -164,9 +164,9 @@ class StackQuestion(BaseModel):
     title: str
     link: str
     body: str
-    text: str | None
-    markdown: str | None
-    content_license: str | None
+    text: str | None = None
+    markdown: str | None = None
+    content_license: str | None = None
     answers: list[StackAnswer] = Field(default_factory=list)
 
     def __init__(self, **data):  # noqa
