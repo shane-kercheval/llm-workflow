@@ -1,7 +1,7 @@
 """Tests the compare module."""
 
 from textwrap import dedent
-from llm_workflow.compare import Scenario
+from llm_workflow.compare import Scenario, ModelCreation, CompareModels
 
 
 class MockChatModel:
@@ -219,3 +219,52 @@ def test_scenario__conversation_mask_email__model_2__without_costs(conversation_
     assert scenario.num_successful_code_blocks == 2
     assert scenario.percent_successful_code_blocks == 1
     assert scenario.cost is None
+
+def test_compare_models(conversation_sum, conversation_mask_email):  # noqa
+    scenario_1_prompts = conversation_sum['prompts']
+    scenario_2_prompts = conversation_mask_email['prompts']
+    all_prompts = scenario_1_prompts + scenario_2_prompts
+
+    scenario_1_model_1_responses = conversation_sum['model_1']['responses']
+    scenario_1_model_2_responses = conversation_sum['model_2']['responses']
+    scenario_2_model_1_responses = conversation_mask_email['model_1']['responses']
+    scenario_2_model_2_responses = conversation_mask_email['model_2']['responses']
+
+    model_creations = [
+        ModelCreation(
+            create=lambda: \
+                MockChatModel(
+                    prompts=all_prompts,
+                    responses=scenario_1_model_1_responses + scenario_2_model_1_responses,
+                    cost=0.5,
+                ),
+            description='Mock Model 1',
+        ),
+        ModelCreation(
+            create=lambda: \
+                MockChatModel(
+                    prompts=all_prompts,
+                    responses=scenario_1_model_2_responses + scenario_2_model_2_responses,
+                    cost=None,
+                ),
+            description='Mock Model 2',
+        ),
+    ]
+    model_creations[0].create()(prompt=scenario_1_prompts[0]) == scenario_1_model_1_responses[0]
+    model_creations[0].create()(prompt=scenario_1_prompts[1]) == scenario_1_model_1_responses[1]
+    model_creations[0].create()(prompt=scenario_2_prompts[0]) == scenario_2_model_1_responses[0]
+    model_creations[0].create()(prompt=scenario_2_prompts[1]) == scenario_2_model_1_responses[1]
+    model_creations[1].create()(prompt=scenario_1_prompts[0]) == scenario_1_model_2_responses[0]
+    model_creations[1].create()(prompt=scenario_1_prompts[1]) == scenario_1_model_2_responses[1]
+    model_creations[1].create()(prompt=scenario_2_prompts[0]) == scenario_2_model_2_responses[0]
+    model_creations[1].create()(prompt=scenario_2_prompts[1]) == scenario_2_model_2_responses[1]
+
+    comparison = CompareModels(
+        prompts=[scenario_1_prompts, scenario_2_prompts],
+        model_creations=model_creations,
+    )
+    comparison()
+    assert 'Mock Model 1' in str(comparison)
+    assert 'Mock Model 2' in str(comparison)
+    assert comparison.prompts == [scenario_1_prompts, scenario_2_prompts]
+    assert comparison.num_scenarios == 2

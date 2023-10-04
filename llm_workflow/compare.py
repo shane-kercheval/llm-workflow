@@ -1,9 +1,34 @@
 """Utilities to compare the responses and performance of different models."""
 
-from typing import Callable
+from typing import Callable, TypeVar
 import time
-
+from pydantic import BaseModel
 from llm_workflow.internal_utilities import execute_code_blocks, extract_code_blocks
+
+Model = TypeVar('Model', bound=Callable[[str], str])
+
+
+class ModelCreation(BaseModel):
+    """
+    Used to define the requirements for comparing models.
+
+    create:
+        A callable function with no arguments that creates a model (e.g. probably just a lambda).
+        The intent is that the model is created each time a trial is run so that the model is
+        in a fresh state.
+
+        The model needs to be a callable that accepts a single string argument and returns a string
+        response.
+        NOTE: The model must track its memory and state internally so that it responses
+        accordingly to each successive prompt.
+        The model may optionally have a cost attribute that represents the cost of running
+        the model (e.g. cost per tokens).
+    description:
+        A description of the scenario (e.g. the name of the model).
+    """
+
+    create: Callable[[], Model]
+    description: str
 
 
 class Scenario:
@@ -109,13 +134,165 @@ class Scenario:
 
     @property
     def percent_successful_code_blocks(self) -> float:
-        """TODO."""
+        """The percentage of code blocks that executed successfully."""
         return self.num_successful_code_blocks / self.num_code_blocks
 
     @property
     def cost(self) -> float:
-        """TODO."""
-        # if model has a cost attribute, use that
+        """
+        The cost of running the model. If the model does not have a cost attribute, None is
+        returned.
+        """
         if hasattr(self._model, 'cost'):
             return self._model.cost
         return None
+
+
+class CompareModels:
+    """
+    One requirements is that the underlying models need to maintain message history. They are
+    passed a list of prompts. The second prompt is a follow up question to the first prompt so
+    the model needs to be able to maintain the history of the conversation.
+    """
+
+    def __init__(
+            self,
+            prompts: list[list[str]],
+            model_creations: list[ModelCreation],
+        ):
+        """
+        Args:
+            prompts:
+                A nested list of prompts. Each outer list represents a single scenario.
+                Each inner list is of prompts. The prompts represent consecutive turns/requests in
+                a conversation (e.g. a follow up question or request).
+            model_creations:
+                A list of "model creations". Each model creation is a ModelCreation object that
+                defines the requirements for comparing models.
+                NOTE: The model must track its memory and state internally so that it responses
+                accordingly to each successive prompt.
+        """
+        # ensure no model descriptions are duplicated
+        model_descriptions = [model_creation.description for model_creation in model_creations]
+        if len(model_descriptions) != len(set(model_descriptions)):
+            raise ValueError("Model descriptions must be unique.")
+
+        self.prompts = prompts
+        self._model_creations = model_creations
+
+    def __call__(self):
+        """Runs the prompts/scenarios."""
+        self.scenarios = []
+        for prompts in self.prompts:
+            runs = []
+            for create_model in self._model_creations:
+                scenario = Scenario(
+                    model=create_model.create(),  # create a new model for each run
+                    description=create_model.description,
+                )
+                scenario(prompts=prompts)
+                runs.append(scenario)
+            self.scenarios.append(runs)
+        assert len(self.scenarios) == len(self.prompts)
+
+    @property
+    def num_scenarios(self) -> int:
+        """
+        The number of scenarios. self.scenarios is a list of lists (of prompts). The outer list
+        represents the scenarios. The inner list represents the prompts for a single scenario.
+        `num_scenarios` is the number of outer lists.
+        """
+        return len(self.scenarios)
+
+    @property
+    def num_models(self) -> int:
+        """The number of models (used for each scenario)."""
+        return len(self._model_creations)
+
+    @property
+    def model_descriptions(self) -> str:
+        """A list of model descriptions."""
+        return [model.description for model in self._model_creations]
+
+    def _sum_property(self, model_description: str, property_name: str) -> float:
+        """
+        sums the property across all scenarios.
+
+        Args:
+            model_description:
+                The description of the model. (The value passed to the ModelCreation object.)
+            property_name:
+                The name of the property to sum.
+        """
+        total = 0
+        for use_case_trials in self.scenarios:
+            for trial in use_case_trials:
+                if trial.description == model_description:
+                    value = getattr(trial, property_name)
+                    if value:
+                        total += value
+        return total
+
+    def duration_seconds(self, model_description: str) -> float:
+        """
+        The total duration (in seconds) across all scenarios for the model associated with
+        model_description.
+        """
+        return self._sum_property(model_description, 'duration_seconds')
+
+    def num_response_chars(self, model_description: str) -> int:
+        """
+        The total number of response characters across all scenarios for the model associated with
+        model_description.
+        """
+        return self._sum_property(model_description, 'num_response_chars')
+
+    def response_chars_per_second(self, model_description: str) -> float:
+        """
+        The number of response characters per second across all scenarios for the model associated
+        with the model_description.
+        """
+        return self.num_response_chars(model_description) / self.duration_seconds(model_description)  # noqa
+
+    def num_code_blocks(self, model_description: str) -> int:
+        """
+        The total number of code blocks across all scenarios for the model associated with
+        model_description.
+        """
+        return self._sum_property(model_description, 'num_code_blocks')
+
+    def num_successful_code_blocks(self, model_description: str) -> int:
+        """
+        The total number of code blocks that executed successfully across all scenarios for the
+        model associated with model_description.
+        """
+        return self._sum_property(model_description, 'num_successful_code_blocks')
+
+    def percent_successful_code_blocks(self, model_description: str) -> float:
+        """
+        The percentage of code blocks that executed successfully across all scenarios for the
+        model associated with model_description.
+        """
+        return self.num_successful_code_blocks(model_description) / self.num_code_blocks(model_description)  # noqa
+
+    def cost(self, model_description: str) -> float | None:
+        """
+        The total cost across all scenarios for the model associated with model_description. If the
+        model does not have a cost attribute, None is returned.
+        """
+        return self._sum_property(model_description, 'cost')
+
+    def __str__(self) -> str:
+        """Returns a summary of the results."""
+        results = ""
+        for model_description in self.model_descriptions:
+            results += f"{model_description}\n"
+            results += f"Time: {self.duration_seconds(model_description):.2f} seconds\n"
+            results += f"Response Characters: {self.num_response_chars(model_description):,}\n"
+            results += f"Response Characters per second: {self.response_chars_per_second(model_description):.1f}\n"  # noqa
+            results += f"Num code blocks: {self.num_code_blocks(model_description)}\n"
+            results += f"Percent Passing Code blocks: {self.percent_successful_code_blocks(model_description):.1%}\n"  # noqa
+            if self.cost(model_description):
+                results += f"Cost: ${self.cost(model_description):.5f}\n"
+            results += "\n"
+        return results
