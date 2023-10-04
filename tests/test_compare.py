@@ -170,7 +170,6 @@ def test_scenario__conversation_mask_email__model_1__with_costs(conversation_mas
     assert scenario.percent_successful_code_blocks == 2 /3
     assert scenario.cost == 0.5
 
-
 def test_scenario__conversation_mask_email__model_2__without_costs(conversation_mask_email):  # noqa
     prompts = conversation_mask_email['prompts']
     model_2_responses = conversation_mask_email['model_2']['responses']
