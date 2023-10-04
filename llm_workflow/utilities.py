@@ -291,3 +291,10 @@ def _get_stack_overflow_answers(question_id: int, max_answers: int = 2) -> list[
         raise RequestError(status_code=response.status_code, reason=response.reason)
     answers = response.json().get('items', [])
     return [StackAnswer(**x) for x in answers]
+
+
+def extract_code_blocks(markdown_text: str) -> list[str]:
+    """Extract code blocks from Markdown text (e.g. llm response)."""
+    pattern = re.compile(r'```(?:python)?\s*(.*?)```', re.DOTALL)
+    matches = pattern.findall(markdown_text)
+    return [match.strip() for match in matches]
