@@ -608,4 +608,3 @@ def test__execute_code_blocks__with_local_namespace(conversation_sum):  # noqa
     assert len(results) == 2
     assert results[0] is None
     assert isinstance(results[1], AssertionError)
-
