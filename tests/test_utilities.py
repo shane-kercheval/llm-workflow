@@ -9,6 +9,8 @@ from llm_workflow.exceptions import RequestError
 from llm_workflow.base import Document
 from llm_workflow.internal_utilities import (
     create_hash,
+    execute_code_blocks,
+    extract_code_blocks,
     has_method,
     has_property,
     retry_handler,
@@ -16,7 +18,6 @@ from llm_workflow.internal_utilities import (
 )
 from llm_workflow.utilities import (
     DuckDuckGoSearch,
-    extract_code_blocks,
     StackOverflowSearchRecord,
     StackQuestion,
     _get_stack_overflow_answers,
@@ -473,7 +474,7 @@ def test__get_stack_overflow_answers_404():  # noqa
         with pytest.raises(RequestError):
             _ = _get_stack_overflow_answers(question_id='asdf')
 
-def tests__extract_code_blocks__conversation_sum(conversation_sum):  # noqa
+def test__extract_code_blocks__conversation_sum(conversation_sum):  # noqa
     extracted_code_blocks = extract_code_blocks(conversation_sum['model_1']['responses'][0])
     assert len(extracted_code_blocks) == 2
     assert extracted_code_blocks[0] == dedent("""
@@ -512,7 +513,7 @@ def tests__extract_code_blocks__conversation_sum(conversation_sum):  # noqa
         assert sum_two_numbers(100, 200) == 300, "Should be 300"
         """).strip()
 
-def tests__extract_code_blocks__conversation_mask_emails(conversation_mask_email):  # noqa
+def test__extract_code_blocks__conversation_mask_emails(conversation_mask_email):  # noqa
     extracted_code_blocks = extract_code_blocks(conversation_mask_email['model_1']['responses'][0])
     assert len(extracted_code_blocks) == 2
     assert extracted_code_blocks[0] == dedent("""
@@ -563,3 +564,47 @@ def tests__extract_code_blocks__conversation_mask_emails(conversation_mask_email
         assert mask_email("jane_doe@example.com") == "j****e@example.com"
         assert mask_email("test@test.com") == "t****t@test.com"
         """).strip()
+
+def test__execute_code_blocks__without_local_namespace(conversation_sum):  # noqa
+    code_blocks = extract_code_blocks(conversation_sum['model_1']['responses'][0])
+    code_blocks.append('assert sum_numbers(5, 3) == 8')
+    code_blocks.append('assert sum_numbers(5, 3) != 8')
+    assert len(code_blocks) == 4
+    results = execute_code_blocks(code_blocks)
+    assert len(results) == 4
+    assert results[0] is None
+    assert results[1] is None
+    assert results[2] is None
+    assert isinstance(results[3], AssertionError)
+
+    # this will fail because local_namespace was not reused so sum_numbers is not defined during
+    # a subsequent call to execute_code_blocks
+    results = execute_code_blocks(code_blocks=['assert sum_numbers(5, 3) == 8'])
+    assert len(results) == 1
+    assert isinstance(results[0], NameError)
+    assert str(results[0]) == "name 'sum_numbers' is not defined"
+
+def test__execute_code_blocks__with_local_namespace(conversation_sum):  # noqa
+    code_blocks = extract_code_blocks(conversation_sum['model_1']['responses'][0])
+    code_blocks.append('assert sum_numbers(5, 3) == 8')
+    code_blocks.append('assert sum_numbers(5, 3) != 8')
+    assert len(code_blocks) == 4
+    local_namespace = {}
+    results = execute_code_blocks(code_blocks, local_namespace)
+    assert len(results) == 4
+    assert results[0] is None
+    assert results[1] is None
+    assert results[2] is None
+    assert isinstance(results[3], AssertionError)
+    assert 'sum_numbers' in local_namespace
+    assert 'result' in local_namespace
+
+    # this will NOT fail because local_namespace was reused so the state is carried over to
+    # a subsequent call to execute_code_blocks
+    results = execute_code_blocks(
+        code_blocks=['assert sum_numbers(5, 3) == 8', 'assert sum_numbers(5, 3) != 8'],
+        local_namespace=local_namespace,
+    )
+    assert len(results) == 2
+    assert results[0] is None
+    assert isinstance(results[1], AssertionError)
