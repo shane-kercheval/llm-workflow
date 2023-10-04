@@ -101,7 +101,9 @@ def extract_code_blocks(markdown_text: str) -> list[str]:
     return [match.strip() for match in matches]
 
 
-def execute_code_blocks(code_blocks: list[str], local_namespace: dict | None = None) -> list[bool]:
+def execute_code_blocks(
+        code_blocks: list[str],
+        local_namespace: dict | None = None) -> list[Exception]:
     """
     Execute code blocks and determine if the code blocks run successfully.
 
