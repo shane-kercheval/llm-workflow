@@ -2,8 +2,12 @@
 
 from typing import Callable, TypeVar
 import time
+import textwrap
 from pydantic import BaseModel
+import markdown
 from llm_workflow.internal_utilities import execute_code_blocks, extract_code_blocks
+from pygments.formatters import HtmlFormatter
+
 
 Model = TypeVar('Model', bound=Callable[[str], str])
 
@@ -296,3 +300,205 @@ class CompareModels:
                 results += f"Cost: ${self.cost(model_description):.5f}\n"
             results += "\n"
         return results
+
+    def to_html(self, file_path: str | None = None) -> str | None:
+        """
+        Returns an HTML string that summarizes the each scenario across all models defined in the
+        comparison object.
+
+        Args:
+            file_path:
+                If provided, the HTML string is written to the file path. Otherwise, the HTML
+                string is returned.
+        """
+        html = _comparison_to_html(self)
+        if file_path:
+            with open(file_path, 'w') as f:
+                f.write(html)
+            return None
+        return html
+
+
+def _scenario_to_html(scenario: Scenario) -> str:
+    results = '<table style="border-collapse: collapse; width: auto;">\n'
+    results += f'<tr><td style="border: none;">Time</td><td style="border: none;"><code>{scenario.duration_seconds:.2f} seconds</code></td></tr>\n'  # noqa
+    results += f'<tr><td style="border: none;">Characters</td><td style="border: none;"><code>{scenario.num_response_chars:,}</code></td></tr>\n'  # noqa
+    results += f'<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>{scenario.response_chars_per_second:.1f}</code></td></tr>\n'  # noqa
+    results += f'<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>{scenario.num_code_blocks}</code></td></tr>\n'  # noqa
+    percent_successful_code_blocks = (
+        scenario.num_successful_code_blocks / scenario.num_code_blocks
+    )
+    results += f'<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>{percent_successful_code_blocks:.1%}</code></td></tr>\n'  # noqa
+    if scenario.cost:
+        results += f'<tr><td style="border: none;">Cost</td><td style="border: none;"><code>${scenario.cost:.5f}</code></td></tr>\n'  # noqa
+    results += '</table>\n'
+    return results
+
+
+def _comparison_summary_html(comparison: CompareModels) -> str:
+    headers = [
+        "Time",
+        "Response Characters",
+        "Response Characters per second",
+        "Num code blocks",
+        "Percent Passing Code blocks",
+        "Cost",
+    ]
+
+    # Metrics for which an increase is considered good
+    increase_is_good = [False, False, True, False, True, False]
+    color_changes = [True, False, True, False, True, True]  # Whether to color the percent changes
+    # Opening the HTML string and adding headers with CSS for minimal width and bold text for
+    # headers
+    html = (
+        '<table border="1" style="width: fit-content; table-layout: fixed;">\n'
+        '<tr><th style="width: 150px;"></th>'
+    )
+
+    for model_description in comparison.model_descriptions:
+        html += f'<th style="width: 200px; font-weight: bold;">{model_description}</th>'
+    html += '</tr>\n'
+
+    # Storing the first model's metrics for percent change calculations
+    first_model_metrics = []
+
+    for idx, header in enumerate(headers):
+        html += f'<tr><td style="font-weight: bold;">{header}</td>'
+
+        for m_idx, model_description in enumerate(comparison.model_descriptions):
+            if idx == 0:
+                value = comparison.duration_seconds(model_description)
+                display_value = f"{value:.2f} seconds"
+            elif idx == 1:
+                value = comparison.num_response_chars(model_description)
+                display_value = f"{value:,}"
+            elif idx == 2:
+                value = comparison.response_chars_per_second(model_description)
+                display_value = f"{value:.1f}"
+            elif idx == 3:
+                value = comparison.num_code_blocks(model_description)
+                display_value = f"{value}"
+            elif idx == 4:
+                value = comparison.percent_successful_code_blocks(model_description)
+                display_value = f"{value:.1%}"
+            elif idx == 5:
+                value = comparison.cost(model_description)
+                display_value = f"${value:.5f}" if value is not None else ""
+            else:
+                value = None
+                display_value = ""
+
+            # Store the first model's metrics
+            if m_idx == 0:
+                first_model_metrics.append(value)
+
+            # Calculate and display percentage change for other models
+            if (
+                m_idx > 0
+                and value is not None
+                and first_model_metrics[idx] is not None
+                and first_model_metrics[idx] != 0
+            ):
+                percent_change = ((value - first_model_metrics[idx]) / first_model_metrics[idx]) * 100  # noqa
+
+                # Determine color based on whether the change is good or bad
+                color = "green" if (percent_change > 0) == increase_is_good[idx] else "red"
+                display_value += (
+                    f' (<span style="color: {color if color_changes[idx] else "black"};">'
+                    f'{percent_change:.1f}% {"increase" if percent_change > 0 else "decrease"}'
+                    '</span>)'
+                )
+            html += f'<td>{display_value}</td>'
+        html += '</tr>\n'
+
+    # Closing the HTML string
+    html += '</table>'
+    return html
+
+
+def _comparison_to_html(comparison: CompareModels) -> str:
+    """
+    Returns an HTML string that summarizes the each scenario across all models defined in the
+    comparison object.
+    """
+    scenarios = comparison.scenarios
+    # Configure Markdown to HTML conversion
+    md = markdown.Markdown(
+        extensions=['fenced_code', 'codehilite'],
+        extension_configs={
+            'codehilite': {
+                'css_class': 'highlight',
+                'linenums': False,
+                'use_pygments': True,
+            },
+        },
+    )
+    css = HtmlFormatter().get_style_defs('.highlight')
+
+    horizontal_line = '<div class="centered-line"></div>'
+    # Generate rows and columns
+    column_names_html = ''
+    for trial in scenarios[0]:
+        column_names_html += f'<th>{trial.description}</th>'
+
+    summary_html = _comparison_summary_html(comparison)
+    use_case_row_html = ''
+    for row in scenarios:
+        columns_html = ''
+        for trial in row:
+            columns_html += f'<td style="vertical-align: top;">{_scenario_to_html(trial)}<br>'
+            columns_html += f'{horizontal_line}<br>'
+            for prompt, response in zip(trial.prompts, trial.responses):
+                columns_html += '<h3>Prompt</h3><br>'
+                columns_html += f'{prompt}<br><br>'
+                columns_html += f'{horizontal_line}<br>'
+                columns_html += '<h3>Response</h3><br>'
+                html = md.convert(response)
+                columns_html += f'{html}<br>'
+                columns_html += f'{horizontal_line}<br>'
+            columns_html += '</td>'
+        use_case_row_html += f'<tr>{columns_html}</tr>'
+
+    # Wrap the HTML and CSS in a complete HTML document with a table
+    return textwrap.dedent(f'''
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <style>
+        {css}
+        .centered-line {{
+            width: 50%;
+            margin-left: 5px; /* Adjust this value to control the left alignment */
+            border-top: 1px solid #000; /* You can adjust the color and style as needed */
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        th, td {{
+            border: 1px solid #B2BEB5;
+            padding: 8px;
+            text-align: left;
+        }}
+        </style>
+    </head>
+    <body>
+    <h1>Summary</h1>
+    {summary_html}
+    <br>
+    {horizontal_line}
+    <h1>Use Cases</h1>
+    <table border="1" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                {column_names_html}
+            </tr>
+        </thead>
+        {use_case_row_html}
+    </table>
+    </body>
+    </html>
+    ''')

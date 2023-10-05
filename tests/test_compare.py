@@ -1,5 +1,6 @@
 """Tests the compare module."""
 
+import os
 from textwrap import dedent
 from llm_workflow.compare import Scenario, ModelCreation, CompareModels
 
@@ -268,3 +269,112 @@ def test_compare_models(conversation_sum, conversation_mask_email):  # noqa
     assert 'Mock Model 2' in str(comparison)
     assert comparison.prompts == [scenario_1_prompts, scenario_2_prompts]
     assert comparison.num_scenarios == 2
+    assert comparison.num_models == 2
+    assert comparison.model_descriptions == ['Mock Model 1', 'Mock Model 2']
+    assert comparison.duration_seconds('Mock Model 1') is not None
+    assert comparison.duration_seconds('Mock Model 2') is not None
+    assert comparison.num_response_chars('Mock Model 1') == len("".join(scenario_1_model_1_responses + scenario_2_model_1_responses))  # noqa
+    assert comparison.num_response_chars('Mock Model 2') == len("".join(scenario_1_model_2_responses + scenario_2_model_2_responses))  # noqa
+    assert comparison.response_chars_per_second('Mock Model 1') > 0
+    assert comparison.response_chars_per_second('Mock Model 2') > 0
+    assert comparison.num_code_blocks('Mock Model 1') == 6
+    assert comparison.num_code_blocks('Mock Model 2') == 5
+    assert comparison.num_successful_code_blocks('Mock Model 1') == 5
+    assert comparison.num_successful_code_blocks('Mock Model 2') == 5
+    assert comparison.percent_successful_code_blocks('Mock Model 1') == 5 / 6
+    assert comparison.percent_successful_code_blocks('Mock Model 2') == 1
+    assert comparison.cost('Mock Model 1') == 0.5 * 2
+    assert comparison.cost('Mock Model 2') == 0
+    assert comparison.to_html()
+    comparison.to_html('tests/test_data/compare/compare_models__2_models.html')
+    assert os.path.exists('tests/test_data/compare/compare_models__2_models.html')
+
+def test_compare_models__3_models(conversation_sum, conversation_mask_email):  # noqa
+    scenario_1_prompts = conversation_sum['prompts']
+    scenario_2_prompts = conversation_mask_email['prompts']
+    all_prompts = scenario_1_prompts + scenario_2_prompts
+
+    scenario_1_model_1_responses = conversation_sum['model_1']['responses']
+    scenario_1_model_2_responses = conversation_sum['model_2']['responses']
+    scenario_2_model_1_responses = conversation_mask_email['model_1']['responses']
+    scenario_2_model_2_responses = conversation_mask_email['model_2']['responses']
+
+    model_creations = [
+        ModelCreation(
+            create=lambda: \
+                MockChatModel(
+                    prompts=all_prompts,
+                    responses=scenario_1_model_1_responses + scenario_2_model_1_responses,
+                    cost=0.5,
+                ),
+            description='Mock Model 1',
+        ),
+        ModelCreation(
+            create=lambda: \
+                MockChatModel(
+                    prompts=all_prompts,
+                    responses=scenario_1_model_2_responses + scenario_2_model_2_responses,
+                    cost=None,
+                ),
+            description='Mock Model 2',
+        ),
+        # same as model 1
+        ModelCreation(
+            create=lambda: \
+                MockChatModel(
+                    prompts=all_prompts,
+                    responses=scenario_1_model_1_responses + scenario_2_model_1_responses,
+                    cost=0.1,
+                ),
+            description='Mock Model 1.5',
+        ),
+    ]
+    model_creations[0].create()(prompt=scenario_1_prompts[0]) == scenario_1_model_1_responses[0]
+    model_creations[0].create()(prompt=scenario_1_prompts[1]) == scenario_1_model_1_responses[1]
+    model_creations[0].create()(prompt=scenario_2_prompts[0]) == scenario_2_model_1_responses[0]
+    model_creations[0].create()(prompt=scenario_2_prompts[1]) == scenario_2_model_1_responses[1]
+    model_creations[1].create()(prompt=scenario_1_prompts[0]) == scenario_1_model_2_responses[0]
+    model_creations[1].create()(prompt=scenario_1_prompts[1]) == scenario_1_model_2_responses[1]
+    model_creations[1].create()(prompt=scenario_2_prompts[0]) == scenario_2_model_2_responses[0]
+    model_creations[1].create()(prompt=scenario_2_prompts[1]) == scenario_2_model_2_responses[1]
+    model_creations[2].create()(prompt=scenario_1_prompts[0]) == scenario_1_model_1_responses[0]
+    model_creations[2].create()(prompt=scenario_1_prompts[1]) == scenario_1_model_1_responses[1]
+    model_creations[2].create()(prompt=scenario_2_prompts[0]) == scenario_2_model_1_responses[0]
+    model_creations[2].create()(prompt=scenario_2_prompts[1]) == scenario_2_model_1_responses[1]
+
+    comparison = CompareModels(
+        prompts=[scenario_1_prompts, scenario_2_prompts],
+        model_creations=model_creations,
+    )
+    comparison()
+    assert 'Mock Model 1' in str(comparison)
+    assert 'Mock Model 2' in str(comparison)
+    assert 'Mock Model 1.5' in str(comparison)
+    assert comparison.prompts == [scenario_1_prompts, scenario_2_prompts]
+    assert comparison.num_scenarios == 2
+    assert comparison.num_models == 3
+    assert comparison.model_descriptions == ['Mock Model 1', 'Mock Model 2', 'Mock Model 1.5']
+    assert comparison.duration_seconds('Mock Model 1') is not None
+    assert comparison.duration_seconds('Mock Model 2') is not None
+    assert comparison.duration_seconds('Mock Model 1.5') is not None
+    assert comparison.num_response_chars('Mock Model 1') == len("".join(scenario_1_model_1_responses + scenario_2_model_1_responses))  # noqa
+    assert comparison.num_response_chars('Mock Model 2') == len("".join(scenario_1_model_2_responses + scenario_2_model_2_responses))  # noqa
+    assert comparison.num_response_chars('Mock Model 1.5') == len("".join(scenario_1_model_1_responses + scenario_2_model_1_responses))  # noqa
+    assert comparison.response_chars_per_second('Mock Model 1') > 0
+    assert comparison.response_chars_per_second('Mock Model 2') > 0
+    assert comparison.response_chars_per_second('Mock Model 1.5') > 0
+    assert comparison.num_code_blocks('Mock Model 1') == 6
+    assert comparison.num_code_blocks('Mock Model 2') == 5
+    assert comparison.num_code_blocks('Mock Model 1.5') == 6
+    assert comparison.num_successful_code_blocks('Mock Model 1') == 5
+    assert comparison.num_successful_code_blocks('Mock Model 2') == 5
+    assert comparison.num_successful_code_blocks('Mock Model 1.5') == 5
+    assert comparison.percent_successful_code_blocks('Mock Model 1') == 5 / 6
+    assert comparison.percent_successful_code_blocks('Mock Model 2') == 1
+    assert comparison.percent_successful_code_blocks('Mock Model 1.5') == 5 / 6
+    assert comparison.cost('Mock Model 1') == 0.5 * 2
+    assert comparison.cost('Mock Model 2') == 0
+    assert comparison.cost('Mock Model 1.5') == 0.1 * 2
+    assert comparison.to_html()
+    comparison.to_html('tests/test_data/compare/compare_models__3_models.html')
+    assert os.path.exists('tests/test_data/compare/compare_models__3_models.html')

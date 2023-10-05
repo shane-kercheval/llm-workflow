@@ -1,0 +1,288 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <style>
+        pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight { background: #f8f8f8; }
+.highlight .c { color: #3D7B7B; font-style: italic } /* Comment */
+.highlight .err { border: 1px solid #FF0000 } /* Error */
+.highlight .k { color: #008000; font-weight: bold } /* Keyword */
+.highlight .o { color: #666666 } /* Operator */
+.highlight .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
+.highlight .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
+.highlight .cp { color: #9C6500 } /* Comment.Preproc */
+.highlight .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
+.highlight .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
+.highlight .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
+.highlight .gd { color: #A00000 } /* Generic.Deleted */
+.highlight .ge { font-style: italic } /* Generic.Emph */
+.highlight .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.highlight .gr { color: #E40000 } /* Generic.Error */
+.highlight .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.highlight .gi { color: #008400 } /* Generic.Inserted */
+.highlight .go { color: #717171 } /* Generic.Output */
+.highlight .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.highlight .gs { font-weight: bold } /* Generic.Strong */
+.highlight .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.highlight .gt { color: #0044DD } /* Generic.Traceback */
+.highlight .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.highlight .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.highlight .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.highlight .kp { color: #008000 } /* Keyword.Pseudo */
+.highlight .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.highlight .kt { color: #B00040 } /* Keyword.Type */
+.highlight .m { color: #666666 } /* Literal.Number */
+.highlight .s { color: #BA2121 } /* Literal.String */
+.highlight .na { color: #687822 } /* Name.Attribute */
+.highlight .nb { color: #008000 } /* Name.Builtin */
+.highlight .nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.highlight .no { color: #880000 } /* Name.Constant */
+.highlight .nd { color: #AA22FF } /* Name.Decorator */
+.highlight .ni { color: #717171; font-weight: bold } /* Name.Entity */
+.highlight .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
+.highlight .nf { color: #0000FF } /* Name.Function */
+.highlight .nl { color: #767600 } /* Name.Label */
+.highlight .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.highlight .nt { color: #008000; font-weight: bold } /* Name.Tag */
+.highlight .nv { color: #19177C } /* Name.Variable */
+.highlight .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.highlight .w { color: #bbbbbb } /* Text.Whitespace */
+.highlight .mb { color: #666666 } /* Literal.Number.Bin */
+.highlight .mf { color: #666666 } /* Literal.Number.Float */
+.highlight .mh { color: #666666 } /* Literal.Number.Hex */
+.highlight .mi { color: #666666 } /* Literal.Number.Integer */
+.highlight .mo { color: #666666 } /* Literal.Number.Oct */
+.highlight .sa { color: #BA2121 } /* Literal.String.Affix */
+.highlight .sb { color: #BA2121 } /* Literal.String.Backtick */
+.highlight .sc { color: #BA2121 } /* Literal.String.Char */
+.highlight .dl { color: #BA2121 } /* Literal.String.Delimiter */
+.highlight .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.highlight .s2 { color: #BA2121 } /* Literal.String.Double */
+.highlight .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
+.highlight .sh { color: #BA2121 } /* Literal.String.Heredoc */
+.highlight .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
+.highlight .sx { color: #008000 } /* Literal.String.Other */
+.highlight .sr { color: #A45A77 } /* Literal.String.Regex */
+.highlight .s1 { color: #BA2121 } /* Literal.String.Single */
+.highlight .ss { color: #19177C } /* Literal.String.Symbol */
+.highlight .bp { color: #008000 } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #0000FF } /* Name.Function.Magic */
+.highlight .vc { color: #19177C } /* Name.Variable.Class */
+.highlight .vg { color: #19177C } /* Name.Variable.Global */
+.highlight .vi { color: #19177C } /* Name.Variable.Instance */
+.highlight .vm { color: #19177C } /* Name.Variable.Magic */
+.highlight .il { color: #666666 } /* Literal.Number.Integer.Long */
+        .centered-line {
+            width: 50%;
+            margin-left: 5px; /* Adjust this value to control the left alignment */
+            border-top: 1px solid #000; /* You can adjust the color and style as needed */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #B2BEB5;
+            padding: 8px;
+            text-align: left;
+        }
+        </style>
+    </head>
+    <body>
+    <h1>Summary</h1>
+    <table border="1" style="width: fit-content; table-layout: fixed;">
+<tr><th style="width: 150px;"></th><th style="width: 200px; font-weight: bold;">Mock Model 1</th><th style="width: 200px; font-weight: bold;">Mock Model 2</th><th style="width: 200px; font-weight: bold;">Mock Model 1.5</th></tr>
+<tr><td style="font-weight: bold;">Time</td><td>0.00 seconds</td><td>0.00 seconds (<span style="color: green;">0.0% decrease</span>)</td><td>0.00 seconds (<span style="color: red;">40.0% increase</span>)</td></tr>
+<tr><td style="font-weight: bold;">Response Characters</td><td>2,761</td><td>1,847 (<span style="color: black;">-33.1% decrease</span>)</td><td>2,761 (<span style="color: black;">0.0% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Response Characters per second</td><td>2316094668.8</td><td>1549375897.6 (<span style="color: red;">-33.1% decrease</span>)</td><td>1654353334.9 (<span style="color: red;">-28.6% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Num code blocks</td><td>6</td><td>5 (<span style="color: black;">-16.7% decrease</span>)</td><td>6 (<span style="color: black;">0.0% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Percent Passing Code blocks</td><td>83.3%</td><td>100.0% (<span style="color: green;">20.0% increase</span>)</td><td>83.3% (<span style="color: red;">0.0% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Cost</td><td>$1.00000</td><td>$0.00000 (<span style="color: green;">-100.0% decrease</span>)</td><td>$0.20000 (<span style="color: green;">-80.0% decrease</span>)</td></tr>
+</table>
+    <br>
+    <div class="centered-line"></div>
+    <h1>Use Cases</h1>
+    <table border="1" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th>Mock Model 1</th><th>Mock Model 2</th><th>Mock Model 1.5</th>
+            </tr>
+        </thead>
+        <tr><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,019</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>1424665258.7</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.50000</code></td></tr>
+</table>
+<br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a function that returns the sum of two numbers.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure! Here's a simple function in Python that takes two numbers as input and returns their sum:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sum_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
+</code></pre></div>
+
+<p>You can use this function by calling it and passing in two numbers as arguments. For example:</p>
+<div class="highlight"><pre><span></span><code>result = sum_numbers(5, 3)
+print(result)  # Output: 8
+</code></pre></div>
+
+<p>Feel free to modify the function to suit your needs. Let me know if you have any other questions!</p><br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>sum_numbers</code> function:</p>
+<div class="highlight"><pre><span></span><code>assert sum_numbers(5, 3) == 8
+assert sum_numbers(-10, 10) == 0
+</code></pre></div>
+
+<p>These assertions will check if the function returns the expected results. If the function is working correctly, these assertions will not raise any exceptions. However, if the function is incorrect and does not return the expected results, an <code>AssertionError</code> will be raised.</p>
+<p>You can add these assertions to your code to ensure that the <code>sum_numbers</code> function is working as expected. Let me know if you need any further assistance!</p><br><div class="centered-line"></div><br></td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>625</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>873813333.3</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
+</table>
+<br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a function that returns the sum of two numbers.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure, here is a simple function in Python that does that:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sum_two_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
+</code></pre></div>
+
+<p>You can use this function like this:</p>
+<div class="highlight"><pre><span></span><code>result = sum_two_numbers(5, 3)
+print(result)  # Outputs: 8
+</code></pre></div><br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure, here are a few assertion statements that can be used to validate the function:</p>
+<div class="highlight"><pre><span></span><code>assert sum_two_numbers(5, 3) == 8, &quot;Should be 8&quot;
+assert sum_two_numbers(-1, 1) == 0, &quot;Should be 0&quot;
+assert sum_two_numbers(0, 0) == 0, &quot;Should be 0&quot;
+assert sum_two_numbers(100, 200) == 300, &quot;Should be 300&quot;
+</code></pre></div>
+
+<p>These statements will throw an error if the function does not return the expected result.</p><br><div class="centered-line"></div><br></td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,019</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>712332629.3</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.10000</code></td></tr>
+</table>
+<br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a function that returns the sum of two numbers.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure! Here's a simple function in Python that takes two numbers as input and returns their sum:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sum_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
+</code></pre></div>
+
+<p>You can use this function by calling it and passing in two numbers as arguments. For example:</p>
+<div class="highlight"><pre><span></span><code>result = sum_numbers(5, 3)
+print(result)  # Output: 8
+</code></pre></div>
+
+<p>Feel free to modify the function to suit your needs. Let me know if you have any other questions!</p><br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>sum_numbers</code> function:</p>
+<div class="highlight"><pre><span></span><code>assert sum_numbers(5, 3) == 8
+assert sum_numbers(-10, 10) == 0
+</code></pre></div>
+
+<p>These assertions will check if the function returns the expected results. If the function is working correctly, these assertions will not raise any exceptions. However, if the function is incorrect and does not return the expected results, an <code>AssertionError</code> will be raised.</p>
+<p>You can add these assertions to your code to ensure that the <code>sum_numbers</code> function is working as expected. Let me know if you need any further assistance!</p><br><div class="centered-line"></div><br></td></tr><tr><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,742</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>3653238784.0</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>66.7%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.50000</code></td></tr>
+</table>
+<br><div class="centered-line"></div><br><h3>Prompt</h3><br>Generate a function that masks email addresses.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure! Here's a Python function that masks email addresses by replacing characters in the local part of the email with asterisks (*) while keeping the domain part intact:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
+    <span class="n">local_part</span><span class="p">,</span> <span class="n">domain</span> <span class="o">=</span> <span class="n">email</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span>
+    <span class="n">masked_local_part</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_part</span><span class="p">)</span>
+    <span class="n">masked_email</span> <span class="o">=</span> <span class="n">masked_local_part</span> <span class="o">+</span> <span class="s1">&#39;@&#39;</span> <span class="o">+</span> <span class="n">domain</span>
+    <span class="k">return</span> <span class="n">masked_email</span>
+</code></pre></div>
+
+<p>Example usage:</p>
+<div class="highlight"><pre><span></span><code><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;example@example.com&#39;</span>
+<span class="n">masked_email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">masked_email</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="k">Output</span><span class="err">:</span><span class="w"> </span><span class="o">********</span><span class="nv">@example</span><span class="p">.</span><span class="n">com</span>
+</code></pre></div>
+
+<p>This function splits the email address into the local part and the domain part using the <code>split()</code> method. Then, it creates a masked local part by replacing each character with an asterisk using the * operator and the <code>len()</code> function. Finally, it concatenates the masked local part with the domain part and returns the masked email address.</p><br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a couple assertion statements validating the function.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>mask_email()</code> function:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test case 1: Masking email with alphanumeric local part</span>
+<span class="n">email1</span> <span class="o">=</span> <span class="s1">&#39;example123@example.com&#39;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email1</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;***********@example.com&#39;</span>
+
+<span class="c1"># Test case 2: Masking email with special characters in local part</span>
+<span class="n">email2</span> <span class="o">=</span> <span class="s1">&#39;ex@mple@example.com&#39;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email2</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;******@example.com&#39;</span>
+</code></pre></div>
+
+<p>In the first test case, the email address <code>'example123@example.com'</code> has an alphanumeric local part. The expected masked email address is <code>'***********@example.com'</code>.</p>
+<p>In the second test case, the email address <code>'ex@mple@example.com'</code> has special characters in the local part. The expected masked email address is <code>'******@example.com'</code>.</p>
+<p>If both assertions pass without throwing any exceptions, it means that the <code>mask_email()</code> function is working correctly for these test cases.</p><br><div class="centered-line"></div><br></td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,222</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>2562719744.0</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>2</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
+</table>
+<br><div class="centered-line"></div><br><h3>Prompt</h3><br>Generate a function that masks email addresses.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure, here's a simple Python function that masks email addresses:</p>
+<div class="highlight"><pre><span></span><code>def mask_email(email):
+    try:
+        email_parts = email.split(&#39;@&#39;)
+        # Mask first part
+        masked_part = email_parts[0][0] + &quot;****&quot; + email_parts[0][-1]
+        # Combine masked part and domain
+        masked_email = masked_part + &#39;@&#39; + email_parts[1]
+        return masked_email
+    except Exception as e:
+        print(&quot;An error occurred: &quot;, e)
+        return None
+</code></pre></div>
+
+<p>This function masks all characters of the local part of the email (before the '@') except for the first and last characters with asterisks ('*'). Please note that this is a simple masking function and may not be suitable for all use cases.</p><br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a couple assertion statements validating the function.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure, here are a few assertion statements to validate the function:</p>
+<div class="highlight"><pre><span></span><code><span class="n">assert</span><span class="w"> </span><span class="n">mask_email</span><span class="p">(</span><span class="ss">&quot;john.doe@example.com&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">&quot;j****e@example.com&quot;</span>
+<span class="n">assert</span><span class="w"> </span><span class="n">mask_email</span><span class="p">(</span><span class="ss">&quot;jane_doe@example.com&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">&quot;j****e@example.com&quot;</span>
+<span class="n">assert</span><span class="w"> </span><span class="n">mask_email</span><span class="p">(</span><span class="ss">&quot;test@test.com&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">&quot;t****t@test.com&quot;</span>
+</code></pre></div>
+
+<p>These assertions check that the function correctly masks the email addresses. If the function is working correctly, these assertions will pass silently. If the function is not working correctly, one or more of these assertions will raise an <code>AssertionError</code>.</p><br><div class="centered-line"></div><br></td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,742</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>7306477568.0</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>66.7%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.10000</code></td></tr>
+</table>
+<br><div class="centered-line"></div><br><h3>Prompt</h3><br>Generate a function that masks email addresses.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Sure! Here's a Python function that masks email addresses by replacing characters in the local part of the email with asterisks (*) while keeping the domain part intact:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
+    <span class="n">local_part</span><span class="p">,</span> <span class="n">domain</span> <span class="o">=</span> <span class="n">email</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span>
+    <span class="n">masked_local_part</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_part</span><span class="p">)</span>
+    <span class="n">masked_email</span> <span class="o">=</span> <span class="n">masked_local_part</span> <span class="o">+</span> <span class="s1">&#39;@&#39;</span> <span class="o">+</span> <span class="n">domain</span>
+    <span class="k">return</span> <span class="n">masked_email</span>
+</code></pre></div>
+
+<p>Example usage:</p>
+<div class="highlight"><pre><span></span><code><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;example@example.com&#39;</span>
+<span class="n">masked_email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">masked_email</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="k">Output</span><span class="err">:</span><span class="w"> </span><span class="o">********</span><span class="nv">@example</span><span class="p">.</span><span class="n">com</span>
+</code></pre></div>
+
+<p>This function splits the email address into the local part and the domain part using the <code>split()</code> method. Then, it creates a masked local part by replacing each character with an asterisk using the * operator and the <code>len()</code> function. Finally, it concatenates the masked local part with the domain part and returns the masked email address.</p><br><div class="centered-line"></div><br><h3>Prompt</h3><br>Write a couple assertion statements validating the function.<br><br><div class="centered-line"></div><br><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>mask_email()</code> function:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test case 1: Masking email with alphanumeric local part</span>
+<span class="n">email1</span> <span class="o">=</span> <span class="s1">&#39;example123@example.com&#39;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email1</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;***********@example.com&#39;</span>
+
+<span class="c1"># Test case 2: Masking email with special characters in local part</span>
+<span class="n">email2</span> <span class="o">=</span> <span class="s1">&#39;ex@mple@example.com&#39;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email2</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;******@example.com&#39;</span>
+</code></pre></div>
+
+<p>In the first test case, the email address <code>'example123@example.com'</code> has an alphanumeric local part. The expected masked email address is <code>'***********@example.com'</code>.</p>
+<p>In the second test case, the email address <code>'ex@mple@example.com'</code> has special characters in the local part. The expected masked email address is <code>'******@example.com'</code>.</p>
+<p>If both assertions pass without throwing any exceptions, it means that the <code>mask_email()</code> function is working correctly for these test cases.</p><br><div class="centered-line"></div><br></td></tr>
+    </table>
+    </body>
+    </html>
