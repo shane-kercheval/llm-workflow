@@ -415,6 +415,7 @@ def _comparison_summary_html(comparison: CompareModels) -> str:
     html += '</table>'
     return html
 
+
 def _comparison_to_html(comparison: CompareModels) -> str:
     """
     Returns an HTML string that summarizes the each scenario across all models defined in the
