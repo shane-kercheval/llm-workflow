@@ -119,8 +119,8 @@ def test_history_tracker():  # noqa
     )
     tracker(record_f)
     assert tracker.history() == [record_a, record_b, record_c, record_d, record_e, record_f]
-    assert tracker.history(Record) == [record_a, record_b, record_c, record_d, record_e, record_f]  # noqa
-    assert tracker.history(TokenUsageRecord) == [record_b, record_c, record_d, record_e, record_f]  # noqa
+    assert tracker.history(Record) == [record_a, record_b, record_c, record_d, record_e, record_f]
+    assert tracker.history(TokenUsageRecord) == [record_b, record_c, record_d, record_e, record_f]
     assert tracker.history(ExchangeRecord) == [record_e, record_f]
     assert tracker.history(EmbeddingRecord) == []
     assert tracker.sum(name='does_not_exist') == 0

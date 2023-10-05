@@ -5,6 +5,9 @@ import inspect
 import datetime
 import hashlib
 from collections.abc import Callable
+import re
+import io
+import contextlib
 import tenacity
 
 
@@ -89,3 +92,42 @@ def has_method(obj: object, method_name: str) -> bool:
     if inspect.isfunction(obj):
         return False
     return hasattr(obj, method_name) and callable(getattr(obj.__class__, method_name, None))
+
+
+def extract_code_blocks(markdown_text: str) -> list[str]:
+    """Extract code blocks from Markdown text (e.g. llm response)."""
+    pattern = re.compile(r'```(?:python)?\s*(.*?)```', re.DOTALL)
+    matches = pattern.findall(markdown_text)
+    return [match.strip() for match in matches]
+
+
+def execute_code_blocks(
+        code_blocks: list[str],
+        local_namespace: dict | None = None) -> list[Exception]:
+    """
+    Execute code blocks and determine if the code blocks run successfully.
+
+    For code blocks that run successfully, None is returned. For code blocks that fail, the
+    exception is returned.
+
+    Args:
+        code_blocks:
+            A list of code blocks to be executed.
+        local_namespace:
+            A dictionary containing the local namespace for the code blocks. If None, an empty
+            dictionary is used. This is useful for passing in variables that are needed for the
+            code blocks to run. This is also useful if you need to keep track of the state of the
+            local namespace after the code blocks have been executed (e.g. if you want to use
+            variables or functions that were created during a previous call to this function.)
+    """
+    block_results = []
+    if local_namespace is None:
+        local_namespace = {}
+    for code in code_blocks:
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                _ = exec(code, {}, local_namespace)
+            block_results.append(None)
+        except Exception as e:
+            block_results.append(e)
+    return block_results

@@ -1,0 +1,62 @@
+prompts:
+  - Write a function that returns the sum of two numbers.
+  - Write a few assertion statements validating the function.
+
+model_1:
+  description: Mock ChatGTP 3.5 Turbo
+  responses:
+    - |
+      Sure! Here's a simple function in Python that takes two numbers as input and returns their sum:
+
+      ```python
+      def sum_numbers(num1, num2):
+          return num1 + num2
+      ```
+
+      You can use this function by calling it and passing in two numbers as arguments. For example:
+
+      ```
+      result = sum_numbers(5, 3)
+      print(result)  # Output: 8
+      ```
+
+      Feel free to modify the function to suit your needs. Let me know if you have any other questions!
+    - |
+      Certainly! Here are a couple of assertion statements to validate the `sum_numbers` function:
+
+      ```
+      assert sum_numbers(5, 3) == 8
+      assert sum_numbers(-10, 10) == 0
+      ```
+
+      These assertions will check if the function returns the expected results. If the function is working correctly, these assertions will not raise any exceptions. However, if the function is incorrect and does not return the expected results, an `AssertionError` will be raised.
+
+      You can add these assertions to your code to ensure that the `sum_numbers` function is working as expected. Let me know if you need any further assistance!
+model_2:
+  description: Mock ChatGTP 4
+  responses:
+    - |
+      Sure, here is a simple function in Python that does that:
+
+      ```python
+      def sum_two_numbers(num1, num2):
+          return num1 + num2
+      ```
+
+      You can use this function like this:
+
+      ```
+      result = sum_two_numbers(5, 3)
+      print(result)  # Outputs: 8
+      ```
+    - |
+      Sure, here are a few assertion statements that can be used to validate the function:
+
+      ```
+      assert sum_two_numbers(5, 3) == 8, "Should be 8"
+      assert sum_two_numbers(-1, 1) == 0, "Should be 0"
+      assert sum_two_numbers(0, 0) == 0, "Should be 0"
+      assert sum_two_numbers(100, 200) == 300, "Should be 300"
+      ```
+
+      These statements will throw an error if the function does not return the expected result.

@@ -4,10 +4,13 @@ import re
 import pytest
 import requests
 import os
+from textwrap import dedent
 from llm_workflow.exceptions import RequestError
 from llm_workflow.base import Document
 from llm_workflow.internal_utilities import (
     create_hash,
+    execute_code_blocks,
+    extract_code_blocks,
     has_method,
     has_property,
     retry_handler,
@@ -470,3 +473,138 @@ def test__get_stack_overflow_answers_404():  # noqa
      if os.getenv('STACK_OVERFLOW_KEY', None):
         with pytest.raises(RequestError):
             _ = _get_stack_overflow_answers(question_id='asdf')
+
+def test__extract_code_blocks__conversation_sum(conversation_sum):  # noqa
+    extracted_code_blocks = extract_code_blocks(conversation_sum['model_1']['responses'][0])
+    assert len(extracted_code_blocks) == 2
+    assert extracted_code_blocks[0] == dedent("""
+        def sum_numbers(num1, num2):
+            return num1 + num2
+        """).strip()
+    assert extracted_code_blocks[1] == dedent("""
+        result = sum_numbers(5, 3)
+        print(result)  # Output: 8
+        """).strip()
+
+    extracted_code_blocks = extract_code_blocks(conversation_sum['model_1']['responses'][1])
+    assert len(extracted_code_blocks) == 1
+    assert extracted_code_blocks[0] == dedent("""
+        assert sum_numbers(5, 3) == 8
+        assert sum_numbers(-10, 10) == 0
+        """).strip()
+
+    extracted_code_blocks = extract_code_blocks(conversation_sum['model_2']['responses'][0])
+    assert len(extracted_code_blocks) == 2
+    assert extracted_code_blocks[0] == dedent("""
+        def sum_two_numbers(num1, num2):
+            return num1 + num2
+        """).strip()
+    assert extracted_code_blocks[1] == dedent("""
+        result = sum_two_numbers(5, 3)
+        print(result)  # Outputs: 8
+        """).strip()
+
+    extracted_code_blocks = extract_code_blocks(conversation_sum['model_2']['responses'][1])
+    assert len(extracted_code_blocks) == 1
+    assert extracted_code_blocks[0] == dedent("""
+        assert sum_two_numbers(5, 3) == 8, "Should be 8"
+        assert sum_two_numbers(-1, 1) == 0, "Should be 0"
+        assert sum_two_numbers(0, 0) == 0, "Should be 0"
+        assert sum_two_numbers(100, 200) == 300, "Should be 300"
+        """).strip()
+
+def test__extract_code_blocks__conversation_mask_emails(conversation_mask_email):  # noqa
+    extracted_code_blocks = extract_code_blocks(conversation_mask_email['model_1']['responses'][0])
+    assert len(extracted_code_blocks) == 2
+    assert extracted_code_blocks[0] == dedent("""
+        def mask_email(email):
+            local_part, domain = email.split('@')
+            masked_local_part = '*' * len(local_part)
+            masked_email = masked_local_part + '@' + domain
+            return masked_email
+        """).strip()
+    assert extracted_code_blocks[1] == dedent("""
+        email = 'example@example.com'
+        masked_email = mask_email(email)
+        print(masked_email)  # Output: ********@example.com
+        """).strip()
+
+    extracted_code_blocks = extract_code_blocks(conversation_mask_email['model_1']['responses'][1])
+    assert len(extracted_code_blocks) == 1
+    assert extracted_code_blocks[0] == dedent("""
+        # Test case 1: Masking email with alphanumeric local part
+        email1 = 'example123@example.com'
+        assert mask_email(email1) == '***********@example.com'
+
+        # Test case 2: Masking email with special characters in local part
+        email2 = 'ex@mple@example.com'
+        assert mask_email(email2) == '******@example.com'
+        """).strip()
+
+    extracted_code_blocks = extract_code_blocks(conversation_mask_email['model_2']['responses'][0])
+    assert len(extracted_code_blocks) == 1
+    assert extracted_code_blocks[0] == dedent("""
+        def mask_email(email):
+            try:
+                email_parts = email.split('@')
+                # Mask first part
+                masked_part = email_parts[0][0] + "****" + email_parts[0][-1]
+                # Combine masked part and domain
+                masked_email = masked_part + '@' + email_parts[1]
+                return masked_email
+            except Exception as e:
+                print("An error occurred: ", e)
+                return None
+        """).strip()
+
+    extracted_code_blocks = extract_code_blocks(conversation_mask_email['model_2']['responses'][1])
+    assert len(extracted_code_blocks) == 1
+    assert extracted_code_blocks[0] == dedent("""
+        assert mask_email("john.doe@example.com") == "j****e@example.com"
+        assert mask_email("jane_doe@example.com") == "j****e@example.com"
+        assert mask_email("test@test.com") == "t****t@test.com"
+        """).strip()
+
+def test__execute_code_blocks__without_local_namespace(conversation_sum):  # noqa
+    code_blocks = extract_code_blocks(conversation_sum['model_1']['responses'][0])
+    code_blocks.append('assert sum_numbers(5, 3) == 8')
+    code_blocks.append('assert sum_numbers(5, 3) != 8')
+    assert len(code_blocks) == 4
+    results = execute_code_blocks(code_blocks)
+    assert len(results) == 4
+    assert results[0] is None
+    assert results[1] is None
+    assert results[2] is None
+    assert isinstance(results[3], AssertionError)
+
+    # this will fail because local_namespace was not reused so sum_numbers is not defined during
+    # a subsequent call to execute_code_blocks
+    results = execute_code_blocks(code_blocks=['assert sum_numbers(5, 3) == 8'])
+    assert len(results) == 1
+    assert isinstance(results[0], NameError)
+    assert str(results[0]) == "name 'sum_numbers' is not defined"
+
+def test__execute_code_blocks__with_local_namespace(conversation_sum):  # noqa
+    code_blocks = extract_code_blocks(conversation_sum['model_1']['responses'][0])
+    code_blocks.append('assert sum_numbers(5, 3) == 8')
+    code_blocks.append('assert sum_numbers(5, 3) != 8')
+    assert len(code_blocks) == 4
+    local_namespace = {}
+    results = execute_code_blocks(code_blocks, local_namespace)
+    assert len(results) == 4
+    assert results[0] is None
+    assert results[1] is None
+    assert results[2] is None
+    assert isinstance(results[3], AssertionError)
+    assert 'sum_numbers' in local_namespace
+    assert 'result' in local_namespace
+
+    # this will NOT fail because local_namespace was reused so the state is carried over to
+    # a subsequent call to execute_code_blocks
+    results = execute_code_blocks(
+        code_blocks=['assert sum_numbers(5, 3) == 8', 'assert sum_numbers(5, 3) != 8'],
+        local_namespace=local_namespace,
+    )
+    assert len(results) == 2
+    assert results[0] is None
+    assert isinstance(results[1], AssertionError)

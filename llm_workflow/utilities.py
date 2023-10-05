@@ -4,8 +4,8 @@ from datetime import datetime
 from itertools import islice
 import os
 import re
-from pydantic import BaseModel, Field, validator
 import requests
+from pydantic import BaseModel, Field, validator
 
 from llm_workflow.base import Document, RecordKeeper, SearchRecord
 from llm_workflow.exceptions import RequestError

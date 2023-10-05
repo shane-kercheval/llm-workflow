@@ -1,0 +1,76 @@
+prompts:
+  - Generate a function that masks email addresses.
+  - Write a couple assertion statements validating the function.
+
+model_1:
+  description: Mock ChatGTP 3.5 Turbo
+  responses:
+    - |
+      Sure! Here's a Python function that masks email addresses by replacing characters in the local part of the email with asterisks (*) while keeping the domain part intact:
+
+      ```python
+      def mask_email(email):
+          local_part, domain = email.split('@')
+          masked_local_part = '*' * len(local_part)
+          masked_email = masked_local_part + '@' + domain
+          return masked_email
+      ```
+
+      Example usage:
+
+      ```
+      email = 'example@example.com'
+      masked_email = mask_email(email)
+      print(masked_email)  # Output: ********@example.com
+      ```
+
+      This function splits the email address into the local part and the domain part using the `split()` method. Then, it creates a masked local part by replacing each character with an asterisk using the * operator and the `len()` function. Finally, it concatenates the masked local part with the domain part and returns the masked email address.
+    - |
+      Certainly! Here are a couple of assertion statements to validate the `mask_email()` function:
+
+      ```python
+      # Test case 1: Masking email with alphanumeric local part
+      email1 = 'example123@example.com'
+      assert mask_email(email1) == '***********@example.com'
+
+      # Test case 2: Masking email with special characters in local part
+      email2 = 'ex@mple@example.com'
+      assert mask_email(email2) == '******@example.com'
+      ```
+
+      In the first test case, the email address `'example123@example.com'` has an alphanumeric local part. The expected masked email address is `'***********@example.com'`.
+
+      In the second test case, the email address `'ex@mple@example.com'` has special characters in the local part. The expected masked email address is `'******@example.com'`.
+
+      If both assertions pass without throwing any exceptions, it means that the `mask_email()` function is working correctly for these test cases.
+model_2:
+  description: Mock ChatGTP 4
+  responses:
+    - |
+      Sure, here's a simple Python function that masks email addresses:
+
+      ```
+      def mask_email(email):
+          try:
+              email_parts = email.split('@')
+              # Mask first part
+              masked_part = email_parts[0][0] + "****" + email_parts[0][-1]
+              # Combine masked part and domain
+              masked_email = masked_part + '@' + email_parts[1]
+              return masked_email
+          except Exception as e:
+              print("An error occurred: ", e)
+              return None
+      ```
+
+      This function masks all characters of the local part of the email (before the '@') except for the first and last characters with asterisks ('*'). Please note that this is a simple masking function and may not be suitable for all use cases.
+    - |
+      Sure, here are a few assertion statements to validate the function:
+
+      ```
+      assert mask_email("john.doe@example.com") == "j****e@example.com"
+      assert mask_email("jane_doe@example.com") == "j****e@example.com"
+      assert mask_email("test@test.com") == "t****t@test.com"
+      ```
+
+      These assertions check that the function correctly masks the email addresses. If the function is working correctly, these assertions will pass silently. If the function is not working correctly, one or more of these assertions will raise an `AssertionError`.

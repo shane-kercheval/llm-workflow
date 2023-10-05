@@ -99,8 +99,7 @@ class HuggingFaceEndpointChat(PromptModel):
             endpoint_url: str,
             system_message: str = 'You are a helpful assistant. Be concise and clear but give good explainations.',  # noqa
             message_formatter: Callable[[str, list[ExchangeRecord]], str] = llama_message_formatter,  # noqa
-            # temperature: float = 0,
-            # max_tokens: int = 2000,
+            temperature: float = 0.001,
             calculate_num_tokens: Callable[[str], int] | None = None,
             memory_manager: Callable[[list[ExchangeRecord]], list[str]] | None = None,
             max_streaming_tokens: int = 10,
@@ -136,6 +135,7 @@ class HuggingFaceEndpointChat(PromptModel):
         self.endpoint_url = endpoint_url
         self._system_message = system_message
         self._message_formatter = message_formatter
+        self.temperature = temperature
         self._calculate_tokens = calculate_num_tokens
         self._memory_manager = memory_manager
         self._max_streaming_tokens = max_streaming_tokens
@@ -166,6 +166,7 @@ class HuggingFaceEndpointChat(PromptModel):
                     "inputs": messages + response,
                     "parameters": {
                         'max_new_tokens': self._max_streaming_tokens,  # controls chunk/delta size
+                        'temperature': self.temperature,
                 },
             })
             if isinstance(output, dict) and 'error' in output:
