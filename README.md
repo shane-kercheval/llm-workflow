@@ -380,6 +380,54 @@ Embedding Tokens: 15,604
 
 Additionally, we can track the history of the workflow with the `workflow.history()` property. See [this notebook](https://github.com/shane-kercheval/llm-workflow/tree/main/examples/workflows.ipynb) for an example.
 
+## Compare LLM Models
+
+You can compare the responses of various LLM models with the following code (see `examples/compare.ipynb` for the output, which is in html.)
+
+```python
+import os
+from llm_workflow.openai import OpenAIChat
+from llm_workflow.hugging_face import HuggingFaceEndpointChat
+from llm_workflow.compare import CompareModels, ModelDefinition
+
+# Comparing GPT-3.5 Turbo, GPT-4, and Mistral 7B
+model_definitions = [
+    ModelDefinition(
+        create=lambda: OpenAIChat(model_name='gpt-3.5-turbo'),
+        description='GPT-3.5 Turbo',
+    ),
+    ModelDefinition(
+        create=lambda: OpenAIChat(model_name='gpt-4'),
+        description='GPT-4',
+    ),
+    ModelDefinition(
+        create=lambda: HuggingFaceEndpointChat(
+            endpoint_url=os.getenv('HUGGING_FACE_ENDPOINT_MISTRAL_7B'),
+        ),
+        description='Mistral 7B (HF Endpoint)',
+    ),
+]
+prompts = [
+    # scenario 1
+    [
+        # initial prompt
+        "Write a function that returns the sum of two numbers.",
+        # follow up question
+        "Write a few assertion statements validating the function.",
+    ],
+    # scenario 2
+    [
+        # initial prompt
+        "Generate a function that masks email addresses.",
+        # follow up question
+        "Write a few assertion statements validating the function.",
+    ]
+]
+comparison = CompareModels(prompts=prompts, model_definitions=model_definitions)
+comparison()
+display(HTML(comparison.to_html()))
+```
+
 ---
 
 ## Notebooks
@@ -410,6 +458,7 @@ Additionally, we can track the history of the workflow with the `workflow.histor
 ## Contributing
 
 Contributions to this project are welcome. Please follow the coding standards, add appropriate unit tests, and ensure that all linting and tests pass before submitting pull requests.
+
 
 ### Coding Standards
 
