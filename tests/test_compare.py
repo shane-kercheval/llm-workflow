@@ -2,7 +2,7 @@
 
 import os
 from textwrap import dedent
-from llm_workflow.compare import Scenario, ModelCreation, CompareModels
+from llm_workflow.compare import Scenario, ModelDefinition, CompareModels
 
 
 class MockChatModel:
@@ -232,7 +232,7 @@ def test_compare_models(conversation_sum, conversation_mask_email):  # noqa
     scenario_2_model_2_responses = conversation_mask_email['model_2']['responses']
 
     model_creations = [
-        ModelCreation(
+        ModelDefinition(
             create=lambda: \
                 MockChatModel(
                     prompts=all_prompts,
@@ -241,7 +241,7 @@ def test_compare_models(conversation_sum, conversation_mask_email):  # noqa
                 ),
             description='Mock Model 1',
         ),
-        ModelCreation(
+        ModelDefinition(
             create=lambda: \
                 MockChatModel(
                     prompts=all_prompts,
@@ -262,7 +262,7 @@ def test_compare_models(conversation_sum, conversation_mask_email):  # noqa
 
     comparison = CompareModels(
         prompts=[scenario_1_prompts, scenario_2_prompts],
-        model_creations=model_creations,
+        model_definitions=model_creations,
     )
     comparison()
     assert 'Mock Model 1' in str(comparison)
@@ -300,7 +300,7 @@ def test_compare_models__3_models(conversation_sum, conversation_mask_email):  #
     scenario_2_model_2_responses = conversation_mask_email['model_2']['responses']
 
     model_creations = [
-        ModelCreation(
+        ModelDefinition(
             create=lambda: \
                 MockChatModel(
                     prompts=all_prompts,
@@ -309,7 +309,7 @@ def test_compare_models__3_models(conversation_sum, conversation_mask_email):  #
                 ),
             description='Mock Model 1',
         ),
-        ModelCreation(
+        ModelDefinition(
             create=lambda: \
                 MockChatModel(
                     prompts=all_prompts,
@@ -319,7 +319,7 @@ def test_compare_models__3_models(conversation_sum, conversation_mask_email):  #
             description='Mock Model 2',
         ),
         # same as model 1
-        ModelCreation(
+        ModelDefinition(
             create=lambda: \
                 MockChatModel(
                     prompts=all_prompts,
@@ -344,7 +344,7 @@ def test_compare_models__3_models(conversation_sum, conversation_mask_email):  #
 
     comparison = CompareModels(
         prompts=[scenario_1_prompts, scenario_2_prompts],
-        model_creations=model_creations,
+        model_definitions=model_creations,
     )
     comparison()
     assert 'Mock Model 1' in str(comparison)

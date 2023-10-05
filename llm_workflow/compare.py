@@ -12,29 +12,6 @@ from pygments.formatters import HtmlFormatter
 Model = TypeVar('Model', bound=Callable[[str], str])
 
 
-class ModelCreation(BaseModel):
-    """
-    Used to define the requirements for comparing models.
-
-    create:
-        A callable function with no arguments that creates a model (e.g. probably just a lambda).
-        The intent is that the model is created each time a trial is run so that the model is
-        in a fresh state.
-
-        The model needs to be a callable that accepts a single string argument and returns a string
-        response.
-        NOTE: The model must track its memory and state internally so that it responses
-        accordingly to each successive prompt.
-        The model may optionally have a cost attribute that represents the cost of running
-        the model (e.g. cost per tokens).
-    description:
-        A description of the scenario (e.g. the name of the model).
-    """
-
-    create: Callable[[], Model]
-    description: str
-
-
 class Scenario:
     """
     Represents a scenario where a model is provided one or more prompts. The model responds, and
@@ -96,9 +73,9 @@ class Scenario:
         results = f"{self.description}\n"
         results += f"Time: {self.duration_seconds:.2f} seconds\n"
         results += f"Response Characters: {self.num_response_chars:,}\n"
-        results += f"Response Characters per second: {self.response_chars_per_second:.1f}\n"
-        results += f"Num code blocks: {self.num_code_blocks}\n"
-        results += f"Percent Passing Code blocks: {self.percent_successful_code_blocks:.1%}\n"
+        results += f"Response Characters Per Pecond: {self.response_chars_per_second:.1f}\n"
+        results += f"Num Code Blocks: {self.num_code_blocks}\n"
+        results += f"Percent Passing Code Blocks: {self.percent_successful_code_blocks:.1%}\n"
         if self.cost:
             results += f"Cost: ${self.cost:.5f}\n"
         return results
@@ -152,6 +129,30 @@ class Scenario:
         return None
 
 
+class ModelDefinition(BaseModel):
+    """
+    Used to define the model creation function and description for a single model when comparing
+    models.
+
+    create:
+        A callable function with no arguments that creates a model (e.g. probably just a lambda).
+        The intent is that the model is created each time a trial is run so that the model is
+        in a fresh state.
+
+        The model needs to be a callable that accepts a single string argument and returns a string
+        response.
+        NOTE: The model must track its memory and state internally so that it responses
+        accordingly to each successive prompt.
+        The model may optionally have a cost attribute that represents the cost of running
+        the model (e.g. cost per tokens).
+    description:
+        A description of the scenario (e.g. the name of the model).
+    """
+
+    create: Callable[[], Model]
+    description: str
+
+
 class CompareModels:
     """
     One requirements is that the underlying models need to maintain message history. They are
@@ -162,7 +163,7 @@ class CompareModels:
     def __init__(
             self,
             prompts: list[list[str]],
-            model_creations: list[ModelCreation],
+            model_definitions: list[ModelDefinition],
         ):
         """
         Args:
@@ -170,26 +171,26 @@ class CompareModels:
                 A nested list of prompts. Each outer list represents a single scenario.
                 Each inner list is of prompts. The prompts represent consecutive turns/requests in
                 a conversation (e.g. a follow up question or request).
-            model_creations:
-                A list of "model creations". Each model creation is a ModelCreation object that
+            model_definitions:
+                A list of "model definitions". Each item is a ModelDefinition object that
                 defines the requirements for comparing models.
                 NOTE: The model must track its memory and state internally so that it responses
                 accordingly to each successive prompt.
         """
         # ensure no model descriptions are duplicated
-        model_descriptions = [model_creation.description for model_creation in model_creations]
+        model_descriptions = [model_creation.description for model_creation in model_definitions]
         if len(model_descriptions) != len(set(model_descriptions)):
             raise ValueError("Model descriptions must be unique.")
 
         self.prompts = prompts
-        self._model_creations = model_creations
+        self._model_definitions = model_definitions
 
     def __call__(self):
         """Runs the prompts/scenarios."""
         self.scenarios = []
         for prompts in self.prompts:
             runs = []
-            for create_model in self._model_creations:
+            for create_model in self._model_definitions:
                 scenario = Scenario(
                     model=create_model.create(),  # create a new model for each run
                     description=create_model.description,
@@ -211,12 +212,12 @@ class CompareModels:
     @property
     def num_models(self) -> int:
         """The number of models (used for each scenario)."""
-        return len(self._model_creations)
+        return len(self._model_definitions)
 
     @property
     def model_descriptions(self) -> str:
         """A list of model descriptions."""
-        return [model.description for model in self._model_creations]
+        return [model.description for model in self._model_definitions]
 
     def _sum_property(self, model_description: str, property_name: str) -> float:
         """
@@ -224,7 +225,7 @@ class CompareModels:
 
         Args:
             model_description:
-                The description of the model. (The value passed to the ModelCreation object.)
+                The description of the model. (The value passed to the ModelDefinition object.)
             property_name:
                 The name of the property to sum.
         """
@@ -293,9 +294,9 @@ class CompareModels:
             results += f"{model_description}\n"
             results += f"Time: {self.duration_seconds(model_description):.2f} seconds\n"
             results += f"Response Characters: {self.num_response_chars(model_description):,}\n"
-            results += f"Response Characters per second: {self.response_chars_per_second(model_description):.1f}\n"  # noqa
-            results += f"Num code blocks: {self.num_code_blocks(model_description)}\n"
-            results += f"Percent Passing Code blocks: {self.percent_successful_code_blocks(model_description):.1%}\n"  # noqa
+            results += f"Response Characters Per Pecond: {self.response_chars_per_second(model_description):.1f}\n"  # noqa
+            results += f"Num Code Blocks: {self.num_code_blocks(model_description)}\n"
+            results += f"Percent Passing Code Blocks: {self.percent_successful_code_blocks(model_description):.1%}\n"  # noqa
             if self.cost(model_description):
                 results += f"Cost: ${self.cost(model_description):.5f}\n"
             results += "\n"
