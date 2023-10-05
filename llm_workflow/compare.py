@@ -319,7 +319,7 @@ class CompareModels:
         return html
 
 
-def _scenario_to_html(scenario: Scenario) -> str:
+def _scenario_summary_to_html(scenario: Scenario) -> str:
     results = '<table style="border-collapse: collapse; width: auto;">\n'
     results += f'<tr><td style="border: none;">Time</td><td style="border: none;"><code>{scenario.duration_seconds:.2f} seconds</code></td></tr>\n'  # noqa
     results += f'<tr><td style="border: none;">Characters</td><td style="border: none;"><code>{scenario.num_response_chars:,}</code></td></tr>\n'  # noqa
@@ -415,7 +415,6 @@ def _comparison_summary_html(comparison: CompareModels) -> str:
     html += '</table>'
     return html
 
-
 def _comparison_to_html(comparison: CompareModels) -> str:
     """
     Returns an HTML string that summarizes the each scenario across all models defined in the
@@ -436,28 +435,53 @@ def _comparison_to_html(comparison: CompareModels) -> str:
     css = HtmlFormatter().get_style_defs('.highlight')
 
     horizontal_line = '<div class="centered-line"></div>'
+
     # Generate rows and columns
     column_names_html = ''
-    for trial in scenarios[0]:
-        column_names_html += f'<th>{trial.description}</th>'
+    for scenario in scenarios[0]:
+        column_names_html += f'<th>{scenario.description}</th>'
 
     summary_html = _comparison_summary_html(comparison)
-    use_case_row_html = ''
-    for row in scenarios:
-        columns_html = ''
-        for trial in row:
-            columns_html += f'<td style="vertical-align: top;">{_scenario_to_html(trial)}<br>'
-            columns_html += f'{horizontal_line}<br>'
-            for prompt, response in zip(trial.prompts, trial.responses):
-                columns_html += '<h3>Prompt</h3><br>'
-                columns_html += f'{prompt}<br><br>'
-                columns_html += f'{horizontal_line}<br>'
-                columns_html += '<h3>Response</h3><br>'
-                html = md.convert(response)
-                columns_html += f'{html}<br>'
-                columns_html += f'{horizontal_line}<br>'
-            columns_html += '</td>'
-        use_case_row_html += f'<tr>{columns_html}</tr>'
+    scenario_tables = ''
+    for model_scenarios in scenarios:
+        # create row for summaries
+        rows_html = '<tr>'
+        for scenario in model_scenarios:
+            rows_html += f'<td style="vertical-align: top;">{_scenario_summary_to_html(scenario)}</td>'  # noqa
+        rows_html += '</tr>'
+
+        num_prompts = len(comparison.prompts)
+        for i in range(num_prompts):
+            # create a row for the prompt
+            rows_html += '<tr>'
+            for scenario in model_scenarios:
+                rows_html += '<td style="vertical-align: top;">'
+                rows_html += '<h3>Prompt</h3><br>'
+                rows_html += f'{scenario.prompts[i]}<br><br>'
+                rows_html += '</td>'
+            rows_html += '</tr>'
+            # create a row for the response
+            rows_html += '<tr>'
+            for scenario in model_scenarios:
+                rows_html += '<td style="vertical-align: top;">'
+                rows_html += '<h3>Response</h3><br>'
+                html = md.convert(scenario.responses[i])
+                rows_html += f'{html}</td>'
+            rows_html += '</tr>'
+
+        scenario_tables += textwrap.dedent(f"""
+            <table border="1" style="width:100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        {column_names_html}
+                    </tr>
+                </thead>
+                {rows_html}
+            </table>
+            <br>
+            {horizontal_line}
+            <br>
+            """)
 
     # Wrap the HTML and CSS in a complete HTML document with a table
     return textwrap.dedent(f'''
@@ -471,7 +495,7 @@ def _comparison_to_html(comparison: CompareModels) -> str:
         {css}
         .centered-line {{
             width: 50%;
-            margin-left: 5px; /* Adjust this value to control the left alignment */
+            margin: auto; /* Adjust this value to control the left alignment */
             border-top: 1px solid #000; /* You can adjust the color and style as needed */
         }}
         table {{
@@ -488,17 +512,9 @@ def _comparison_to_html(comparison: CompareModels) -> str:
     <body>
     <h1>Summary</h1>
     {summary_html}
-    <br>
-    {horizontal_line}
+    <br><br>
     <h1>Use Cases</h1>
-    <table border="1" style="width:100%; border-collapse: collapse;">
-        <thead>
-            <tr>
-                {column_names_html}
-            </tr>
-        </thead>
-        {use_case_row_html}
-    </table>
+    {scenario_tables}
     </body>
     </html>
     ''')
