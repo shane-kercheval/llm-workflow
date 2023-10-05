@@ -3,6 +3,7 @@ from collections.abc import Callable
 import pytest
 import requests
 import random
+import yaml
 from faker import Faker
 import numpy as np
 from dotenv import load_dotenv
@@ -174,3 +175,14 @@ def is_endpoint_available(url: str) -> bool:
         print('Endpoint Not available.')
 
     return available
+
+
+@pytest.fixture()
+def conversation_mask_email():  # noqa
+    with open('tests/test_data/compare/mock_conversation__mask_email_function.yml') as f:
+        return yaml.safe_load(f)
+
+@pytest.fixture()
+def conversation_sum():  # noqa
+    with open('tests/test_data/compare/mock_conversation__sum_function.yml') as f:
+        return yaml.safe_load(f)
