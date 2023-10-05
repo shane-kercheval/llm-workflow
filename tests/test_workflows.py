@@ -257,7 +257,7 @@ def test_workflow_with_MockChat_tokens_costs():  # noqa
     assert chat.history()[1].total_tokens == len(second_prompt) + len(second_response)
     assert chat.history()[1].cost == chat.history()[1].total_tokens * cost_per_token
 
-    assert chat.prompt_tokens == chat.history()[0].prompt_tokens + chat.history()[1].prompt_tokens  # noqa
+    assert chat.prompt_tokens == chat.history()[0].prompt_tokens + chat.history()[1].prompt_tokens
     assert chat.response_tokens == chat.history()[0].response_tokens + chat.history()[1].response_tokens  # noqa
     assert chat.total_tokens == chat.history()[0].total_tokens + chat.history()[1].total_tokens
     assert chat.cost == chat.history()[0].cost + chat.history()[1].cost
@@ -423,7 +423,7 @@ def test_workflow_with_MockChat_MockEmbeddings():  # noqa
     assert chat.history()[1].total_tokens == len(second_prompt) + len(second_response)
     assert chat.history()[1].cost == chat.history()[1].total_tokens * cost_per_token_chat
 
-    assert chat.prompt_tokens == chat.history()[0].prompt_tokens + chat.history()[1].prompt_tokens  # noqa
+    assert chat.prompt_tokens == chat.history()[0].prompt_tokens + chat.history()[1].prompt_tokens
     assert chat.response_tokens == chat.history()[0].response_tokens + chat.history()[1].response_tokens  # noqa
     assert chat.total_tokens == chat.history()[0].total_tokens + chat.history()[1].total_tokens
     assert chat.cost == chat.history()[0].cost + chat.history()[1].cost
