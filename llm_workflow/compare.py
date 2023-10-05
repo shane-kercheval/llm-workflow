@@ -495,17 +495,19 @@ def _comparison_to_html(comparison: CompareModels) -> str:
         {css}
         .centered-line {{
             width: 50%;
-            margin: auto; /* Adjust this value to control the left alignment */
-            border-top: 1px solid #000; /* You can adjust the color and style as needed */
+            margin: auto;
+            border-top: 1px solid #000;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;  # ensures equal column widths
         }}
         th, td {{
             border: 1px solid #B2BEB5;
             padding: 8px;
             text-align: left;
+            word-wrap: break-word;  # ensures content doesn't overflow cell
         }}
         </style>
     </head>
