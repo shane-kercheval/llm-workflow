@@ -8,6 +8,7 @@ markdown
 markdownify
 numpy
 pydantic
+pygments
 pypirc
 pytest
 python-dotenv
