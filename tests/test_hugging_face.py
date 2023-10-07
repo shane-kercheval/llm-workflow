@@ -1,6 +1,5 @@
 """Test HuggingFace models and helpers."""
 
-import os
 from unittest.mock import patch
 from llm_workflow.hugging_face import (
     HuggingFaceEndpointChat,
@@ -55,16 +54,15 @@ def test_llama_message_formatter():  # noqa
     )
     assert messages == ['[INST] <<SYS>> system <</SYS>> [/INST]\n', *expected_value, '[INST] e [/INST]\n']  # noqa
 
-def test_HuggingFaceEndpointChat__no_token_calculator():  # noqa
-    endpoint = os.getenv('HUGGING_FACE_ENDPOINT_LLAMA2_7B')
-    if is_endpoint_available(endpoint):
+def test_HuggingFaceEndpointChat__no_token_calculator(hugging_face_endpoint):  # noqa
+    if is_endpoint_available(hugging_face_endpoint):
         callback_response = ''
         def streaming_callback(record: StreamingEvent) -> None:
             nonlocal callback_response
             callback_response += record.response
 
         model = HuggingFaceEndpointChat(
-            endpoint_url=endpoint,
+            endpoint_url=hugging_face_endpoint,
             streaming_callback=streaming_callback,
         )
         assert len(model.history()) == 0
@@ -89,7 +87,7 @@ def test_HuggingFaceEndpointChat__no_token_calculator():  # noqa
         history = model.history()
         assert history[0].prompt == prompt
         assert history[0].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
@@ -105,9 +103,8 @@ def test_HuggingFaceEndpointChat__no_token_calculator():  # noqa
         assert model.sum(name='cost') == 0
         assert model.sum(name='total_tokens') == 0
 
-def test_HuggingFaceEndpointChat():  # noqa
-    endpoint = os.getenv('HUGGING_FACE_ENDPOINT_LLAMA2_7B')
-    if is_endpoint_available(endpoint):
+def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
+    if is_endpoint_available(hugging_face_endpoint):
         tokenizer = get_tokenizer('meta-llama/Llama-2-7b-chat-hf')
 
         def calc_num_tokens(value: str):  # noqa
@@ -119,7 +116,7 @@ def test_HuggingFaceEndpointChat():  # noqa
             callback_response += record.response
 
         model = HuggingFaceEndpointChat(
-            endpoint_url=endpoint,
+            endpoint_url=hugging_face_endpoint,
             calculate_num_tokens=calc_num_tokens,
             streaming_callback=streaming_callback,
         )
@@ -145,7 +142,7 @@ def test_HuggingFaceEndpointChat():  # noqa
         history = model.history()
         assert history[0].prompt == prompt
         assert history[0].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
@@ -181,7 +178,7 @@ def test_HuggingFaceEndpointChat():  # noqa
         assert history[0].response == previous_response
         assert history[1].prompt == prompt
         assert history[1].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
@@ -197,9 +194,8 @@ def test_HuggingFaceEndpointChat():  # noqa
         assert model.sum(name='cost') == 0
         assert model.sum(name='total_tokens') == message.total_tokens + previous_tokens
 
-def test_HuggingFaceEndpointChat__timeout():  # noqa
-    endpoint = os.getenv('HUGGING_FACE_ENDPOINT_LLAMA2_7B')
-    if is_endpoint_available(endpoint):
+def test_HuggingFaceEndpointChat__timeout(hugging_face_endpoint):  # noqa
+    if is_endpoint_available(hugging_face_endpoint):
         callback_response = ''
         callback_count = 0
         def streaming_callback(record: StreamingEvent) -> None:
@@ -208,7 +204,7 @@ def test_HuggingFaceEndpointChat__timeout():  # noqa
             callback_count += 1
 
         model = HuggingFaceEndpointChat(
-            endpoint_url=endpoint,
+            endpoint_url=hugging_face_endpoint,
             streaming_callback=streaming_callback,
             max_streaming_tokens=30,
             # 1 second is only enough time for one call to the model and associated callback
@@ -239,7 +235,7 @@ def test_HuggingFaceEndpointChat__timeout():  # noqa
         history = model.history()
         assert history[0].prompt == prompt
         assert history[0].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
@@ -247,9 +243,8 @@ def test_HuggingFaceEndpointChat__timeout():  # noqa
         assert prompt in message.metadata['messages']
         assert message.cost is None
 
-def test_HuggingFaceEndpointChat__memory_manager__1000_tokens():  # noqa
-    endpoint = os.getenv('HUGGING_FACE_ENDPOINT_LLAMA2_7B')
-    if is_endpoint_available(endpoint):
+def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpoint):  # noqa
+    if is_endpoint_available(hugging_face_endpoint):
         tokenizer = get_tokenizer('meta-llama/Llama-2-7b-chat-hf')
 
         def calc_num_tokens(value: str):  # noqa
@@ -266,7 +261,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens():  # noqa
             message_formatter=llama_message_formatter,
         )
         model = HuggingFaceEndpointChat(
-            endpoint_url=endpoint,
+            endpoint_url=hugging_face_endpoint,
             calculate_num_tokens=calc_num_tokens,
             streaming_callback=streaming_callback,
             message_formatter=llama_message_formatter,
@@ -294,7 +289,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens():  # noqa
         history = model.history()
         assert history[0].prompt == prompt
         assert history[0].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
@@ -330,7 +325,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens():  # noqa
         assert history[0].response == previous_response
         assert history[1].prompt == prompt
         assert history[1].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
@@ -346,9 +341,8 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens():  # noqa
         assert model.sum(name='cost') == 0
         assert model.sum(name='total_tokens') == message.total_tokens + previous_tokens
 
-def test_HuggingFaceEndpointChat__memory_manager__20_tokens():  # noqa
-    endpoint = os.getenv('HUGGING_FACE_ENDPOINT_LLAMA2_7B')
-    if is_endpoint_available(endpoint):
+def test_HuggingFaceEndpointChat__memory_manager__20_tokens(hugging_face_endpoint):  # noqa
+    if is_endpoint_available(hugging_face_endpoint):
         tokenizer = get_tokenizer('meta-llama/Llama-2-7b-chat-hf')
 
         def calc_num_tokens(value: str):  # noqa
@@ -365,7 +359,7 @@ def test_HuggingFaceEndpointChat__memory_manager__20_tokens():  # noqa
             message_formatter=llama_message_formatter,
         )
         model = HuggingFaceEndpointChat(
-            endpoint_url=endpoint,
+            endpoint_url=hugging_face_endpoint,
             calculate_num_tokens=calc_num_tokens,
             streaming_callback=streaming_callback,
             message_formatter=llama_message_formatter,
@@ -393,7 +387,7 @@ def test_HuggingFaceEndpointChat__memory_manager__20_tokens():  # noqa
         history = model.history()
         assert history[0].prompt == prompt
         assert history[0].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
@@ -431,7 +425,7 @@ def test_HuggingFaceEndpointChat__memory_manager__20_tokens():  # noqa
         assert history[0].response == previous_response
         assert history[1].prompt == prompt
         assert history[1].response == response
-        assert message.metadata['endpoint_url'] == endpoint
+        assert message.metadata['endpoint_url'] == hugging_face_endpoint
         assert '[INST]' in message.metadata['messages']
         assert '[/INST]' in message.metadata['messages']
         assert '<<SYS>>' in message.metadata['messages']
