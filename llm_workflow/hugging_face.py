@@ -13,7 +13,25 @@ def query_hugging_face_endpoint(
         endpoint_url: str,
         payload: dict,
         ) -> dict:
-    """TODO."""
+    """
+    Queries a Hugging Face endpoint and returns the response. Expects the environment variable
+    HUGGING_FACE_API_KEY to be set. See https://ui.endpoints.huggingface.co/ for more info.
+
+    Args:
+        endpoint_url:
+            The URL of the endpoint. Generated when you deploy a model to Hugging Face Endpoints.
+        payload:
+            The payload to send to the endpoint.
+
+            For example:
+
+            ```
+            "parameters": {
+                'max_new_tokens': self._max_streaming_tokens,  # controls chunk/delta size
+                'temperature': self.temperature,
+            }
+            ```
+    """
     headers = {
         "Authorization": f"Bearer {os.getenv('HUGGING_FACE_API_KEY')}",
         "Content-Type": "application/json",
@@ -28,7 +46,14 @@ def query_hugging_face_endpoint(
 
 
 def get_tokenizer(model_path: str) -> PreTrainedTokenizer:
-    """TODO."""
+    """
+    Returns a tokenizer for the given model path. Expects the environment variable
+    HUGGING_FACE_API_KEY to be set. See https://ui.endpoints.huggingface.co/ for more info.
+
+    Args:
+        model_path:
+            The path to the model. For example: 'meta-llama/Llama-2-7b-chat-hf'
+    """
     return AutoTokenizer.from_pretrained(
         model_path,
         token=os.getenv('HUGGING_FACE_API_KEY'),
@@ -40,7 +65,19 @@ def num_tokens(
         tokenizer: PreTrainedTokenizer,
         device: str = 'cpu',
         ) -> int:
-    """TODO."""
+    """
+    Returns the number of tokens in the given string based on the `tokenizer`.
+
+    Args:
+        value:
+            The string from which to calculate the number of tokens.
+        tokenizer:
+            The tokenizer to use to calculate the number of tokens. For example, the tokenizer
+            returned by `get_tokenizer`.
+        device:
+            The device to use for the calculation. Valid values are 'cpu' and 'cuda'. Defaults to
+            'cpu'.
+    """
     tokens = tokenizer([value], return_tensors="pt").to(device)
     return len(tokens['input_ids'][0])
 
@@ -85,13 +122,12 @@ class HuggingFaceEndpointChat(PromptModel):
     A wrapper around a model being served via Hugging Face Endpoints. More info here:
     https://ui.endpoints.huggingface.co/.
 
-    NOTE: this class expects the environment variable HUGGING_FACE_API_KEY to be set.
+    NOTE: This class expects the environment variable HUGGING_FACE_API_KEY to be set.
 
-    TODO: Update
     This class manages the messages that are sent to the model and, by default, sends all
     messages previously sent to the model in subsequent requests. Therefore, each object created
     represents a single conversation. The number of messages sent to the model can be controlled
-    via `memory_manager`.
+    via `memory_manager` (e.g. `MessageFormatterMaxTokensMemoryManager`).
     """
 
     def __init__(
@@ -102,34 +138,35 @@ class HuggingFaceEndpointChat(PromptModel):
             temperature: float = 0.001,
             calculate_num_tokens: Callable[[str], int] | None = None,
             memory_manager: Callable[[list[ExchangeRecord]], list[str]] | None = None,
-            max_streaming_tokens: int = 10,
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
+            max_streaming_tokens: int = 10,
             timeout: int = 30,
             ) -> None:
         """
-        TODO: Update
         Args:
-            model_name:
-                e.g. 'gpt-3.5-turbo'
-            temperature:
-                "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will
-                make the output more random, while lower values like 0.2 will make it more focused
-                and deterministic."
-            max_tokens:
-                The maximum number of tokens to generate in the chat completion.
-                The total length of input tokens and generated tokens is limited by the model's
-                context length.
+            endpoint_url:
+                The URL of the endpoint. Generated when you deploy a model to Hugging Face
+                Endpoints.
             system_message:
                 The content of the message associated with the "system" `role`.
+            message_formatter:
+                A callable that takes the system message, the history of messages, and the prompt
+                and returns a list of messages to send to the model.
+            temperature:
+                The temperature to use when generating text. Defaults to 0.001 (must be > 0).
+            calculate_num_tokens:
+                A callable that takes a string and returns the number of tokens in the string.
+            memory_manager:
+                A callable that takes the history of messages and returns a list of messages to
+                send to the model.
             streaming_callback:
                 Callable that takes a StreamingEvent object, which contains the streamed token (in
                 the `response` property and perhaps other metadata.
-            memory_manager:
-                MemoryManager object (or callable that takes a list of ExchangeRecord objects and
-                returns a list of ExchangeRecord objects. The underlying logic should return the
-                messages sent to the OpenAI model.
+            max_streaming_tokens:
+                The maximum number of tokens to return from the model in a single request when
+                streaming.
             timeout:
-                timeout value passed to OpenAI model.
+                The maximum number of seconds to wait for a response from the model.
         """
         super().__init__()
         self.endpoint_url = endpoint_url
@@ -143,9 +180,8 @@ class HuggingFaceEndpointChat(PromptModel):
         self._timeout = timeout
         self._previous_messages = None
 
-
     def _run(self, prompt: str) -> ExchangeRecord:
-        """TODO: Update."""
+        """Runs the model based on the prompt and returns the response."""
         # build up messages from history
         history = self.history().copy()
         if self._memory_manager:
@@ -167,8 +203,9 @@ class HuggingFaceEndpointChat(PromptModel):
                     "parameters": {
                         'max_new_tokens': self._max_streaming_tokens,  # controls chunk/delta size
                         'temperature': self.temperature,
+                    },
                 },
-            })
+            )
             if isinstance(output, dict) and 'error' in output:
                 response += f"\n\n{output['error']}"
                 break
