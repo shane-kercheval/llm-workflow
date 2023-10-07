@@ -2,6 +2,8 @@
 
 import os
 from textwrap import dedent
+
+import pytest
 from llm_workflow.compare import Scenario, ModelDefinition, CompareModels
 
 
@@ -15,7 +17,8 @@ class MockChatModel:
         response, the second prompt with the second response, etc.).
         """
         assert len(prompts) == len(responses)
-        self.cost = cost
+        if cost is not None:
+            self.cost = cost
         self.responses = dict(zip(prompts, responses))
         assert len(self.responses) == len(responses)
 
@@ -221,6 +224,19 @@ def test_scenario__conversation_mask_email__model_2__without_costs(conversation_
     assert scenario.percent_successful_code_blocks == 1
     assert scenario.cost is None
 
+def test_scenario__cannot_rerun(conversation_sum):  # noqa
+    prompts = conversation_sum['prompts']
+    model_1_responses = conversation_sum['model_1']['responses']
+    model = MockChatModel(
+        prompts=prompts,
+        responses=model_1_responses,
+        cost=0.5,
+    )
+    scenario = Scenario(model=model, description="Mock Chat Model")
+    scenario(prompts)
+    with pytest.raises(ValueError, match="Trial has already been run."):
+        scenario(prompts)
+
 def test_compare_models(conversation_sum, conversation_mask_email):  # noqa
     scenario_1_prompts = conversation_sum['prompts']
     scenario_2_prompts = conversation_mask_email['prompts']
@@ -378,3 +394,28 @@ def test_compare_models__3_models(conversation_sum, conversation_mask_email):  #
     assert comparison.to_html()
     comparison.to_html('tests/test_data/compare/compare_models__3_models.html')
     assert os.path.exists('tests/test_data/compare/compare_models__3_models.html')
+
+def test_compare_unique_descriptions(conversation_sum):  # noqa
+    prompts = conversation_sum['prompts']
+    model_definitions = [
+        ModelDefinition(
+            create=lambda: \
+                MockChatModel(
+                    prompts=prompts,
+                    responses=["a", "b"],
+                    cost=0.5,
+                ),
+            description='Mock Model 1',
+        ),
+        ModelDefinition(
+            create=lambda: \
+                MockChatModel(
+                    prompts=prompts,
+                    responses=["c", "d"],
+                    cost=None,
+                ),
+            description='Mock Model 1',
+        ),
+    ]
+    with pytest.raises(ValueError, match="Model descriptions must be unique."):
+        _ = CompareModels(prompts=prompts, model_definitions=model_definitions)

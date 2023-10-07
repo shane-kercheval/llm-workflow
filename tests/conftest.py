@@ -1,4 +1,5 @@
 """Configures the pytests."""
+import os
 from collections.abc import Callable
 import pytest
 import requests
@@ -160,7 +161,6 @@ def fake_hugging_face_response(fake_hugging_face_response_json):  # noqa
     return response
 
 
-
 def is_endpoint_available(url: str) -> bool:
     """Returns True if the endpoint is available."""
     available = False
@@ -186,3 +186,8 @@ def conversation_mask_email():  # noqa
 def conversation_sum():  # noqa
     with open('tests/test_data/compare/mock_conversation__sum_function.yml') as f:
         return yaml.safe_load(f)
+
+
+@pytest.fixture()
+def hugging_face_endpoint() -> str:  # noqa
+    return os.getenv('HUGGING_FACE_ENDPOINT_UNIT_TESTS')
