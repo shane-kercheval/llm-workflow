@@ -12,9 +12,8 @@ from typing import Any
 from collections.abc import Callable
 import functools
 
-from llm_workflow.base import Record, _has_history
+from llm_workflow.base import Record, _has_history, ExchangeRecord, LanguageModel
 from llm_workflow.internal_utilities import has_method, retry_handler
-from llm_workflow.models import ExchangeRecord, LanguageModel
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 
 

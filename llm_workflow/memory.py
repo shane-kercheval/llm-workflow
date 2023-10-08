@@ -18,7 +18,7 @@ to the memory_manager variable when initializing the model object.
 """
 
 from typing import Callable
-from llm_workflow.models import MemoryManager, ExchangeRecord
+from llm_workflow.base import MemoryManager, ExchangeRecord
 
 
 class LastNExchangesManager(MemoryManager):

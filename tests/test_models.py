@@ -1,7 +1,8 @@
 """tests llm_workflow/models.py."""
 import pytest
-from llm_workflow.base import Document, Record
-from llm_workflow.models import (
+from llm_workflow.base import (
+    Document,
+    Record,
     EmbeddingModel,
     EmbeddingRecord,
     ExchangeRecord,

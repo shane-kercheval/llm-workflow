@@ -1,6 +1,7 @@
 """Utilities to compare the responses and performance of different models."""
 
-from typing import Callable, TypeVar
+from typing import TypeVar
+from collections.abc import Callable
 import time
 import textwrap
 from pydantic import BaseModel

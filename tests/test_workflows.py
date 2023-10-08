@@ -1,7 +1,15 @@
 """Tests workflow functionality."""
 from time import sleep
-from llm_workflow.base import Document, Record, Workflow, Value
-from llm_workflow.models import EmbeddingRecord, LanguageModel, ExchangeRecord, TokenUsageRecord
+from llm_workflow.base import (
+    EmbeddingRecord,
+    ExchangeRecord,
+    Document,
+    LanguageModel,
+    Record,
+    TokenUsageRecord,
+    Workflow,
+    Value,
+)
 from llm_workflow.internal_utilities import has_property
 from tests.conftest import MockChat, MockRandomEmbeddings
 

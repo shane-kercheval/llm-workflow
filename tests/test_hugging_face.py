@@ -8,8 +8,8 @@ from llm_workflow.hugging_face import (
     num_tokens,
     query_hugging_face_endpoint,
 )
+from llm_workflow.base import ExchangeRecord, StreamingEvent
 from llm_workflow.memory import MessageFormatterMaxTokensMemoryManager
-from llm_workflow.models import ExchangeRecord, StreamingEvent
 from tests.conftest import is_endpoint_available
 
 

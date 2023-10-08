@@ -2,8 +2,7 @@
 
 from time import sleep
 from llm_workflow.agents import OpenAIFunctionAgent, Tool, tool
-from llm_workflow.base import Record
-from llm_workflow.models import ExchangeRecord
+from llm_workflow.base import Record, ExchangeRecord
 
 
 def test_OpenAIToolAgent__Tool_class():  # noqa

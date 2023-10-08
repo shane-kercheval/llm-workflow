@@ -9,10 +9,13 @@ from faker import Faker
 import numpy as np
 from dotenv import load_dotenv
 from unittest.mock import MagicMock
-
-
-from llm_workflow.base import Document
-from llm_workflow.models import EmbeddingModel, EmbeddingRecord, ExchangeRecord, PromptModel
+from llm_workflow.base import (
+    Document,
+    EmbeddingModel,
+    EmbeddingRecord,
+    ExchangeRecord,
+    PromptModel,
+)
 
 load_dotenv()
 

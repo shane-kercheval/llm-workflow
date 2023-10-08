@@ -2,8 +2,7 @@
 
 import openai
 import pytest
-from llm_workflow.base import Document
-from llm_workflow.models import EmbeddingRecord, ExchangeRecord, StreamingEvent
+from llm_workflow.base import Document, EmbeddingRecord, ExchangeRecord, StreamingEvent
 from llm_workflow.openai import OpenAIChat, OpenAIEmbedding, num_tokens, num_tokens_from_messages
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 

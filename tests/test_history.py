@@ -1,7 +1,12 @@
 """Test history."""
 import pytest
-from llm_workflow.base import RecordKeeper, Record
-from llm_workflow.models import EmbeddingRecord, ExchangeRecord, TokenUsageRecord
+from llm_workflow.base import (
+    RecordKeeper,
+    Record,
+    EmbeddingRecord,
+    ExchangeRecord,
+    TokenUsageRecord,
+)
 
 
 class Mocktask(RecordKeeper):

@@ -1,8 +1,15 @@
 """Test Session class."""
 from time import sleep
 import pytest
-from llm_workflow.base import Workflow, Record, Session
-from llm_workflow.models import EmbeddingRecord, LanguageModel, ExchangeRecord, TokenUsageRecord
+from llm_workflow.base import (
+    EmbeddingRecord,
+    ExchangeRecord,
+    LanguageModel,
+    Record,
+    Session,
+    TokenUsageRecord,
+    Workflow,
+)
 
 
 class MockHistoricalUsageRecords(LanguageModel):

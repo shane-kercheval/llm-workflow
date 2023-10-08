@@ -5,7 +5,7 @@ from llm_workflow.memory import (
     MessageFormatterMaxTokensMemoryManager,
     TokenWindowManager,
 )
-from llm_workflow.models import ExchangeRecord
+from llm_workflow.base import ExchangeRecord
 from llm_workflow.openai import OpenAIChat
 from llm_workflow.hugging_face import llama_message_formatter
 from llm_workflow.resources import MODEL_COST_PER_TOKEN

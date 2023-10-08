@@ -1,7 +1,6 @@
 """Helper methods for notebooks."""
 from IPython.display import display, Markdown
-from llm_workflow.base import RecordKeeper
-from llm_workflow.models import ExchangeRecord, EmbeddingRecord
+from llm_workflow.base import RecordKeeper, ExchangeRecord, EmbeddingRecord
 
 
 def usage_string(

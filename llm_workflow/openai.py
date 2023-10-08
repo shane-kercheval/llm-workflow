@@ -5,9 +5,9 @@ from typing import Callable
 from functools import cache
 import tiktoken
 from tiktoken import Encoding
-from llm_workflow.base import Document
 from llm_workflow.internal_utilities import retry_handler
-from llm_workflow.models import (
+from llm_workflow.base import (
+    Document,
     EmbeddingModel,
     EmbeddingRecord,
     ExchangeRecord,

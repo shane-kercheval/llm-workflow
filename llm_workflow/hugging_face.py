@@ -6,7 +6,7 @@ import requests
 from typing import Callable
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from llm_workflow.internal_utilities import retry_handler
-from llm_workflow.models import ExchangeRecord, PromptModel, StreamingEvent
+from llm_workflow.base import ExchangeRecord, PromptModel, StreamingEvent
 
 
 def query_hugging_face_endpoint(
