@@ -70,9 +70,10 @@ class RecordKeeper(ABC):
         """
         history = self._get_history() or []  # ensure empty list is returned instead of None
         if not types:
-            return history
+            return sorted(history, key=lambda x: x.timestamp)
         if isinstance(types, type | tuple):
-            return [x for x in history if isinstance(x, types)]
+            history = [x for x in history if isinstance(x, types)]
+            return sorted(history, key=lambda x: x.timestamp)
 
         raise TypeError(f"types not a valid type ({type(types)}) ")
 
@@ -189,7 +190,7 @@ class Workflow(RecordKeeper):
                 if record.uuid not in unique_uuids:
                     unique_records.append(record)
                     unique_uuids |= {record.uuid}
-        return sorted(unique_records, key=lambda x: x.timestamp)
+        return unique_records
 
 
 class Session(RecordKeeper):
@@ -467,3 +468,49 @@ class PromptModel(LanguageModel):
         returned by this object's `history` property.
         """
         return self.sum(name='response_tokens')
+
+
+class ChatModel(PromptModel):
+    """
+    The ChatModel class represents an LLM where each exchange (from the end-user's perspective)
+    is a string input (user's prompt) and string output (model's response). Unlike the PromptModel,
+    it provides additional methods to separate the chat history (prompt/response) from the
+    additional history that may be added (e.g. additional models for MemoryManager (e.g.
+    summarization/embeddings)).
+
+    Any MemoryManager object that is passed in that has a `history()` function will be included in
+    the `history()` of the underlying ChatModel object.
+    """
+
+    def __init__(self, memory_manager: MemoryManager | None = None):
+        super().__init__()
+        self._history: list[ExchangeRecord] = []
+        self._chat_history: list[ExchangeRecord] = []
+        self._memory_manager = memory_manager
+
+    def __call__(self, prompt: str) -> str:
+        """
+        Executes a chat request based on the given prompt and returns a response.
+
+        Args:
+            prompt: The prompt or question to be sent to the model.
+        """
+        response = self._run(prompt)
+        # the reason to separate out the history from chat_history is so that subclasses can add
+        # additional history (via _append_history, from e.g. memory_manager / summarization)
+        # without it being included in the chat history.
+        self._chat_history.append(response)
+        self._history.append(response)
+        return response.response
+
+    @property
+    def chat_history(self) -> list[ExchangeRecord]:
+        """TODO."""
+        return self._chat_history
+
+    def _get_history(self) -> list[ExchangeRecord]:
+        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
+        history = self._history.copy()
+        if self._memory_manager and _has_history(self._memory_manager):
+            history += self._memory_manager.history()
+        return history

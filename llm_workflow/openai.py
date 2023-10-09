@@ -7,12 +7,12 @@ import tiktoken
 from tiktoken import Encoding
 from llm_workflow.internal_utilities import retry_handler
 from llm_workflow.base import (
+    ChatModel,
     Document,
     EmbeddingModel,
     EmbeddingRecord,
     ExchangeRecord,
     MemoryManager,
-    PromptModel,
     StreamingEvent,
 )
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
@@ -118,7 +118,7 @@ class OpenAIEmbedding(EmbeddingModel):
         return MODEL_COST_PER_TOKEN[self.model_name]
 
 
-class OpenAIChat(PromptModel):
+class OpenAIChat(ChatModel):
     """
     A wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
     endpoint). More info here: https://platform.openai.com/docs/api-reference/chat.
@@ -165,13 +165,12 @@ class OpenAIChat(PromptModel):
             timeout:
                 timeout value passed to OpenAI model.
         """
-        super().__init__()
+        super().__init__(memory_manager=memory_manager)
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.streaming_callback = streaming_callback
         self.timeout = timeout
-        self._memory_manager = memory_manager
         self._system_message = {'role': 'system', 'content': system_message}
         self._previous_messages = None
 
@@ -188,13 +187,13 @@ class OpenAIChat(PromptModel):
         """
         import openai
         # build up messages from history
-        history = self.history().copy()
+        chat_history = self.chat_history.copy()
         if self._memory_manager:
-            history = self._memory_manager(history=history)
+            chat_history = self._memory_manager(history=chat_history)
 
         # initial message; always keep system message regardless of memory_manager
         messages = [self._system_message]
-        for message in history:
+        for message in chat_history:
             messages += [
                 {'role': 'user', 'content': message.prompt},
                 {'role': 'assistant', 'content': message.response},
@@ -250,7 +249,10 @@ class OpenAIChat(PromptModel):
         return ExchangeRecord(
             prompt=prompt,
             response=response_message,
-            metadata={'model_name': self.model_name},
+            metadata={
+                'model_name': self.model_name,
+                'messages': messages,
+            },
             prompt_tokens=prompt_tokens,
             response_tokens=completion_tokens,
             total_tokens=total_tokens,

@@ -7,7 +7,6 @@ from llm_workflow.openai import OpenAIChat, OpenAIEmbedding, num_tokens, num_tok
 from llm_workflow.resources import MODEL_COST_PER_TOKEN
 
 
-
 def test_num_tokens():  # noqa
     assert num_tokens(model_name='gpt-3.5-turbo', value="This should be six tokens.") == 6
 
@@ -62,7 +61,6 @@ def test_num_tokens_from_messages():  # noqa
     with pytest.raises(NotImplementedError):
         num_tokens_from_messages(model_name='<not implemented>', messages=example_messages)
 
-
 def test_OpenAIChat():  # noqa
     model_name = 'gpt-3.5-turbo'
     model = OpenAIChat(model_name=model_name)
@@ -94,7 +92,8 @@ def test_OpenAIChat():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
+    assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -140,7 +139,8 @@ def test_OpenAIChat():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
+    assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -194,7 +194,8 @@ def test_OpenAIChat_streaming():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
+    assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -242,7 +243,8 @@ def test_OpenAIChat_streaming():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
+    assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -290,7 +292,6 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     assert non_streaming_chat.response_tokens == streaming_chat.response_tokens
     assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
     assert non_streaming_chat.cost == streaming_chat.cost
-
 
 def test_OpenAIEmbedding():  # noqa
     model = OpenAIEmbedding(model_name='text-embedding-ada-002')

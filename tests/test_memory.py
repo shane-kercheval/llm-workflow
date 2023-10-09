@@ -45,7 +45,7 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -88,7 +88,7 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -136,7 +136,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -182,7 +182,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -227,7 +227,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -268,7 +268,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': model_name}
+    assert message.metadata['model_name'] == model_name
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0

@@ -1,6 +1,7 @@
 """Configures the pytests."""
 import os
 from collections.abc import Callable
+from time import sleep
 import pytest
 import requests
 import random
@@ -10,24 +11,55 @@ import numpy as np
 from dotenv import load_dotenv
 from unittest.mock import MagicMock
 from llm_workflow.base import (
+    ChatModel,
     Document,
     EmbeddingModel,
     EmbeddingRecord,
     ExchangeRecord,
-    PromptModel,
+    MemoryManager,
 )
 
 load_dotenv()
 
 
-class MockChat(PromptModel):
+class MockCostMemoryManager:
+    """Used for unit tests to mock the behavior of an LLM."""
+
+    def __init__(self, cost: float | None) -> None:
+        self._history = []
+        self.cost = cost
+
+    def history(self):  # noqa
+        return self._history
+
+    def __call__(self, prompt: str) -> list[ExchangeRecord]:  # noqa
+        response = 'Memory Response: ' + prompt
+        prompt = 'Memory Prompt: ' + prompt
+        cost = self.cost
+        if cost:
+            cost *= (len(prompt) + len(response))
+        self._history.append(ExchangeRecord(
+            prompt=prompt,
+            response=response,
+            metadata={'model_name': 'memory'},
+            prompt_tokens=len(prompt),
+            response_tokens=len(response),
+            total_tokens=len(prompt) + len(response),
+            cost=cost,
+        ))
+        sleep(0.1)
+        return []
+
+
+class MockChat(ChatModel):
     """Used for unit tests to mock the behavior of an LLM."""
 
     def __init__(
             self,
             token_counter: Callable[[str], int] | None = None,
             cost_per_token: float | None = None,
-            return_prompt: str | None = None ) -> None:
+            return_prompt: str | None = None,
+            memory_manager: MemoryManager | None = None) -> None:
         """
         Used to test base classes.
 
@@ -38,8 +70,10 @@ class MockChat(PromptModel):
                 custom costs to check costs
             return_prompt:
                 if not None, prepends the string to the prompt and returns it as a response
+            memory_manager:
+                custom memory manager to manage memory
         """
-        super().__init__()
+        super().__init__(memory_manager=memory_manager)
         self.token_counter = token_counter
         self.cost_per_token = cost_per_token
         self.return_prompt = return_prompt
@@ -50,6 +84,8 @@ class MockChat(PromptModel):
         else:
             fake = Faker()
             response = ' '.join([fake.word() for _ in range(random.randint(10, 100))])
+        if self._memory_manager:
+            self._memory_manager(prompt=prompt)
         prompt_tokens = self.token_counter(prompt) if self.token_counter else None
         response_tokens = self.token_counter(response) if self.token_counter else None
         total_tokens = prompt_tokens + response_tokens if self.token_counter else None

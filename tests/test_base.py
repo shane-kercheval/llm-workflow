@@ -8,7 +8,7 @@ from llm_workflow.base import (
     ExchangeRecord,
     TokenUsageRecord,
 )
-from tests.conftest import MockChat, MockRandomEmbeddings
+from tests.conftest import MockChat, MockRandomEmbeddings, MockCostMemoryManager
 
 
 def test_ChatModel__no_token_counter_or_costs():  # noqa
@@ -169,6 +169,86 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert model.total_tokens == expected_tokens + previous_tokens
     assert model.prompt_tokens == expected_prompt_tokens + previous_prompt_tokens
     assert model.response_tokens == expected_response_tokens + previous_response_tokens
+
+def test_ChatModel_memory_manager__adds_history():  # noqa
+    model = MockChat(
+        token_counter=len,
+        cost_per_token=3,
+        memory_manager=MockCostMemoryManager(cost=6),
+    )
+    model('This is a question.')
+    assert model.history()[0].metadata == {'model_name': 'memory'}
+    assert model.history()[1].metadata == {'model_name': 'mock'}
+    assert model.chat_history[0].uuid == model.history()[1].uuid
+
+    expected_prompt = 'Memory Prompt: This is a question.'
+    expected_response = 'Memory Response: This is a question.'
+    assert model.history()[0].prompt == expected_prompt
+    assert model.history()[0].response == expected_response
+    assert model.history()[0].prompt_tokens == len(expected_prompt)
+    assert model.history()[0].response_tokens == len(expected_response)
+    assert model.history()[0].total_tokens == len(expected_prompt) + len(expected_response)
+    assert model.history()[0].cost == 6 * (len(expected_prompt) + len(expected_response))
+
+    assert model.history()[1].prompt == 'This is a question.'
+    assert model.history()[1].response == model.previous_response
+    assert model.history()[1].prompt_tokens == len('This is a question.')
+    assert model.history()[1].response_tokens == len(model.previous_response)
+    assert model.history()[1].total_tokens == len('This is a question.') + len(model.previous_response)  # noqa
+    assert model.history()[1].cost == 3 * (len('This is a question.') + len(model.previous_response))  # noqa
+
+    assert model.previous_prompt == 'This is a question.'
+    assert model.previous_response == model.previous_response
+    assert model.cost == model.history()[0].cost + model.history()[1].cost
+    assert model.total_tokens == model.history()[0].total_tokens + model.history()[1].total_tokens
+    assert model.prompt_tokens == model.history()[0].prompt_tokens + model.history()[1].prompt_tokens  # noqa
+    assert model.response_tokens == model.history()[0].response_tokens + model.history()[1].response_tokens  # noqa
+    previous_response = model.previous_response
+
+    model('This is another question.')
+    assert model.history()[0].metadata == {'model_name': 'memory'}
+    assert model.history()[1].metadata == {'model_name': 'mock'}
+    assert model.chat_history[0].uuid == model.history()[1].uuid
+    assert model.history()[2].metadata == {'model_name': 'memory'}
+    assert model.history()[3].metadata == {'model_name': 'mock'}
+    assert model.chat_history[1].uuid == model.history()[3].uuid
+
+    assert model.history()[0].prompt == expected_prompt
+    assert model.history()[0].response == expected_response
+    assert model.history()[0].prompt_tokens == len(expected_prompt)
+    assert model.history()[0].response_tokens == len(expected_response)
+    assert model.history()[0].total_tokens == len(expected_prompt) + len(expected_response)
+    assert model.history()[0].cost == 6 * (len(expected_prompt) + len(expected_response))
+
+    assert model.history()[1].prompt == 'This is a question.'
+    assert model.history()[1].response == previous_response
+    assert model.history()[1].prompt_tokens == len('This is a question.')
+    assert model.history()[1].response_tokens == len(previous_response)
+    assert model.history()[1].total_tokens == len('This is a question.') + len(previous_response)
+    assert model.history()[1].cost == 3 * (len('This is a question.') + len(previous_response))
+
+    expected_prompt = 'Memory Prompt: This is another question.'
+    expected_response = 'Memory Response: This is another question.'
+    assert model.history()[2].prompt == expected_prompt
+    assert model.history()[2].response == expected_response
+    assert model.history()[2].prompt_tokens == len(expected_prompt)
+    assert model.history()[2].response_tokens == len(expected_response)
+    assert model.history()[2].total_tokens == len(expected_prompt) + len(expected_response)
+    assert model.history()[2].cost == 6 * (len(expected_prompt) + len(expected_response))
+
+    assert model.history()[3].prompt == 'This is another question.'
+    assert model.history()[3].response == model.previous_response
+    assert model.history()[3].prompt_tokens == len('This is another question.')
+    assert model.history()[3].response_tokens == len(model.previous_response)
+    assert model.history()[3].total_tokens == len('This is another question.') + len(model.previous_response)  # noqa
+    assert model.history()[3].cost == 3 * (len('This is another question.') + len(model.previous_response))  # noqa
+
+    assert model.previous_prompt == 'This is another question.'
+    assert model.previous_response == model.previous_response
+    assert model.cost == model.history()[0].cost + model.history()[1].cost + model.history()[2].cost + model.history()[3].cost  # noqa
+    assert model.total_tokens == model.history()[0].total_tokens + model.history()[1].total_tokens + model.history()[2].total_tokens + model.history()[3].total_tokens  # noqa
+    assert model.prompt_tokens == model.history()[0].prompt_tokens + model.history()[1].prompt_tokens + model.history()[2].prompt_tokens + model.history()[3].prompt_tokens  # noqa
+    assert model.response_tokens == model.history()[0].response_tokens + model.history()[1].response_tokens + model.history()[2].response_tokens + model.history()[3].response_tokens  # noqa
 
 def test_EmbeddingModel__called_with_different_types():  # noqa
     class MockEmbeddings(EmbeddingModel):

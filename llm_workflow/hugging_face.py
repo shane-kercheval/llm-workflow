@@ -6,7 +6,7 @@ import requests
 from typing import Callable
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from llm_workflow.internal_utilities import retry_handler
-from llm_workflow.base import ExchangeRecord, PromptModel, StreamingEvent
+from llm_workflow.base import ChatModel, ExchangeRecord, StreamingEvent
 
 
 def query_hugging_face_endpoint(
@@ -117,7 +117,7 @@ def llama_message_formatter(
     return formatted_messages
 
 
-class HuggingFaceEndpointChat(PromptModel):
+class HuggingFaceEndpointChat(ChatModel):
     """
     A wrapper around a model being served via Hugging Face Endpoints. More info here:
     https://ui.endpoints.huggingface.co/.
@@ -170,20 +170,20 @@ class HuggingFaceEndpointChat(PromptModel):
         """
         super().__init__()
         self.endpoint_url = endpoint_url
+        self.streaming_callback = streaming_callback
+        self.temperature = temperature
         self._system_message = system_message
         self._message_formatter = message_formatter
-        self.temperature = temperature
         self._calculate_tokens = calculate_num_tokens
         self._memory_manager = memory_manager
         self._max_streaming_tokens = max_streaming_tokens
-        self.streaming_callback = streaming_callback
         self._timeout = timeout
         self._previous_messages = None
 
     def _run(self, prompt: str) -> ExchangeRecord:
         """Runs the model based on the prompt and returns the response."""
         # build up messages from history
-        history = self.history().copy()
+        history = self.chat_history.copy()
         if self._memory_manager:
             self._previous_messages = self._memory_manager(self._system_message, history, prompt)
         else:
