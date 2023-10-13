@@ -308,20 +308,6 @@ class StreamingEvent(Record):
     response: str
 
 
-class MemoryManager(ABC):
-    """
-    Class that has logic to handle the memory (i.e. total context) of the messages sent to an
-    LLM.
-    """
-
-    @abstractmethod
-    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
-        """
-        Takes the hisitory of messages and returns a modified/reduced list of messages based on the
-        memory strategy.
-        """
-
-
 class LanguageModel(RecordKeeper):
     """
     A LanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embedding model), is a
@@ -470,6 +456,52 @@ class PromptModel(LanguageModel):
         return self.sum(name='response_tokens')
 
 
+class MemoryManager(ABC):
+    """
+    Class that has logic to handle the memory (i.e. total context) of the messages sent to an
+    LLM.
+    """
+
+    @abstractmethod
+    def __call__(
+        self,
+        system_message: str,
+        history: list[ExchangeRecord],
+        prompt: str,
+        ) -> list[ExchangeRecord]:
+        """
+        Takes the hisitory of messages and returns a modified/reduced list of messages based on the
+        memory strategy. Requires the system message and prompt to be passed in as well, since
+        those will affect the memory. Only the list of messages to send to the model should be
+        returned since those are the only messages that will be dynamically modified.
+        """
+
+
+class ChatMessageFormatter(ABC):
+    """
+    A ChatMessageFormatter is a class designed to be callable. Given specific inputs, (e.g. system
+    message, history of messages, and prompt), it the final prompt to send to the model (e.g. list
+    or string, depending on the type of model).
+    """
+
+    @abstractmethod
+    def __call__(
+            self,
+            system_message: str,
+            history: list[ExchangeRecord],
+            prompt: str,
+            ) -> list | str:
+        """
+        Takes the system message, history of messages, and prompt and returns a list of messages
+        (or a single message) to send to the model. Some models, such as OpenAI's ChatGPT takes a
+        list of dictionaries defining role/content pairs, while others, such as Llama, takes a
+        single string.
+        """
+
+
+# a chat model should know how to take a system message, history of messages, and prompt and create the message(s) sent to the model
+# a chat model should know how to calculate the number of tokens used based on the messages sent to the model
+# a chat model should know how to calculate the cost based on the messages sent to the model; future pricing models may not be cost per token though, so let's keep this generic
 class ChatModel(PromptModel):
     """
     The ChatModel class represents an LLM where each exchange (from the end-user's perspective)
@@ -482,10 +514,43 @@ class ChatModel(PromptModel):
     the `history()` of the underlying ChatModel object.
     """
 
-    def __init__(self, memory_manager: MemoryManager | None = None):
+    def __init__(
+            self,
+            system_message: str,
+            message_formatter: Callable[[str, list[ExchangeRecord], str], list | str],
+            token_calculator: Callable[[str], int] | Callable[[str], int],
+            cost_calculator: Callable[[str], float] | None = None,
+            memory_manager: MemoryManager | None = None,
+
+            ):
+        """
+        Args:
+            system_message:
+                The content of the message associated with the "system" `role`.
+            message_formatter:
+                A callable that takes the system message, the history of messages, and the prompt
+                and returns a list of messages to send to the model.
+            memory_manager:
+                A callable that takes the history of messages and returns a list of messages to
+                send to the model.
+        """
+
+# TODO memory manager needs to know how to format each individual message in order to calculate the
+# tokens and determine the messages but formatter needs the final messages to send to the model.
+# this is a bit of a chicken and egg problem. we could have the memory manager return a list of
+# messages and then have the formatter combine them into a single message, but that's not ideal
+# because the memory manager doesn't know how to format the messages. we could have the memory
+# manager return a list of messages and then have the formatter format each message individually,
+# but that's not ideal because the formatter doesn't know how to calculate the tokens for each
+# message. we could have the memory manager return a list of messages and then have the formatter\
+
+
+# 
+
         super().__init__()
         self._history: list[ExchangeRecord] = []
         self._chat_history: list[ExchangeRecord] = []
+        self._system_message = system_message
         self._memory_manager = memory_manager
 
     def __call__(self, prompt: str) -> str:
@@ -495,7 +560,11 @@ class ChatModel(PromptModel):
         Args:
             prompt: The prompt or question to be sent to the model.
         """
+        messages = 
         response = self._run(prompt)
+        # TODO: calculate tokens and add to response
+        # TODO: calculate cost and add to response
+
         # the reason to separate out the history from chat_history is so that subclasses can add
         # additional history (via _append_history, from e.g. memory_manager / summarization)
         # without it being included in the chat history.
