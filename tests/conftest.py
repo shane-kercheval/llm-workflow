@@ -79,6 +79,7 @@ class MockCostMemoryManager(MemoryManager):
             history: list[ExchangeRecord],
             prompt: str,
             **kwargs: dict[str, Any]) -> str | list[str] | list[dict[str, str]]:
+        """Mocks a call to a memory memanager."""
         message_formatter = kwargs['message_formatter']
         message = message_formatter(system_message, None, None)
         for record in history:

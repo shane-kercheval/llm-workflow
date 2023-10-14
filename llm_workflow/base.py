@@ -522,9 +522,6 @@ class ChatMessageFormatter(ABC):
         """
 
 
-# a chat model should know how to take a system message, history of messages, and prompt and create the message(s) sent to the model
-# a chat model should know how to calculate the number of tokens used based on the messages sent to the model
-# a chat model should know how to calculate the cost based on the messages sent to the model; future pricing models may not be cost per token though, so let's keep this generic
 class ChatModel(PromptModel):
     """
     The ChatModel class represents an LLM where each exchange (from the end-user's perspective)
@@ -603,7 +600,7 @@ class ChatModel(PromptModel):
 
     @property
     def chat_history(self) -> list[ExchangeRecord]:
-        """TODO."""
+        """Returns the chat history (prompt, response, metadata, etc.) for the model."""
         return self._chat_history.copy()
 
     def _get_history(self) -> list[ExchangeRecord]:

@@ -18,7 +18,7 @@ to the memory_manager variable when initializing the model object.
 """
 
 from typing import Callable
-from llm_workflow.base import MemoryManager, ExchangeRecord, PromptModel
+from llm_workflow.base import MemoryManager, ExchangeRecord
 
 
 class LastNExchangesManager(MemoryManager):
@@ -140,14 +140,14 @@ class MessageFormatterMaxTokensMemoryManager(MemoryManager):
         return list(reversed(memory))
 
 
-class MessageSummaryManager(MemoryManager):
-    """TODO."""
+# class MessageSummaryManager(MemoryManager):
+#     """TODO."""
 
-    def __init__(self, model: PromptModel, max_tokens) -> None:
-        super().__init__()
-        self._model = model
+#     def __init__(self, model: PromptModel, max_tokens: int) -> None:
+#         super().__init__()
+#         self._model = model
 
-    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
-        """TODO."""
-        raise NotImplementedError
+#     def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
+#         """TODO."""
+#         raise NotImplementedError
 
