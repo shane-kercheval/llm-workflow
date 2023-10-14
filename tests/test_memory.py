@@ -6,9 +6,8 @@ from llm_workflow.memory import (
     TokenWindowManager,
 )
 from llm_workflow.base import ExchangeRecord
-from llm_workflow.openai import OpenAIChat
+from llm_workflow.openai import OpenAIChat, MODEL_COST_PER_TOKEN
 from llm_workflow.hugging_face import llama_message_formatter
-from llm_workflow.resources import MODEL_COST_PER_TOKEN
 
 
 def test_OpenAIChat__LastNExchangesManager0():  # noqa
@@ -22,7 +21,7 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
     assert openai_llm.total_tokens == 0
-    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.input_tokens == 0
     assert openai_llm.response_tokens == 0
 
     ####
@@ -47,23 +46,23 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model_name
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.prompt_tokens == message.prompt_tokens
+    assert openai_llm.input_tokens == message.input_tokens
     assert openai_llm.response_tokens == message.response_tokens
 
     # previous_prompt = prompt
     # previous_response = response
     previous_cost = message.cost
     previous_total_tokens = message.total_tokens
-    previous_prompt_tokens = message.prompt_tokens
+    previous_input_tokens = message.input_tokens
     previous_response_tokens = message.response_tokens
 
     ####
@@ -90,16 +89,16 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model_name
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert openai_llm.input_tokens == previous_input_tokens + message.input_tokens
     assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat__LastNExchangesManager1():  # noqa
@@ -113,7 +112,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
     assert openai_llm.total_tokens == 0
-    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.input_tokens == 0
     assert openai_llm.response_tokens == 0
 
     ####
@@ -138,23 +137,23 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model_name
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.prompt_tokens == message.prompt_tokens
+    assert openai_llm.input_tokens == message.input_tokens
     assert openai_llm.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
     previous_cost = message.cost
     previous_total_tokens = message.total_tokens
-    previous_prompt_tokens = message.prompt_tokens
+    previous_input_tokens = message.input_tokens
     previous_response_tokens = message.response_tokens
 
     ####
@@ -184,16 +183,16 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model_name
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert openai_llm.input_tokens == previous_input_tokens + message.input_tokens
     assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
     previous_prompt = prompt
@@ -229,9 +228,9 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model_name
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
@@ -270,9 +269,9 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model_name
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
@@ -290,7 +289,7 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     assert openai_llm.previous_response is None
     assert openai_llm.cost == 0
     assert openai_llm.total_tokens == 0
-    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.input_tokens == 0
     assert openai_llm.response_tokens == 0
 
     ####

@@ -15,7 +15,15 @@ from llm_workflow.base import (
     MemoryManager,
     StreamingEvent,
 )
-from llm_workflow.resources import MODEL_COST_PER_TOKEN
+
+
+MODEL_COST_PER_TOKEN = {
+    'text-embedding-ada-002': 0.0001 / 1_000,
+    'gpt-4': {'input': 0.03 / 1_000, 'output': 0.06 / 1_000},
+    'gpt-4-32k': {'input': 0.06 / 1_000, 'output': 0.12 / 1_000},
+    'gpt-3.5-turbo': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
+    'gpt-3.5-turbo-16k': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
+}
 
 
 @cache
@@ -165,16 +173,25 @@ class OpenAIChat(ChatModel):
             timeout:
                 timeout value passed to OpenAI model.
         """
-        super().__init__(memory_manager=memory_manager)
+        def cost_calculator(input_tokens: int, response_tokens: int) -> float:
+            model_costs = MODEL_COST_PER_TOKEN[self.model_name]
+            return (input_tokens * model_costs['input']) + \
+                (response_tokens * model_costs['output'])
+
+        super().__init__(
+            system_message={'role': 'system', 'content': system_message},
+            token_calculator=num_tokens_from_messages,
+            token_calc_text=num_tokens,
+            cost_calculator=cost_calculator,
+            memory_manager=memory_manager,
+        )
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.streaming_callback = streaming_callback
         self.timeout = timeout
-        self._system_message = {'role': 'system', 'content': system_message}
-        self._previous_messages = None
 
-    def _run(self, prompt: str) -> ExchangeRecord:
+    def _run(self, messages: list[dict]) -> tuple[str, dict]:
         """
         `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
         user, assistant). This function builds the list of messages based on the history of
@@ -186,20 +203,6 @@ class OpenAIChat(ChatModel):
         (i.e. a ExchangeRecord object).
         """
         import openai
-        # build up messages from history
-        chat_history = self.chat_history.copy()
-        if self._memory_manager:
-            chat_history = self._memory_manager(history=chat_history)
-
-        # initial message; always keep system message regardless of memory_manager
-        messages = [self._system_message]
-        for message in chat_history:
-            messages += [
-                {'role': 'user', 'content': message.prompt},
-                {'role': 'assistant', 'content': message.response},
-            ]
-        # add latest prompt to messages
-        messages += [{'role': 'user', 'content': prompt}]
         if self.streaming_callback:
             response = retry_handler()(
                 openai.ChatCompletion.create,
@@ -224,10 +227,6 @@ class OpenAIChat(ChatModel):
                 if delta:
                     self.streaming_callback(StreamingEvent(response=delta))
                     response_message += delta
-
-            prompt_tokens = num_tokens_from_messages(model_name=self.model_name, messages=messages)
-            completion_tokens = num_tokens(model_name=self.model_name, value=response_message)
-            total_tokens = prompt_tokens + completion_tokens
         else:
             response = retry_handler()(
                 openai.ChatCompletion.create,
@@ -238,26 +237,14 @@ class OpenAIChat(ChatModel):
                 timeout=self.timeout,
             )
             response_message = response['choices'][0]['message'].content
-            prompt_tokens = response['usage'].prompt_tokens
-            completion_tokens = response['usage'].completion_tokens
-            total_tokens = response['usage'].total_tokens
 
-        self._previous_messages = messages
-        cost = (prompt_tokens * self.cost_per_token['input']) + \
-            (completion_tokens * self.cost_per_token['output'])
-
-        return ExchangeRecord(
-            prompt=prompt,
-            response=response_message,
-            metadata={
-                'model_name': self.model_name,
-                'messages': messages,
-            },
-            prompt_tokens=prompt_tokens,
-            response_tokens=completion_tokens,
-            total_tokens=total_tokens,
-            cost=cost,
-        )
+        metadata = {
+            'model_name': self.model_name,
+            'temperature': self.temperature,
+            'max_tokens': self.max_tokens,
+            'timeout': self.timeout,
+        }
+        return response_message, metadata
 
     @property
     def cost_per_token(self) -> dict:

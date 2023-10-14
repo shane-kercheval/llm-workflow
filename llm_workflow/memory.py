@@ -111,9 +111,9 @@ class MessageFormatterMaxTokensMemoryManager(MemoryManager):
         """
         if prompt:
             memory = self._message_formatter(None, [], prompt)
-            prompt_tokens = self._calculate_num_tokens(memory[0])
+            input_tokens = self._calculate_num_tokens(memory[0])
         else:
-            prompt_tokens = 0
+            input_tokens = 0
             memory = []
         if system_message:
             system_message = self._message_formatter(system_message, [], None)[0]
@@ -123,7 +123,7 @@ class MessageFormatterMaxTokensMemoryManager(MemoryManager):
 
         # start added the most recent messages to the memory
         history = reversed(history)
-        tokens_used = system_tokens + prompt_tokens
+        tokens_used = system_tokens + input_tokens
         for message in history:
             # if the message's tokens plus the tokens that are already used in the memory is more
             # than the threshold then we need to break and avoid adding more memory

@@ -34,7 +34,7 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 0
     assert tracker.sum(name='total_tokens') == 0
-    assert tracker.sum(name='prompt_tokens') == 0
+    assert tracker.sum(name='input_tokens') == 0
     assert tracker.sum(name='response_tokens') == 0
 
     record_a = Record(metadata={'id': 'a'})
@@ -47,7 +47,7 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 0
     assert tracker.sum(name='total_tokens') == 0
-    assert tracker.sum(name='prompt_tokens') == 0
+    assert tracker.sum(name='input_tokens') == 0
     assert tracker.sum(name='response_tokens') == 0
 
     record_b = TokenUsageRecord(total_tokens=1, metadata={'id': 'b'})
@@ -60,7 +60,7 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 0
     assert tracker.sum(name='total_tokens') == 1
-    assert tracker.sum(name='prompt_tokens') == 0
+    assert tracker.sum(name='input_tokens') == 0
     assert tracker.sum(name='response_tokens') == 0
 
     record_c = TokenUsageRecord(cost=3, metadata={'id': 'c'})
@@ -73,7 +73,7 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 3
     assert tracker.sum(name='total_tokens') == 1
-    assert tracker.sum(name='prompt_tokens') == 0
+    assert tracker.sum(name='input_tokens') == 0
     assert tracker.sum(name='response_tokens') == 0
 
     record_d = TokenUsageRecord(total_tokens=7, cost=6, metadata={'id': 'd'})
@@ -86,7 +86,7 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 9
     assert tracker.sum(name='total_tokens') == 8
-    assert tracker.sum(name='prompt_tokens') == 0
+    assert tracker.sum(name='input_tokens') == 0
     assert tracker.sum(name='response_tokens') == 0
 
     record_e = ExchangeRecord(
@@ -105,12 +105,12 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 29
     assert tracker.sum(name='total_tokens') == 18
-    assert tracker.sum(name='prompt_tokens') == 0
+    assert tracker.sum(name='input_tokens') == 0
     assert tracker.sum(name='response_tokens') == 0
     # test calculating historical values based on ExchangeRecords
     assert tracker.sum(name='cost', types=ExchangeRecord) == 20
     assert tracker.sum(name='total_tokens', types=ExchangeRecord) == 10
-    assert tracker.sum(name='prompt_tokens', types=ExchangeRecord) == 0
+    assert tracker.sum(name='input_tokens', types=ExchangeRecord) == 0
     assert tracker.sum(name='response_tokens', types=ExchangeRecord) == 0
 
     record_f = ExchangeRecord(
@@ -118,7 +118,7 @@ def test_history_tracker():  # noqa
         response="the response",
         cost=13,
         total_tokens=5,
-        prompt_tokens=7,
+        input_tokens=7,
         response_tokens=9,
         metadata={'id': 'f'},
     )
@@ -131,12 +131,12 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 42
     assert tracker.sum(name='total_tokens') == 23
-    assert tracker.sum(name='prompt_tokens') == 7
+    assert tracker.sum(name='input_tokens') == 7
     assert tracker.sum(name='response_tokens') == 9
     # test calculating historical values based on ExchangeRecords
     assert tracker.sum(name='cost', types=ExchangeRecord) == 33
     assert tracker.sum(name='total_tokens', types=ExchangeRecord) == 15
-    assert tracker.sum(name='prompt_tokens', types=ExchangeRecord) == 7
+    assert tracker.sum(name='input_tokens', types=ExchangeRecord) == 7
     assert tracker.sum(name='response_tokens', types=ExchangeRecord) == 9
 
     record_g = EmbeddingRecord(
@@ -153,12 +153,12 @@ def test_history_tracker():  # noqa
     assert tracker.sum(name='does_not_exist') == 0
     assert tracker.sum(name='cost') == 43
     assert tracker.sum(name='total_tokens') == 25
-    assert tracker.sum(name='prompt_tokens') == 7
+    assert tracker.sum(name='input_tokens') == 7
     assert tracker.sum(name='response_tokens') == 9
     # test calculating historical values based on EmbeddingRecords
     assert tracker.sum(name='cost', types=EmbeddingRecord) == 1
     assert tracker.sum(name='total_tokens', types=EmbeddingRecord) == 2
-    assert tracker.sum(name='prompt_tokens', types=EmbeddingRecord) == 0
+    assert tracker.sum(name='input_tokens', types=EmbeddingRecord) == 0
     assert tracker.sum(name='response_tokens', types=EmbeddingRecord) == 0
     # test calculating historical values based on ExchangeRecords or EmbeddingRecord
     assert tracker.sum(
@@ -170,7 +170,7 @@ def test_history_tracker():  # noqa
             types=(ExchangeRecord, EmbeddingRecord),
         ) == 17
     assert tracker.sum(
-            name='prompt_tokens',
+            name='input_tokens',
             types=(ExchangeRecord, EmbeddingRecord),
         ) == 7
     assert tracker.sum(

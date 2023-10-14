@@ -11,15 +11,15 @@ def usage_string(
         value = ""
         cost = obj.sum('cost')
         total_tokens = obj.sum('total_tokens')
-        prompt_tokens = obj.sum('prompt_tokens')
+        input_tokens = obj.sum('input_tokens')
         response_tokens = obj.sum('response_tokens')
         embedding_tokens = obj.sum('total_tokens', EmbeddingRecord)
         if cost:
             value += f"Cost:              ${cost:.{cost_precision}f}\n"
         if total_tokens:
             value += f"Total Tokens:       {total_tokens:,}\n"
-        if prompt_tokens:
-            value += f"Prompt Tokens:      {prompt_tokens:,}\n"
+        if input_tokens:
+            value += f"Prompt Tokens:      {input_tokens:,}\n"
         if response_tokens:
             value += f"Response Tokens:    {response_tokens:,}\n"
         if embedding_tokens:
@@ -32,8 +32,8 @@ def usage_string(
         value += f"Cost:              ${obj.cost:.{cost_precision}f}\n"
     if getattr(obj, 'total_tokens') and obj.total_tokens:
         value += f"Total Tokens:       {obj.total_tokens:,}\n"
-    if getattr(obj, 'prompt_tokens') and obj.prompt_tokens:
-        value += f"Prompt Tokens:      {obj.prompt_tokens:,}\n"
+    if getattr(obj, 'input_tokens') and obj.input_tokens:
+        value += f"Prompt Tokens:      {obj.input_tokens:,}\n"
     if getattr(obj, 'response_tokens') and obj.response_tokens:
         value += f"Response Tokens:    {obj.response_tokens:,}\n"
     if getattr(obj, 'embedding_tokens') and obj.embedding_tokens:
@@ -56,7 +56,7 @@ def messages_string(messages: list[ExchangeRecord], cost_precision: int = 5) -> 
     for index, message in enumerate(messages):
         value += f"### Message {index + 1}\n\n"
         value += f"{message.timestamp}; `${message.cost:.{cost_precision}f}`; `{message.total_tokens:,}` Tokens\n"  # noqa
-        value += f"#### Prompt ({message.prompt_tokens} tokens):\n"
+        value += f"#### Prompt ({message.input_tokens} tokens):\n"
         value += f"\n{message.prompt}\n"
         value += f"#### Response ({message.response_tokens} tokens):\n"
         value += f"\n{message.response}\n"

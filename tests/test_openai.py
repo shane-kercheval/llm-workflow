@@ -3,8 +3,13 @@
 import openai
 import pytest
 from llm_workflow.base import Document, EmbeddingRecord, ExchangeRecord, StreamingEvent
-from llm_workflow.openai import OpenAIChat, OpenAIEmbedding, num_tokens, num_tokens_from_messages
-from llm_workflow.resources import MODEL_COST_PER_TOKEN
+from llm_workflow.openai import (
+    OpenAIChat,
+    OpenAIEmbedding,
+    num_tokens,
+    num_tokens_from_messages,
+    MODEL_COST_PER_TOKEN,
+)
 
 
 def test_num_tokens():  # noqa
@@ -49,7 +54,7 @@ def test_num_tokens_from_messages():  # noqa
         temperature=0,
         max_tokens=1,  # we're only counting input tokens here, so let's not waste tokens on output
     )
-    expected_value = response["usage"]["prompt_tokens"]
+    expected_value = response["usage"]["input_tokens"]
     actual_value = num_tokens_from_messages(model_name=model_name, messages=example_messages)
     assert expected_value == actual_value
 
@@ -70,7 +75,7 @@ def test_OpenAIChat():  # noqa
     assert model.previous_response is None
     assert model.cost == 0
     assert model.total_tokens == 0
-    assert model.prompt_tokens == 0
+    assert model.input_tokens == 0
     assert model.response_tokens == 0
 
     ####
@@ -95,9 +100,9 @@ def test_OpenAIChat():  # noqa
     assert message.metadata['model_name'] == model_name
     assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
     assert message.uuid
     assert message.timestamp
 
@@ -106,14 +111,14 @@ def test_OpenAIChat():  # noqa
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert model.cost == message.cost
     assert model.total_tokens == message.total_tokens
-    assert model.prompt_tokens == message.prompt_tokens
+    assert model.input_tokens == message.input_tokens
     assert model.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
     previous_cost = message.cost
     previous_total_tokens = message.total_tokens
-    previous_prompt_tokens = message.prompt_tokens
+    previous_input_tokens = message.input_tokens
     previous_response_tokens = message.response_tokens
     previous_message = message
 
@@ -142,9 +147,9 @@ def test_OpenAIChat():  # noqa
     assert message.metadata['model_name'] == model_name
     assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
     assert message.uuid
     assert message.uuid != previous_message.uuid
     assert message.timestamp
@@ -154,7 +159,7 @@ def test_OpenAIChat():  # noqa
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert model.cost == previous_cost + message.cost
     assert model.total_tokens == previous_total_tokens + message.total_tokens
-    assert model.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat_streaming():  # noqa
@@ -171,7 +176,7 @@ def test_OpenAIChat_streaming():  # noqa
     assert model.previous_response is None
     assert model.cost == 0
     assert model.total_tokens == 0
-    assert model.prompt_tokens == 0
+    assert model.input_tokens == 0
     assert model.response_tokens == 0
 
     ####
@@ -197,9 +202,9 @@ def test_OpenAIChat_streaming():  # noqa
     assert message.metadata['model_name'] == model_name
     assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
     assert message.uuid
     assert message.timestamp
 
@@ -208,14 +213,14 @@ def test_OpenAIChat_streaming():  # noqa
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert model.cost == message.cost
     assert model.total_tokens == message.total_tokens
-    assert model.prompt_tokens == message.prompt_tokens
+    assert model.input_tokens == message.input_tokens
     assert model.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
     previous_cost = message.cost
     previous_total_tokens = message.total_tokens
-    previous_prompt_tokens = message.prompt_tokens
+    previous_input_tokens = message.input_tokens
     previous_response_tokens = message.response_tokens
     previous_message = message
 
@@ -246,9 +251,9 @@ def test_OpenAIChat_streaming():  # noqa
     assert message.metadata['model_name'] == model_name
     assert message.metadata['messages'] == model._previous_messages
     assert message.cost > 0
-    assert message.prompt_tokens > 0
+    assert message.input_tokens > 0
     assert message.response_tokens > 0
-    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.total_tokens == message.input_tokens + message.response_tokens
     assert message.uuid
     assert message.uuid != previous_message.uuid
     assert message.timestamp
@@ -258,7 +263,7 @@ def test_OpenAIChat_streaming():  # noqa
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert model.cost == previous_cost + message.cost
     assert model.total_tokens == previous_total_tokens + message.total_tokens
-    assert model.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
@@ -288,7 +293,7 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     streaming_response  = streaming_chat(question)
     assert non_streaming_response == streaming_response
     assert non_streaming_response == callback_response
-    assert non_streaming_chat.prompt_tokens == streaming_chat.prompt_tokens
+    assert non_streaming_chat.input_tokens == streaming_chat.input_tokens
     assert non_streaming_chat.response_tokens == streaming_chat.response_tokens
     assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
     assert non_streaming_chat.cost == streaming_chat.cost

@@ -283,7 +283,7 @@ class ExchangeRecord(TokenUsageRecord):
 
     prompt: str
     response: str
-    prompt_tokens: int | None = None
+    input_tokens: int | None = None
     response_tokens: int | None = None
 
     def __str__(self) -> str:
@@ -293,7 +293,7 @@ class ExchangeRecord(TokenUsageRecord):
             f"response: \"{self.response.strip()[0:50]}...\";  " \
             f"cost: ${self.cost or 0:.6f}; " \
             f"total_tokens: {self.total_tokens or 0:,}; " \
-            f"prompt_tokens: {self.prompt_tokens or 0:,}; " \
+            f"input_tokens: {self.input_tokens or 0:,}; " \
             f"response_tokens: {self.response_tokens or 0:,}; " \
             f"uuid: {self.uuid}"
 
@@ -405,14 +405,24 @@ class PromptModel(LanguageModel):
     instantiated model, including metrics like tokens used.
     """
 
-    def __init__(self):
+    def __init__(
+            self,
+            token_calculator: Callable[[str | list[str] | object], int],
+            cost_calculator: Callable[[int, int], float] | None = None) -> None:
         super().__init__()
         self._history: list[ExchangeRecord] = []
+        self._token_calculator = token_calculator
+        if cost_calculator:
+            self._cost_calculator = cost_calculator
+        else:
+            self._cost_calculator = lambda _in, _out: None
 
     @abstractmethod
-    def _run(self, prompt: str) -> ExchangeRecord:
-        """Subclasses should override this function and generate responses from the LLM."""
-
+    def _run(self, prompt: str) -> tuple[str | list[str] | object, dict]:
+        """
+        Subclasses should override this function and generate responses from the LLM.
+        TODO: returns dict metadata.
+        """
 
     def __call__(self, prompt: str) -> str:
         """
@@ -421,13 +431,26 @@ class PromptModel(LanguageModel):
         Args:
             prompt: The prompt or question to be sent to the model.
         """
-        response = self._run(prompt)
+        response, metadata = self._run(prompt)
+        input_tokens = self._token_calculator(prompt)
+        response_tokens = self._token_calculator(response)
+        total_tokens = input_tokens + response_tokens
+        cost = self._cost_calculator(input_tokens, response_tokens)
+        response = ExchangeRecord(
+            prompt=prompt,
+            response=response.strip(),
+            metadata=metadata,
+            input_tokens=input_tokens,
+            response_tokens=response_tokens,
+            total_tokens=total_tokens,
+            cost=cost,
+        )
         self._history.append(response)
         return response.response
 
     def _get_history(self) -> list[ExchangeRecord]:
         """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
-        return self._history
+        return self._history.copy()
 
     @property
     def previous_prompt(self) -> str | None:
@@ -440,12 +463,12 @@ class PromptModel(LanguageModel):
         return self.previous_record().response if self.previous_record() else None
 
     @property
-    def prompt_tokens(self) -> int | None:
+    def input_tokens(self) -> int | None:
         """
-        Sums the `prompt_tokens` values across all Record objects (which contain that property)
+        Sums the `input_tokens` values across all Record objects (which contain that property)
         returned by this object's `history` property.
         """
-        return self.sum(name='prompt_tokens')
+        return self.sum(name='input_tokens')
 
     @property
     def response_tokens(self) -> int | None:
@@ -468,10 +491,7 @@ class MemoryManager(ABC):
         system_message: str,
         history: list[ExchangeRecord],
         prompt: str,
-        message_formatter: Callable[[str, list[ExchangeRecord], str], list | str],
-        token_calc_messages: Callable[[list[str]], int] | Callable[[str], int],
-        token_calc_text: Callable[[str], int],
-        ) -> list[ExchangeRecord]:
+        **kwargs: dict[str, Any]) -> str | list[str] | list[dict[str, str]]:
         """
         Takes the hisitory of messages and returns a modified/reduced list of messages based on the
         memory strategy. Requires the system message and prompt to be passed in as well, since
@@ -521,8 +541,7 @@ class ChatModel(PromptModel):
             self,
             system_message: str,
             message_formatter: Callable[[str, list[ExchangeRecord], str], list | str],
-            token_calc_messages: Callable[[list[str]], int] | Callable[[str], int],
-            token_calc_text: Callable[[str], int],
+            token_calculator: Callable[[list[str]], int] | Callable[[str], int],
             cost_calculator: Callable[[int, int], float] | None = None,
             memory_manager: MemoryManager | None = None,
             ):
@@ -533,30 +552,22 @@ class ChatModel(PromptModel):
             message_formatter:
                 A callable that takes the system message, the history of messages, and the prompt
                 and returns a list of messages to send to the model.
+            token_calculator:
+                A callable that returns number of tokens in the message(s)
+            cost_calculator:
+                A callable that takes the number of tokens in the prompt and response and returns
+                the cost.
             memory_manager:
                 A callable that takes the history of messages and returns a list of messages to
                 send to the model.
         """
-
-# TODO memory manager needs to know how to format each individual message in order to calculate the
-# tokens and determine the messages but formatter needs the final messages to send to the model.
-# this is a bit of a chicken and egg problem. we could have the memory manager return a list of
-# messages and then have the formatter combine them into a single message, but that's not ideal
-# because the memory manager doesn't know how to format the messages. we could have the memory
-# manager return a list of messages and then have the formatter format each message individually,
-# but that's not ideal because the formatter doesn't know how to calculate the tokens for each
-# message. we could have the memory manager return a list of messages and then have the formatter\
-
-
-        super().__init__()
-        self._history: list[ExchangeRecord] = []
+        super().__init__(token_calculator=token_calculator, cost_calculator=cost_calculator)
         self._chat_history: list[ExchangeRecord] = []
         self._system_message = system_message
         self._message_formatter = message_formatter
-        self._token_calc_messages = token_calc_messages
-        self._token_calc_text = token_calc_text
-        self._cost_calculator = cost_calculator
+        self._token_calculator = token_calculator
         self._memory_manager = memory_manager
+        self._previous_messages = None
 
     def __call__(self, prompt: str) -> str:
         """
@@ -568,49 +579,32 @@ class ChatModel(PromptModel):
         if self._memory_manager:
             messages = self._memory_manager(
                 system_message=self._system_message,
-                history=self._chat_history.copy(),
+                history=self._chat_history,
                 prompt=prompt,
                 message_formatter=self._message_formatter,
+                token_calculator=self._token_calculator,
+                cost_calculator=self._cost_calculator,
             )
         else:
             messages = self._message_formatter(
                 system_message=self._system_message,
-                history=self._chat_history.copy(),
+                messages=self._chat_history,
                 prompt=prompt,
             )
-        response = self._run(messages)
-
-        prompt_tokens = self._token_calc_messages(messages)
-        response_tokens = self._token_calc_text(response)
-        total_tokens = prompt_tokens + response_tokens
-        cost = self._cost_calculator(prompt_tokens, response_tokens) if self._cost_calculator else None
-        response = ExchangeRecord(
-            prompt=prompt,
-            response=response.strip(),
-            metadata={
-                'endpoint_url': self.endpoint_url,
-                'messages': messages,
-                },
-            prompt_tokens=prompt_tokens,
-            response_tokens=response_tokens,
-            total_tokens=total_tokens,
-            cost=cost,
-        )
-
-        # TODO: calculate tokens and add to response
-        # TODO: calculate cost and add to response
-
+        self._previous_messages = messages
+        response = super().__call__(prompt=messages)
+        self._history[-1].prompt = prompt
+        self._history[-1].metadata['messages'] = messages
         # the reason to separate out the history from chat_history is so that subclasses can add
-        # additional history (via _append_history, from e.g. memory_manager / summarization)
+        # additional history (via from e.g. memory_manager / summarization)
         # without it being included in the chat history.
-        self._chat_history.append(response)
-        self._history.append(response)
-        return response.response
+        self._chat_history.append(self._history[-1])
+        return response
 
     @property
     def chat_history(self) -> list[ExchangeRecord]:
         """TODO."""
-        return self._chat_history
+        return self._chat_history.copy()
 
     def _get_history(self) -> list[ExchangeRecord]:
         """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""

@@ -71,7 +71,7 @@ def test_HuggingFaceEndpointChat__no_token_calculator(hugging_face_endpoint):  #
         assert model.previous_response is None
         assert model.cost == 0
         assert model.total_tokens == 0
-        assert model.prompt_tokens == 0
+        assert model.input_tokens == 0
         assert model.response_tokens == 0
 
         prompt = "My name is Shane. What's your name?"
@@ -94,7 +94,7 @@ def test_HuggingFaceEndpointChat__no_token_calculator(hugging_face_endpoint):  #
         assert '<</SYS>>' in message.metadata['messages']
         assert prompt in message.metadata['messages']
         assert message.cost is None
-        assert message.prompt_tokens is None
+        assert message.input_tokens is None
         assert message.response_tokens is None
         assert message.total_tokens is None
         assert message.uuid
@@ -126,7 +126,7 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert model.previous_response is None
         assert model.cost == 0
         assert model.total_tokens == 0
-        assert model.prompt_tokens == 0
+        assert model.input_tokens == 0
         assert model.response_tokens == 0
 
         prompt = "My name is Shane. What's your name?"
@@ -149,9 +149,9 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert '<</SYS>>' in message.metadata['messages']
         assert prompt in message.metadata['messages']
         assert message.cost is None
-        assert message.prompt_tokens > 0
+        assert message.input_tokens > 0
         assert message.response_tokens > 0
-        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
         assert model.cost == 0
@@ -185,9 +185,9 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert '<</SYS>>' in message.metadata['messages']
         assert prompt in message.metadata['messages']
         assert message.cost is None
-        assert message.prompt_tokens > 0
+        assert message.input_tokens > 0
         assert message.response_tokens > 0
-        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
         assert model.cost == 0
@@ -216,7 +216,7 @@ def test_HuggingFaceEndpointChat__timeout(hugging_face_endpoint):  # noqa
         assert model.previous_response is None
         assert model.cost == 0
         assert model.total_tokens == 0
-        assert model.prompt_tokens == 0
+        assert model.input_tokens == 0
         assert model.response_tokens == 0
 
         prompt = "Write a poem about a dog."
@@ -273,7 +273,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert model.previous_response is None
         assert model.cost == 0
         assert model.total_tokens == 0
-        assert model.prompt_tokens == 0
+        assert model.input_tokens == 0
         assert model.response_tokens == 0
 
         prompt = "My name is Shane. What's your name?"
@@ -296,9 +296,9 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert '<</SYS>>' in message.metadata['messages']
         assert prompt in message.metadata['messages']
         assert message.cost is None
-        assert message.prompt_tokens > 0
+        assert message.input_tokens > 0
         assert message.response_tokens > 0
-        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
         assert model.cost == 0
@@ -332,9 +332,9 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert '<</SYS>>' in message.metadata['messages']
         assert prompt in message.metadata['messages']
         assert message.cost is None
-        assert message.prompt_tokens > 0
+        assert message.input_tokens > 0
         assert message.response_tokens > 0
-        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
         assert model.cost == 0
@@ -371,7 +371,7 @@ def test_HuggingFaceEndpointChat__memory_manager__20_tokens(hugging_face_endpoin
         assert model.previous_response is None
         assert model.cost == 0
         assert model.total_tokens == 0
-        assert model.prompt_tokens == 0
+        assert model.input_tokens == 0
         assert model.response_tokens == 0
 
         prompt = "My name is Shane and my favorite color is blue. What's your name?"
@@ -394,9 +394,9 @@ def test_HuggingFaceEndpointChat__memory_manager__20_tokens(hugging_face_endpoin
         assert '<</SYS>>' in message.metadata['messages']
         assert prompt in message.metadata['messages']
         assert message.cost is None
-        assert message.prompt_tokens > 0
+        assert message.input_tokens > 0
         assert message.response_tokens > 0
-        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
         assert model.cost == 0
@@ -432,9 +432,9 @@ def test_HuggingFaceEndpointChat__memory_manager__20_tokens(hugging_face_endpoin
         assert '<</SYS>>' in message.metadata['messages']
         assert prompt in message.metadata['messages']
         assert message.cost is None
-        assert message.prompt_tokens > 0
+        assert message.input_tokens > 0
         assert message.response_tokens > 0
-        assert message.total_tokens == message.prompt_tokens + message.response_tokens
+        assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
         assert model.cost == 0
