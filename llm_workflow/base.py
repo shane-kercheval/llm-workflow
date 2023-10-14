@@ -468,6 +468,9 @@ class MemoryManager(ABC):
         system_message: str,
         history: list[ExchangeRecord],
         prompt: str,
+        message_formatter: Callable[[str, list[ExchangeRecord], str], list | str],
+        token_calc_messages: Callable[[list[str]], int] | Callable[[str], int],
+        token_calc_text: Callable[[str], int],
         ) -> list[ExchangeRecord]:
         """
         Takes the hisitory of messages and returns a modified/reduced list of messages based on the
@@ -518,10 +521,10 @@ class ChatModel(PromptModel):
             self,
             system_message: str,
             message_formatter: Callable[[str, list[ExchangeRecord], str], list | str],
-            token_calculator: Callable[[str], int] | Callable[[str], int],
-            cost_calculator: Callable[[str], float] | None = None,
+            token_calc_messages: Callable[[list[str]], int] | Callable[[str], int],
+            token_calc_text: Callable[[str], int],
+            cost_calculator: Callable[[int, int], float] | None = None,
             memory_manager: MemoryManager | None = None,
-
             ):
         """
         Args:
@@ -545,12 +548,14 @@ class ChatModel(PromptModel):
 # message. we could have the memory manager return a list of messages and then have the formatter\
 
 
-# 
-
         super().__init__()
         self._history: list[ExchangeRecord] = []
         self._chat_history: list[ExchangeRecord] = []
         self._system_message = system_message
+        self._message_formatter = message_formatter
+        self._token_calc_messages = token_calc_messages
+        self._token_calc_text = token_calc_text
+        self._cost_calculator = cost_calculator
         self._memory_manager = memory_manager
 
     def __call__(self, prompt: str) -> str:
@@ -560,8 +565,38 @@ class ChatModel(PromptModel):
         Args:
             prompt: The prompt or question to be sent to the model.
         """
-        messages = 
-        response = self._run(prompt)
+        if self._memory_manager:
+            messages = self._memory_manager(
+                system_message=self._system_message,
+                history=self._chat_history.copy(),
+                prompt=prompt,
+                message_formatter=self._message_formatter,
+            )
+        else:
+            messages = self._message_formatter(
+                system_message=self._system_message,
+                history=self._chat_history.copy(),
+                prompt=prompt,
+            )
+        response = self._run(messages)
+
+        prompt_tokens = self._token_calc_messages(messages)
+        response_tokens = self._token_calc_text(response)
+        total_tokens = prompt_tokens + response_tokens
+        cost = self._cost_calculator(prompt_tokens, response_tokens) if self._cost_calculator else None
+        response = ExchangeRecord(
+            prompt=prompt,
+            response=response.strip(),
+            metadata={
+                'endpoint_url': self.endpoint_url,
+                'messages': messages,
+                },
+            prompt_tokens=prompt_tokens,
+            response_tokens=response_tokens,
+            total_tokens=total_tokens,
+            cost=cost,
+        )
+
         # TODO: calculate tokens and add to response
         # TODO: calculate cost and add to response
 
