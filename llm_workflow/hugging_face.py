@@ -84,7 +84,7 @@ def num_tokens(
 
 def llama_message_formatter(
         system_message: str | None,
-        messages: list[ExchangeRecord] | None,
+        history: list[ExchangeRecord] | None,
         prompt: str | None) -> str:
     """
     A message formatter takes a list of messages (ExchangeRecord objects) and formats them
@@ -102,7 +102,7 @@ def llama_message_formatter(
     Args:
         system_message:
             The content of the message associated with the "system" `role`.
-        messages:
+        history:
             A list of ExchangeRecord objects, containing the prompt/response pairs.
         prompt:
             The next prompt to be sent to the model.
@@ -110,8 +110,8 @@ def llama_message_formatter(
     formatted_messages = []
     if system_message:
         formatted_messages.append(f"[INST] <<SYS>> {system_message} <</SYS>> [/INST]\n")
-    if messages:
-        for message in messages:
+    if history:
+        for message in history:
             formatted_messages.append(
                 f"[INST] {message.prompt} [/INST]\n" + f"{message.response}\n",
             )

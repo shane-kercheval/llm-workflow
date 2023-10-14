@@ -281,7 +281,7 @@ class ExchangeRecord(TokenUsageRecord):
     associated costs, if any.
     """
 
-    prompt: str
+    prompt: str | list
     response: str
     input_tokens: int | None = None
     response_tokens: int | None = None
@@ -537,7 +537,7 @@ class ChatModel(PromptModel):
     def __init__(
             self,
             system_message: str,
-            message_formatter: Callable[[str, list[ExchangeRecord], str], list | str],
+            message_formatter: Callable[[str | None, list[ExchangeRecord] | None, str | None], list | str],  # noqa
             token_calculator: Callable[[list[str]], int] | Callable[[str], int],
             cost_calculator: Callable[[int, int], float] | None = None,
             memory_manager: MemoryManager | None = None,
@@ -585,7 +585,7 @@ class ChatModel(PromptModel):
         else:
             messages = self._message_formatter(
                 system_message=self._system_message,
-                messages=self._chat_history,
+                history=self._chat_history,
                 prompt=prompt,
             )
         self._previous_messages = messages

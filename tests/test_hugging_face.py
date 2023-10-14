@@ -23,11 +23,11 @@ def test_query_hugging_face_endpoint(fake_retry_handler, fake_hugging_face_respo
             assert 'generated_text' in response[0]
 
 def test_llama_message_formatter():  # noqa
-    assert llama_message_formatter(system_message=None, messages=[]) == []
+    assert llama_message_formatter(system_message=None, history=[]) == []
 
     messages = llama_message_formatter(
         system_message=None,
-        messages=[
+        history=[
             ExchangeRecord(prompt='a', response='b'),
             ExchangeRecord(prompt='c', response='d'),
         ],
@@ -37,7 +37,7 @@ def test_llama_message_formatter():  # noqa
 
     messages = llama_message_formatter(
         system_message='system',
-        messages=[
+        history=[
             ExchangeRecord(prompt='a', response='b'),
             ExchangeRecord(prompt='c', response='d'),
         ],
@@ -46,7 +46,7 @@ def test_llama_message_formatter():  # noqa
 
     messages = llama_message_formatter(
         system_message='system',
-        messages=[
+        history=[
             ExchangeRecord(prompt='a', response='b'),
             ExchangeRecord(prompt='c', response='d'),
         ],

@@ -144,9 +144,7 @@ class OpenAIChat(ChatModel):
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
-            memory_manager: MemoryManager | \
-                Callable[[list[ExchangeRecord]], list[ExchangeRecord]] | \
-                None = None,
+            memory_manager: MemoryManager | None = None,
             timeout: int = 10,
             ) -> None:
         """
@@ -178,10 +176,32 @@ class OpenAIChat(ChatModel):
             return (input_tokens * model_costs['input']) + \
                 (response_tokens * model_costs['output'])
 
+        def token_calculator(messages: str | list[dict]) -> int:
+            if isinstance(messages, str):
+                return num_tokens(model_name=model_name, value=messages)
+            if isinstance(messages, list):
+                return num_tokens_from_messages(model_name=model_name, messages=messages)
+            raise NotImplementedError(f"""token_calculator() is not implemented for messages of type {type(messages)}.""")  # noqa
+
+        def message_formatter(
+                system_message: str | None,
+                history: list[ExchangeRecord] | None,
+                prompt: str | None) -> list[dict]:
+            # initial message; always keep system message regardless of memory_manager
+            messages = [{'role': 'system', 'content': system_message}]
+            for message in history:
+                messages += [
+                    {'role': 'user', 'content': message.prompt},
+                    {'role': 'assistant', 'content': message.response},
+                ]
+            # add latest prompt to messages
+            messages += [{'role': 'user', 'content': prompt}]
+            return messages
+
         super().__init__(
-            system_message={'role': 'system', 'content': system_message},
-            token_calculator=num_tokens_from_messages,
-            token_calc_text=num_tokens,
+            system_message=system_message,
+            message_formatter=message_formatter,
+            token_calculator=token_calculator,
             cost_calculator=cost_calculator,
             memory_manager=memory_manager,
         )

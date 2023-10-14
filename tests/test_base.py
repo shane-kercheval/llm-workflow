@@ -182,7 +182,7 @@ def test_ChatModel__no_costs():  # noqa
 
     expected_message_0 = llama_message_formatter(
         system_message=model._system_message,
-        messages=None,
+        history=None,
         prompt=prompt,
     )
     assert expected_message_0.count("<<SYS>>") == 1
@@ -225,7 +225,7 @@ def test_ChatModel__no_costs():  # noqa
 
     expected_message_1 = llama_message_formatter(
         system_message=model._system_message,
-        messages=[model._history[0]],
+        history=[model._history[0]],
         prompt=prompt,
     )
     assert expected_message_1.count("<<SYS>>") == 1
@@ -286,7 +286,7 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
 
     expected_message_0 = llama_message_formatter(
         system_message=model._system_message,
-        messages=None,
+        history=None,
         prompt=prompt,
     )
 
@@ -334,7 +334,7 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
 
     expected_message_1 = llama_message_formatter(
         system_message=model._system_message,
-        messages=[model._history[0]],
+        history=[model._history[0]],
         prompt=prompt,
     )
     expected_input_tokens = len(expected_message_1)
