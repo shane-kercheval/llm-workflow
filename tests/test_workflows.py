@@ -91,7 +91,7 @@ def test_Value():  # noqa
     assert value() == 'test'
 
 def test_has_property():  # noqa
-    chat = MockChatModel()
+    chat = MockChatModel(token_calculator=len)
     lambda_func = lambda x: x  # noqa
     assert has_property(obj=chat, property_name='total_tokens')
     assert not has_property(obj=lambda_func, property_name='total_tokens')
@@ -200,7 +200,8 @@ def test_workflow_with_MockChat():  # noqa
     second_prompt = "Question: " + first_response
     second_response = "Response: " + second_prompt
 
-    chat = MockChatModel(return_prompt="Response: ")  # this Chat returns the "Response: " + prompt
+    # this Chat returns the "Response: " + prompt
+    chat = MockChatModel(return_prompt="Response: ", token_calculator=len)
     workflow = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
     result = workflow(prompt)
     # the final result should be the response returned by the second invokation of chat()

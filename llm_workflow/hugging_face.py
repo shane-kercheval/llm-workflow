@@ -139,7 +139,7 @@ class HuggingFaceEndpointChat(ChatModel):
             system_message: str = 'You are a helpful assistant. Be concise and clear but give good explainations.',  # noqa
             message_formatter: Callable[[str, list[ExchangeRecord]], str] = llama_message_formatter,  # noqa
             temperature: float = 0.001,
-            calculate_num_tokens: Callable[[str], int] | None = None,
+            token_calculator: Callable[[str], int] = len,
             memory_manager: Callable[[list[ExchangeRecord]], list[str]] | None = None,
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             max_streaming_tokens: int = 10,
@@ -157,8 +157,9 @@ class HuggingFaceEndpointChat(ChatModel):
                 and returns a list of messages to send to the model.
             temperature:
                 The temperature to use when generating text. Defaults to 0.001 (must be > 0).
-            calculate_num_tokens:
+            token_calculator:
                 A callable that takes a string and returns the number of tokens in the string.
+                Defaults to `len` which returns the number of characters rather than "tokens".
             memory_manager:
                 A callable that takes the history of messages and returns a list of messages to
                 send to the model.
@@ -174,8 +175,7 @@ class HuggingFaceEndpointChat(ChatModel):
         super().__init__(
             system_message=system_message,
             message_formatter=message_formatter,
-            token_calculator=calculate_num_tokens,
-            token_calc_text=calculate_num_tokens,
+            token_calculator=token_calculator,
             cost_calculator=None,
             memory_manager=memory_manager,
         )

@@ -23,7 +23,8 @@ def test_query_hugging_face_endpoint(fake_retry_handler, fake_hugging_face_respo
             assert 'generated_text' in response[0]
 
 def test_llama_message_formatter():  # noqa
-    assert llama_message_formatter(system_message=None, history=[]) == []
+    assert llama_message_formatter(system_message=None, history=[], prompt=None) == ''
+    assert llama_message_formatter(system_message=None, history=None, prompt=None) == ''
 
     messages = llama_message_formatter(
         system_message=None,
@@ -31,9 +32,10 @@ def test_llama_message_formatter():  # noqa
             ExchangeRecord(prompt='a', response='b'),
             ExchangeRecord(prompt='c', response='d'),
         ],
+        prompt=None,
     )
-    expected_value = ['[INST] a [/INST]\nb\n', '[INST] c [/INST]\nd\n']
-    assert messages == expected_value
+    expected_value = '[INST] a [/INST]\nb\n[INST] c [/INST]\nd\n'
+    assert messages == '[INST] a [/INST]\nb\n[INST] c [/INST]\nd\n'
 
     messages = llama_message_formatter(
         system_message='system',
@@ -41,8 +43,9 @@ def test_llama_message_formatter():  # noqa
             ExchangeRecord(prompt='a', response='b'),
             ExchangeRecord(prompt='c', response='d'),
         ],
+        prompt=None,
     )
-    assert messages == ['[INST] <<SYS>> system <</SYS>> [/INST]\n', *expected_value]
+    assert messages == '[INST] <<SYS>> system <</SYS>> [/INST]\n' + expected_value
 
     messages = llama_message_formatter(
         system_message='system',
@@ -52,7 +55,7 @@ def test_llama_message_formatter():  # noqa
         ],
         prompt='e',
     )
-    assert messages == ['[INST] <<SYS>> system <</SYS>> [/INST]\n', *expected_value, '[INST] e [/INST]\n']  # noqa
+    assert messages == f'[INST] <<SYS>> system <</SYS>> [/INST]\n{expected_value}[INST] e [/INST]\n'  # noqa
 
 def test_HuggingFaceEndpointChat__no_token_calculator(hugging_face_endpoint):  # noqa
     if is_endpoint_available(hugging_face_endpoint):
@@ -80,6 +83,8 @@ def test_HuggingFaceEndpointChat__no_token_calculator(hugging_face_endpoint):  #
         assert len(response) > 0
         assert response == callback_response
         assert len(model.history()) == 1
+        assert len(model.chat_history) == 1
+        assert model.history() == model.chat_history
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -88,20 +93,20 @@ def test_HuggingFaceEndpointChat__no_token_calculator(hugging_face_endpoint):  #
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        assert '[INST]' in message.metadata['messages']
-        assert '[/INST]' in message.metadata['messages']
-        assert '<<SYS>>' in message.metadata['messages']
-        assert '<</SYS>>' in message.metadata['messages']
-        assert prompt in message.metadata['messages']
+        assert message.metadata['messages'].count('<<SYS>>') == 1
+        assert message.metadata['messages'].count('<</SYS>>') == 1
+        assert message.metadata['messages'].count('[INST]') == 2
+        assert message.metadata['messages'].count('[/INST]') == 2
+        assert message.metadata['messages'].count(prompt) == 1
         assert message.cost is None
-        assert message.input_tokens is None
-        assert message.response_tokens is None
-        assert message.total_tokens is None
+        assert message.input_tokens == len(message.metadata['messages'])
+        assert message.response_tokens == len(response)
+        assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
         assert model.cost == 0
         assert model.sum(name='cost') == 0
-        assert model.sum(name='total_tokens') == 0
+        assert model.sum(name='total_tokens') == message.total_tokens
 
 def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
     if is_endpoint_available(hugging_face_endpoint):
@@ -117,7 +122,7 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
 
         model = HuggingFaceEndpointChat(
             endpoint_url=hugging_face_endpoint,
-            calculate_num_tokens=calc_num_tokens,
+            token_calculator=calc_num_tokens,
             streaming_callback=streaming_callback,
         )
         assert len(model.history()) == 0
@@ -135,6 +140,8 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert len(response) > 0
         assert response == callback_response
         assert len(model.history()) == 1
+        assert len(model.chat_history) == 1
+        assert model.history() == model.chat_history
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -143,14 +150,14 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        assert '[INST]' in message.metadata['messages']
-        assert '[/INST]' in message.metadata['messages']
-        assert '<<SYS>>' in message.metadata['messages']
-        assert '<</SYS>>' in message.metadata['messages']
-        assert prompt in message.metadata['messages']
+        assert message.metadata['messages'].count('<<SYS>>') == 1
+        assert message.metadata['messages'].count('<</SYS>>') == 1
+        assert message.metadata['messages'].count('[INST]') == 2
+        assert message.metadata['messages'].count('[/INST]') == 2
+        assert message.metadata['messages'].count(prompt) == 1
+        assert message.input_tokens == calc_num_tokens(message.metadata['messages'])
+        assert message.response_tokens == calc_num_tokens(response)
         assert message.cost is None
-        assert message.input_tokens > 0
-        assert message.response_tokens > 0
         assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
@@ -169,6 +176,8 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert 'Shane' in response
         assert response == callback_response
         assert len(model.history()) == 2
+        assert len(model.chat_history) == 2
+        assert model.history() == model.chat_history
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -179,14 +188,16 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        assert '[INST]' in message.metadata['messages']
-        assert '[/INST]' in message.metadata['messages']
-        assert '<<SYS>>' in message.metadata['messages']
-        assert '<</SYS>>' in message.metadata['messages']
-        assert prompt in message.metadata['messages']
+        assert message.metadata['messages'].count('<<SYS>>') == 1
+        assert message.metadata['messages'].count('<</SYS>>') == 1
+        assert message.metadata['messages'].count('[INST]') == 3
+        assert message.metadata['messages'].count('[/INST]') == 3
+        assert message.metadata['messages'].count(previous_prompt) == 1
+        assert message.metadata['messages'].count(previous_response) == 1
+        assert message.metadata['messages'].count(prompt) == 1
         assert message.cost is None
-        assert message.input_tokens > 0
-        assert message.response_tokens > 0
+        assert message.input_tokens == calc_num_tokens(message.metadata['messages'])
+        assert message.response_tokens == calc_num_tokens(response)
         assert message.total_tokens == message.input_tokens + message.response_tokens
         assert message.uuid
         assert message.timestamp
@@ -262,7 +273,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         )
         model = HuggingFaceEndpointChat(
             endpoint_url=hugging_face_endpoint,
-            calculate_num_tokens=calc_num_tokens,
+            token_calculator=calc_num_tokens,
             streaming_callback=streaming_callback,
             message_formatter=llama_message_formatter,
             memory_manager=memory_manager,
@@ -360,7 +371,7 @@ def test_HuggingFaceEndpointChat__memory_manager__20_tokens(hugging_face_endpoin
         )
         model = HuggingFaceEndpointChat(
             endpoint_url=hugging_face_endpoint,
-            calculate_num_tokens=calc_num_tokens,
+            token_calculator=calc_num_tokens,
             streaming_callback=streaming_callback,
             message_formatter=llama_message_formatter,
             memory_manager=memory_manager,

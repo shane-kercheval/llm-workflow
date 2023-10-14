@@ -234,7 +234,7 @@ class OpenAIFunctionAgent(LanguageModel):
                 # max_tokens=self.max_tokens,
                 timeout=self.timeout,
             )
-        input_tokens = response['usage'].input_tokens
+        input_tokens = response['usage'].prompt_tokens
         completion_tokens = response['usage'].completion_tokens
         total_tokens = response['usage'].total_tokens
         cost = (input_tokens * self.cost_per_token['input']) + \
