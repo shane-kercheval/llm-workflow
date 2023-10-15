@@ -560,7 +560,7 @@ class ChatModel(PromptModel):
         """
         super().__init__(token_calculator=token_calculator, cost_calculator=cost_calculator)
         self._chat_history: list[ExchangeRecord] = []
-        self._system_message = system_message
+        self.system_message = system_message
         self._message_formatter = message_formatter
         self._token_calculator = token_calculator
         self._memory_manager = memory_manager
@@ -575,7 +575,7 @@ class ChatModel(PromptModel):
         """
         if self._memory_manager:
             messages = self._memory_manager(
-                system_message=self._system_message,
+                system_message=self.system_message,
                 history=self._chat_history,
                 prompt=prompt,
                 message_formatter=self._message_formatter,
@@ -584,7 +584,7 @@ class ChatModel(PromptModel):
             )
         else:
             messages = self._message_formatter(
-                system_message=self._system_message,
+                system_message=self.system_message,
                 history=self._chat_history,
                 prompt=prompt,
             )

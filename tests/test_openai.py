@@ -109,7 +109,7 @@ def test_OpenAIChat():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     assert model._previous_messages[-1]['role'] == 'user'
     assert model._previous_messages[-1]['content'] == prompt
 
@@ -158,7 +158,7 @@ def test_OpenAIChat():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
@@ -223,7 +223,7 @@ def test_OpenAIChat_streaming():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     assert model._previous_messages[-1]['role'] == 'user'
     assert model._previous_messages[-1]['content'] == prompt
 
@@ -275,7 +275,7 @@ def test_OpenAIChat_streaming():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
@@ -643,7 +643,7 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_1000_tokens():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     assert model._previous_messages[-1]['role'] == 'user'
     assert model._previous_messages[-1]['content'] == prompt
 
@@ -692,7 +692,7 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_1000_tokens():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
@@ -754,7 +754,7 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_75_tokens():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     assert model._previous_messages[-1]['role'] == 'user'
     assert model._previous_messages[-1]['content'] == prompt
 
@@ -805,7 +805,7 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_75_tokens():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == model._system_message
+    assert model._previous_messages[0]['content'] == model.system_message
     # assert model._previous_messages[1]['role'] == 'user'
     # assert model._previous_messages[1]['content'] == previous_prompt
     # assert model._previous_messages[2]['role'] == 'assistant'

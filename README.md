@@ -507,3 +507,10 @@ In the terminal, in the project directory, run the following command to run lint
 ```commandline
 make tests
 ```
+
+The `.env` file must contain the following key/values:
+
+- `OPENAI_API_KEY`
+- `STACK_OVERFLOW_KEY`
+- `HUGGING_FACE_API_KEY`
+- `HUGGING_FACE_ENDPOINT_UNIT_TESTS` which should contain the endpointurl for a lamma-2 endpoint (or model that expects the same message formatting (e.g. `[INST]`, `<<SYS>>`, etc.))

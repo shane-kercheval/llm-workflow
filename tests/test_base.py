@@ -181,7 +181,7 @@ def test_ChatModel__no_costs():  # noqa
     assert len(response) > 1
 
     expected_message_0 = llama_message_formatter(
-        system_message=model._system_message,
+        system_message=model.system_message,
         history=None,
         prompt=prompt,
     )
@@ -189,7 +189,7 @@ def test_ChatModel__no_costs():  # noqa
     assert expected_message_0.count("<</SYS>>") == 1
     assert expected_message_0.count("[INST]") == 2
     assert expected_message_0.count("[/INST]") == 2
-    assert expected_message_0.count(model._system_message) == 1
+    assert expected_message_0.count(model.system_message) == 1
     assert expected_message_0.count(prompt) == 1
     assert len(model.history()) == 1
     assert len(model.chat_history) == 1
@@ -224,7 +224,7 @@ def test_ChatModel__no_costs():  # noqa
     assert len(response) > 1
 
     expected_message_1 = llama_message_formatter(
-        system_message=model._system_message,
+        system_message=model.system_message,
         history=[model._history[0]],
         prompt=prompt,
     )
@@ -232,7 +232,7 @@ def test_ChatModel__no_costs():  # noqa
     assert expected_message_1.count("<</SYS>>") == 1
     assert expected_message_1.count("[INST]") == 3
     assert expected_message_1.count("[/INST]") == 3
-    assert expected_message_1.count(model._system_message) == 1
+    assert expected_message_1.count(model.system_message) == 1
     assert expected_message_1.count(model.chat_history[0].prompt) == 1
     assert expected_message_1.count(model.chat_history[0].response) == 1
     assert expected_message_1.count(prompt) == 1
@@ -285,7 +285,7 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert len(response) > 1
 
     expected_message_0 = llama_message_formatter(
-        system_message=model._system_message,
+        system_message=model.system_message,
         history=None,
         prompt=prompt,
     )
@@ -333,7 +333,7 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert len(response) > 1
 
     expected_message_1 = llama_message_formatter(
-        system_message=model._system_message,
+        system_message=model.system_message,
         history=[model._history[0]],
         prompt=prompt,
     )
@@ -378,7 +378,7 @@ def test_ChatModel_memory_manager__adds_history():  # noqa
     )
     prompt = 'This is a question.'
     response = model(prompt)
-    formatted_message_0 = llama_message_formatter(model._system_message, None, prompt)
+    formatted_message_0 = llama_message_formatter(model.system_message, None, prompt)
     expected_response = f'Model Message: {formatted_message_0}'
     assert response == expected_response.strip()
     assert model.history()[0].metadata == {'model_name': 'memory'}
@@ -413,7 +413,7 @@ def test_ChatModel_memory_manager__adds_history():  # noqa
 
     prompt = 'This is another question.'
     response = model(prompt)
-    formatted_message_1 = llama_message_formatter(model._system_message, [model.chat_history[0]], prompt)  # noqa
+    formatted_message_1 = llama_message_formatter(model.system_message, [model.chat_history[0]], prompt)  # noqa
     assert response == f'Model Message: {formatted_message_1}'.strip()
     assert model.history()[0].metadata == {'model_name': 'memory'}
     assert model.history()[1].metadata['model_name'] == 'mock'

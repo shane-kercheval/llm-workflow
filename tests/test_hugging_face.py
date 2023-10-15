@@ -95,7 +95,7 @@ def test_HuggingFaceEndpointChat__no_token_calculator(hugging_face_endpoint):  #
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -154,7 +154,7 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -194,7 +194,7 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]\n.*?\n\[INST\].*?\[\/INST\]'  # noqa
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -306,7 +306,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -346,7 +346,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = fr'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -433,7 +433,7 @@ def test_HuggingFaceEndpointChat__memory_manager__100_tokens(hugging_face_endpoi
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -475,7 +475,7 @@ def test_HuggingFaceEndpointChat__memory_manager__100_tokens(hugging_face_endpoi
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -536,7 +536,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -576,7 +576,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = fr'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -637,7 +637,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_0(huggin
         assert history[0].prompt == prompt
         assert history[0].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = r'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -677,9 +677,9 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_0(huggin
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        # pattern = fr'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
+        # pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         # we should not see the previous prompt or response in the messages
-        pattern = fr'^\[INST\].*?<<SYS>>.*?<</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
