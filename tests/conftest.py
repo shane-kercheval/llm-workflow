@@ -1,6 +1,7 @@
 """Configures the pytests."""
 import os
 from collections.abc import Callable
+import re
 from time import sleep
 from typing import Any
 import pytest
@@ -271,3 +272,9 @@ def conversation_sum():  # noqa
 @pytest.fixture()
 def hugging_face_endpoint() -> str:  # noqa
     return os.getenv('HUGGING_FACE_ENDPOINT_UNIT_TESTS')
+
+
+def pattern_found(value: str, pattern: str) -> bool:
+    """Returns True if the pattern is found in the value."""
+    pattern = re.compile(pattern)
+    return bool(pattern.match(value))

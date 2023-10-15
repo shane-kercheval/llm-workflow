@@ -2,7 +2,7 @@
 
 from llm_workflow.memory import (
     LastNExchangesManager,
-    MessageFormatterMaxTokensMemoryManager,
+    LastNTokensMemoryManager,
     TokenWindowManager,
 )
 from llm_workflow.base import ExchangeRecord
@@ -339,8 +339,8 @@ def test_OpenAIChat__TokenWindowManager():  # noqa
     assert openai_llm._previous_messages[-1]['content'] == prompt
     assert len(openai_llm.history()) == 3
 
-def test_MessageFormatterMaxTokensMemoryManager():  # noqa
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+def test_LastNTokensMemoryManager():  # noqa
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=1000,
         calculate_num_tokens=lambda x: len(x),
         message_formatter=llama_message_formatter,
@@ -364,7 +364,7 @@ def test_MessageFormatterMaxTokensMemoryManager():  # noqa
     assert messages[3] == expected_new_prompt
 
     # test edge case that if we don't have enough tokens for expected_history, none are added
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=len(expected_system_message) + len(expected_history_1) + len(expected_new_prompt) - 1,  # noqa
         calculate_num_tokens=lambda x: len(x),
         message_formatter=llama_message_formatter,
@@ -382,7 +382,7 @@ def test_MessageFormatterMaxTokensMemoryManager():  # noqa
     assert messages[1] == expected_new_prompt
 
     # test that if we have exactly enough tokens for expected_history, then the latest one is added
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=len(expected_system_message) + len(expected_history_1) + len(expected_new_prompt),  # noqa
         calculate_num_tokens=lambda x: len(x),
         message_formatter=llama_message_formatter,
@@ -401,7 +401,7 @@ def test_MessageFormatterMaxTokensMemoryManager():  # noqa
     assert messages[2] == expected_new_prompt
 
     # test that if we have don't have enough for both histories, then the latest one is added
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=len(expected_system_message) + len(expected_history_1) + \
             len(expected_history_2) + len(expected_new_prompt) - 1,
         calculate_num_tokens=lambda x: len(x),
@@ -421,7 +421,7 @@ def test_MessageFormatterMaxTokensMemoryManager():  # noqa
     assert messages[2] == expected_new_prompt
 
     # test that if we have exactly enough for both histories, then both are added
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=len(expected_system_message) + len(expected_history_1) + \
             len(expected_history_2) + len(expected_new_prompt),
         calculate_num_tokens=lambda x: len(x),
@@ -441,8 +441,8 @@ def test_MessageFormatterMaxTokensMemoryManager():  # noqa
     assert messages[2] == expected_history_2
     assert messages[3] == expected_new_prompt
 
-def test_MessageFormatterMaxTokensMemoryManager__no_system_message__no_prompt():  # noqa
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+def test_LastNTokensMemoryManager__no_system_message__no_prompt():  # noqa
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=1000,
         calculate_num_tokens=lambda x: len(x),
         message_formatter=llama_message_formatter,
@@ -462,7 +462,7 @@ def test_MessageFormatterMaxTokensMemoryManager__no_system_message__no_prompt():
     assert messages[1] == expected_history_2
 
     # test edge case that if we don't have enough tokens for expected_history, none are added
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=len(expected_history_1) + len(expected_history_2) - 1,
         calculate_num_tokens=lambda x: len(x),
         message_formatter=llama_message_formatter,
@@ -479,7 +479,7 @@ def test_MessageFormatterMaxTokensMemoryManager__no_system_message__no_prompt():
     assert messages[0] == expected_history_2
 
     # test that if we have exactly enough tokens for expected_history, then both are added
-    memory_manager = MessageFormatterMaxTokensMemoryManager(
+    memory_manager = LastNTokensMemoryManager(
         last_n_tokens=len(expected_history_1) + len(expected_history_2) ,
         calculate_num_tokens=lambda x: len(x),
         message_formatter=llama_message_formatter,

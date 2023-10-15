@@ -130,7 +130,7 @@ class HuggingFaceEndpointChat(ChatModel):
     This class manages the messages that are sent to the model and, by default, sends all
     messages previously sent to the model in subsequent requests. Therefore, each object created
     represents a single conversation. The number of messages sent to the model can be controlled
-    via `memory_manager` (e.g. `MessageFormatterMaxTokensMemoryManager`).
+    via `memory_manager` (e.g. `LastNTokensMemoryManager`).
     """
 
     def __init__(
