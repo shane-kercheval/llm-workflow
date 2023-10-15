@@ -28,40 +28,27 @@ class LastNExchangesManager(MemoryManager):
         super().__init__()
         self.last_n_exchanges = last_n_exchanges
 
-    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
+    def __call__(
+            self,
+            system_message: str | None,
+            history: list[ExchangeRecord],
+            prompt: str | None,
+            **kwargs: dict[str, Any],
+            ) -> list[str]:
         """
-        Takes a list of `ExchangeRecord` objects and returns the last `n` messages based on the
-        `last_n_message` variable set during initialization.
+        Args:
+            system_message:
+                The system message to be formatted and added to the memory.
+            history:
+                A list of ExchangeRecord objects that represent the history of the conversation.
+            prompt:
+                The prompt to be formatted and added to the memory.
+            kwargs:
+                The keyword arguments (e.g. message_formatter).
         """
-        if self.last_n_exchanges == 0:
-            return []
-        return history[-self.last_n_exchanges:]
-
-
-class TokenWindowManager(MemoryManager):
-    """Returns the last x number of messages that are within a certain threshold of tokens."""
-
-    def __init__(self, last_n_tokens: int) -> None:
-        super().__init__()
-        self.last_n_tokens = last_n_tokens
-
-    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
-        """
-        Takes a list of `ExchangeRecord` objects and returns the last x messages where the
-        aggregated number of tokens is less than the `last_n_message` variable set during
-        initialization.
-        """
-        history = reversed(history)
-        memory = []
-        tokens_used = 0
-        for message in history:
-            # if the message's tokens plus the tokens that are already used in the memory is more
-            # than the threshold then we need to break and avoid adding more memory
-            if message.total_tokens + tokens_used > self.last_n_tokens:
-                break
-            memory.append(message)
-            tokens_used += message.total_tokens
-        return reversed(memory)
+        message_formatter = kwargs['message_formatter']
+        history = None if self.last_n_exchanges == 0 else history[-self.last_n_exchanges:]
+        return message_formatter(system_message, history, prompt)
 
 
 class LastNTokensMemoryManager(MemoryManager):
