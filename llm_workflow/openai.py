@@ -97,6 +97,7 @@ def message_formatter(
         messages += [{'role': 'user', 'content': prompt}]
     return messages
 
+
 class OpenAIEmbedding(EmbeddingModel):
     """A wrapper around the OpenAI Embedding model that tracks token usage and costs."""
 
