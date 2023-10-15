@@ -144,7 +144,11 @@ class LastNTokensMemoryManager(MemoryManager):
             message_tokens = token_calculator(formatted_message)
             if message_tokens + tokens_used > self.last_n_tokens:
                 break
-            if not is_list:
+            if is_list:
+                # if the output is a list, then we need to reverse it so that when we reverse at
+                # the end of the function we get the correct order
+                formatted_message = list(reversed(formatted_message))
+            else:
                 formatted_message = [formatted_message]
             memory += formatted_message
             tokens_used += message_tokens

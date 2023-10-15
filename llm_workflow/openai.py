@@ -75,6 +75,28 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
     return num_tokens
 
 
+def message_formatter(
+        system_message: str | None,
+        history: list[ExchangeRecord] | None,
+        prompt: str | None) -> list[dict]:
+    """
+    A message formatter takes a system_message, list of messages (ExchangeRecord objects), and a
+    prompt, and formats them according to the best practices for interacting with the model.
+    """
+    # initial message; always keep system message regardless of memory_manager
+    messages = []
+    if system_message:
+        messages += [{'role': 'system', 'content': system_message}]
+    if history:
+        for message in history:
+            messages += [
+                {'role': 'user', 'content': message.prompt},
+                {'role': 'assistant', 'content': message.response},
+            ]
+    if prompt:
+        messages += [{'role': 'user', 'content': prompt}]
+    return messages
+
 class OpenAIEmbedding(EmbeddingModel):
     """A wrapper around the OpenAI Embedding model that tracks token usage and costs."""
 
@@ -182,21 +204,6 @@ class OpenAIChat(ChatModel):
             if isinstance(messages, list):
                 return num_tokens_from_messages(model_name=model_name, messages=messages)
             raise NotImplementedError(f"""token_calculator() is not implemented for messages of type {type(messages)}.""")  # noqa
-
-        def message_formatter(
-                system_message: str | None,
-                history: list[ExchangeRecord] | None,
-                prompt: str | None) -> list[dict]:
-            # initial message; always keep system message regardless of memory_manager
-            messages = [{'role': 'system', 'content': system_message}]
-            for message in history:
-                messages += [
-                    {'role': 'user', 'content': message.prompt},
-                    {'role': 'assistant', 'content': message.response},
-                ]
-            # add latest prompt to messages
-            messages += [{'role': 'user', 'content': prompt}]
-            return messages
 
         super().__init__(
             system_message=system_message,
