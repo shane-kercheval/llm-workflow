@@ -568,6 +568,15 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_75_tokens():  # noqa
     assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
+def test_OpenAIChat_with_LastNTokensMemoryManager__1_tokens():  # noqa
+    model = OpenAIChat(
+        model_name='gpt-3.5-turbo',
+        memory_manager=LastNTokensMemoryManager(last_n_tokens=1),
+    )
+    prompt = "My name is Shane and my favorite color is blue. What's your name?"
+    with pytest.raises(AssertionError):
+        _ = model(prompt)
+
 def test_OpenAIEmbedding():  # noqa
     model = OpenAIEmbedding(model_name='text-embedding-ada-002')
     assert model.cost == 0
