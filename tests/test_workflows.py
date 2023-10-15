@@ -195,13 +195,17 @@ def test_workflow_index_len():  # noqa
     assert workflow[0] == 'test'
 
 def test_workflow_with_MockChat():  # noqa
+    # this Chat returns the "Response: " + prompt
     prompt = "Here's a question."
     first_response = "Response: " + prompt
     second_prompt = "Question: " + first_response
     second_response = "Response: " + second_prompt
 
-    # this Chat returns the "Response: " + prompt
-    chat = MockChatModel(return_prompt="Response: ", token_calculator=len)
+    chat = MockChatModel(
+        return_prompt="Response: ",
+        token_calculator=len,
+        message_formatter=lambda system_message, history, prompt: prompt,  # noqa
+    )
     workflow = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
     result = workflow(prompt)
     # the final result should be the response returned by the second invokation of chat()
@@ -209,28 +213,30 @@ def test_workflow_with_MockChat():  # noqa
 
     # check that the prompts/responses got propegated through the workflow
     assert len(chat.history()) == 2
+    assert len(chat.chat_history) == 2
+    assert chat.history() == chat.chat_history
     assert chat.history()[0].prompt == prompt
     assert chat.history()[0].response == first_response
-    assert chat.history()[0].input_tokens is None
-    assert chat.history()[0].response_tokens is None
-    assert chat.history()[0].total_tokens is None
+    assert chat.history()[0].input_tokens == len(prompt)
+    assert chat.history()[0].response_tokens == len(first_response)
+    assert chat.history()[0].total_tokens == len(prompt) + len(first_response)
     assert chat.history()[0].cost is None
     assert chat.history()[1].prompt == second_prompt
     assert chat.history()[1].response == second_response
-    assert chat.history()[1].input_tokens is None
-    assert chat.history()[1].response_tokens is None
-    assert chat.history()[1].total_tokens is None
+    assert chat.history()[1].input_tokens == len(second_prompt)
+    assert chat.history()[1].response_tokens == len(second_response)
+    assert chat.history()[1].total_tokens == len(second_prompt) + len(second_response)
     assert chat.history()[1].cost is None
 
-    assert chat.input_tokens == 0
-    assert chat.response_tokens == 0
-    assert chat.total_tokens == 0
+    assert chat.input_tokens == chat.history()[0].input_tokens + chat.history()[1].input_tokens
+    assert chat.response_tokens == chat.history()[0].response_tokens + chat.history()[1].response_tokens  # noqa
+    assert chat.total_tokens == chat.history()[0].total_tokens + chat.history()[1].total_tokens
     assert chat.cost == 0
 
     assert workflow.sum('total_tokens', types=EmbeddingRecord) == 0
-    assert workflow.sum('input_tokens') == 0
-    assert workflow.sum('response_tokens') == 0
-    assert workflow.sum('total_tokens') == 0
+    assert workflow.sum('input_tokens') == chat.input_tokens
+    assert workflow.sum('response_tokens') == chat.response_tokens
+    assert workflow.sum('total_tokens') == chat.total_tokens
     assert workflow.sum('cost') == 0
 
 def test_workflow_with_MockChat_tokens_costs():  # noqa
@@ -243,8 +249,9 @@ def test_workflow_with_MockChat_tokens_costs():  # noqa
     # this Chat returns the "Response: " + prompt
     chat = MockChatModel(
         return_prompt="Response: ",
-        token_counter=len,
-        cost_per_token=cost_per_token,
+        token_calculator=len,
+        cost_calculator=lambda input_tokens, response_tokens: (input_tokens + response_tokens) * cost_per_token,  # noqa
+        message_formatter=lambda system_message, history, prompt: prompt,  # noqa
     )
     workflow = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
     result = workflow(prompt)
@@ -387,8 +394,9 @@ def test_workflow_with_MockChat_MockEmbeddings():  # noqa
 
     chat = MockChatModel(
         return_prompt="Response: ",
-        token_counter=len,
-        cost_per_token=cost_per_token_chat,
+        token_calculator=len,
+        cost_calculator=lambda input_tokens, response_tokens: (input_tokens + response_tokens) * cost_per_token_chat,  # noqa
+        message_formatter=lambda system_message, history, prompt: prompt,  # noqa
     )
     workflow = Workflow(tasks=[
         sleep_return,

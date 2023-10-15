@@ -111,6 +111,7 @@ class MockChatModel(ChatModel):
             token_calculator: Callable[[str | list[str] | object], int],
             cost_calculator: Callable[[int, int], float] | None = None,
             return_prompt: str | None = None,
+            message_formatter: Callable[[str, list[ExchangeRecord]], str] | None = None,
             memory_manager: MemoryManager | None = None) -> None:
         """
         Used to test base classes.
@@ -122,12 +123,16 @@ class MockChatModel(ChatModel):
                 callable to calculate costs
             return_prompt:
                 if not None, prepends the string to the prompt and returns it as a response
+            message_formatter:
+                custom message formatter to format messages
             memory_manager:
                 custom memory manager to manage memory
         """
+        if message_formatter is None:
+            message_formatter = llama_message_formatter
         super().__init__(
             system_message="This is a system message.",
-            message_formatter=llama_message_formatter,
+            message_formatter=message_formatter,
             token_calculator=token_calculator,
             cost_calculator=cost_calculator,
             memory_manager=memory_manager,

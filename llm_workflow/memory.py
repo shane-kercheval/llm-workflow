@@ -17,7 +17,7 @@ These classes can be used with, for example, the OpenAIChat model by passing a M
 to the memory_manager variable when initializing the model object.
 """
 
-from typing import Any, Callable
+from typing import Any
 from llm_workflow.base import MemoryManager, ExchangeRecord
 
 
