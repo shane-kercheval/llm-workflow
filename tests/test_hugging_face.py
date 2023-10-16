@@ -146,6 +146,9 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert len(model.history()) == 1
         assert len(model.chat_history) == 1
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == prompt
+        assert model.chat_history[0].response == response
+
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -184,6 +187,11 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         assert len(model.history()) == 2
         assert len(model.chat_history) == 2
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == previous_prompt
+        assert model.chat_history[0].response == previous_response
+        assert model.chat_history[1].prompt == prompt
+        assert model.chat_history[1].response == response
+
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -298,6 +306,9 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert len(model.history()) == 1
         assert len(model.chat_history) == 1
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == prompt
+        assert model.chat_history[0].response == response
+
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -336,6 +347,11 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert len(model.history()) == 2
         assert len(model.chat_history) == 2
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == previous_prompt
+        assert model.chat_history[0].response == previous_response
+        assert model.chat_history[1].prompt == prompt
+        assert model.chat_history[1].response == response
+
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -425,6 +441,9 @@ def test_HuggingFaceEndpointChat__memory_manager__100_tokens(hugging_face_endpoi
         assert len(model.history()) == 1
         assert len(model.chat_history) == 1
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == prompt
+        assert model.chat_history[0].response == response
+
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -465,6 +484,11 @@ def test_HuggingFaceEndpointChat__memory_manager__100_tokens(hugging_face_endpoi
         assert len(model.history()) == 2
         assert len(model.chat_history) == 2
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == previous_prompt
+        assert model.chat_history[0].response == previous_response
+        assert model.chat_history[1].prompt == prompt
+        assert model.chat_history[1].response == response
+
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -528,6 +552,8 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         assert len(model.history()) == 1
         assert len(model.chat_history) == 1
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == prompt
+        assert model.chat_history[0].response == response
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -566,6 +592,10 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         assert len(model.history()) == 2
         assert len(model.chat_history) == 2
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == previous_prompt
+        assert model.chat_history[0].response == previous_response
+        assert model.chat_history[1].prompt == prompt
+        assert model.chat_history[1].response == response
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -629,6 +659,8 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_0(huggin
         assert len(model.history()) == 1
         assert len(model.chat_history) == 1
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == prompt
+        assert model.chat_history[0].response == response
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt
@@ -667,6 +699,10 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_0(huggin
         assert len(model.history()) == 2
         assert len(model.chat_history) == 2
         assert model.history() == model.chat_history
+        assert model.chat_history[0].prompt == previous_prompt
+        assert model.chat_history[0].response == previous_response
+        assert model.chat_history[1].prompt == prompt
+        assert model.chat_history[1].response == response
         message = model.previous_record()
         assert isinstance(message, ExchangeRecord)
         assert message.prompt == prompt

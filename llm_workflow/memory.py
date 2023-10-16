@@ -147,14 +147,74 @@ class LastNTokensMemoryManager(MemoryManager):
         return memory if is_list else ''.join(memory)
 
 
-class MessageSummaryManager(MemoryManager):
+class MessageSummaryMemoryManager(MemoryManager):
     """TODO."""
 
-    def __init__(self, model: PromptModel, max_tokens: int) -> None:
+    def __init__(
+            self,
+            model: PromptModel,
+            message_threshold: int = 150,
+            summarize_instruction: str = 'Summarize the following while retaining the important information.',  # noqa
+            ) -> None:
+        """
+        Args:
+            model:
+                The model to use for summarizing messages.
+            message_threshold:
+                The maximum number of characters that a message (prompt/response) can be before it
+                is summarized.
+            summarize_instruction:
+                The instruction to use when summarizing messages.
+        """
         super().__init__()
         self._model = model
+        self._model.system_message = None  # for any chat models; we don't need/want a system msg
+        self._message_threshold = message_threshold
+        self._summarize_instruction = summarize_instruction
+        self._history = []
+        self._cache = {}
 
-    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
+    def __call__(
+        self,
+        system_message: str,
+        history: list[ExchangeRecord],
+        prompt: str,
+        **kwargs: dict[str, Any]) -> str | list[str] | list[dict[str, str]]:
         """TODO."""
-        raise NotImplementedError
+        message_formatter = kwargs['message_formatter']
+        # for each of the previous prompt/responses in history, we want to summarize the prompt
+        # and response using the model; we want to cache the results so that we don't have to
+        # summarize the same prompt/response pair multiple times
+        summarized_records = []
+        for record in history:
+            if record.uuid not in self._cache:
+                if len(record.prompt) > self._message_threshold:
+                    summarized_prompt = self._model(self._summarize_format_message(record.prompt))
+                else:
+                    summarized_prompt = record.prompt
+                if len(record.response) > self._message_threshold:
+                    summarized_response = self._model(self._summarize_format_message(record.response))  # noqa
+                else:
+                    summarized_response = record.response
+                self._cache[record.uuid] = {
+                    'prompt': summarized_prompt,
+                    'response': summarized_response,
+                }
+            summarized_records.append(ExchangeRecord(
+                prompt=self._cache[record.uuid]['prompt'],
+                response=self._cache[record.uuid]['response'],
+            ))
 
+        return message_formatter(
+            system_message,
+            summarized_records,
+            prompt,
+        )
+
+    def _summarize_format_message(self, message: str) -> str:
+        """TODO."""
+        return f"{self._summarize_instruction}:\n\n```\n{message}\n```"
+
+    def history(self) -> list[ExchangeRecord]:
+        """TODO."""
+        return self._model.history()
