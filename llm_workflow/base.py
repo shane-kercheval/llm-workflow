@@ -6,7 +6,6 @@ from collections.abc import Callable
 from uuid import uuid4
 from datetime import datetime
 from pydantic import BaseModel, Field
-
 from llm_workflow.internal_utilities import has_method, has_property
 
 
@@ -71,9 +70,10 @@ class RecordKeeper(ABC):
         """
         history = self._get_history() or []  # ensure empty list is returned instead of None
         if not types:
-            return history
+            return sorted(history, key=lambda x: x.timestamp)
         if isinstance(types, type | tuple):
-            return [x for x in history if isinstance(x, types)]
+            history = [x for x in history if isinstance(x, types)]
+            return sorted(history, key=lambda x: x.timestamp)
 
         raise TypeError(f"types not a valid type ({type(types)}) ")
 
@@ -190,7 +190,7 @@ class Workflow(RecordKeeper):
                 if record.uuid not in unique_uuids:
                     unique_records.append(record)
                     unique_uuids |= {record.uuid}
-        return sorted(unique_records, key=lambda x: x.timestamp)
+        return unique_records
 
 
 class Session(RecordKeeper):
@@ -257,3 +257,355 @@ def _has_history(obj: object) -> bool:
         isinstance(obj.history(), list) and \
         len(obj.history()) > 0 and \
         isinstance(obj.history()[0], Record)
+
+
+class TokenUsageRecord(CostRecord):
+    """Represents a record associated with token usage and/or costs."""
+
+    total_tokens: int | None = None
+
+    def __str__(self) -> str:
+        return \
+            f"timestamp: {self.timestamp}; " \
+            f"cost: ${self.cost or 0:.6f}; " \
+            f"total_tokens: {self.total_tokens or 0:,}; " \
+            f"uuid: {self.uuid}"
+
+
+class ExchangeRecord(TokenUsageRecord):
+    """
+    An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input
+    (prompt) and its corresponding output (response). For example, it could represent a single
+    prompt and correpsonding response from within a larger conversation with ChatGPT. Its
+    purpose is to record details of the interaction/exchange, including the token count and
+    associated costs, if any.
+    """
+
+    prompt: str | list
+    response: str
+    input_tokens: int | None = None
+    response_tokens: int | None = None
+
+    def __str__(self) -> str:
+        return \
+            f"timestamp: {self.timestamp}; " \
+            f"prompt: \"{self.prompt.strip()[0:50]}...\"; "\
+            f"response: \"{self.response.strip()[0:50]}...\";  " \
+            f"cost: ${self.cost or 0:.6f}; " \
+            f"total_tokens: {self.total_tokens or 0:,}; " \
+            f"input_tokens: {self.input_tokens or 0:,}; " \
+            f"response_tokens: {self.response_tokens or 0:,}; " \
+            f"uuid: {self.uuid}"
+
+
+class EmbeddingRecord(TokenUsageRecord):
+    """Record associated with an embedding request."""
+
+
+class StreamingEvent(Record):
+    """Contains the information from a streaming event."""
+
+    response: str
+
+
+class LanguageModel(RecordKeeper):
+    """
+    A LanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embedding model), is a
+    class designed to be callable. Given specific inputs, such as prompts for chat-based models or
+    documents for embedding models, it generates meaningful responses, which can be in the form of
+    strings or documents.
+
+    Additionally, a LanguageModel is equipped with helpful auxiliary methods that enable
+    tracking and analysis of its usage history. These methods provide insights into
+    metrics like token consumption and associated costs. It's worth noting that not all models
+    incur direct costs, as is the case with ChatGPT; for example, offline models.
+    """
+
+    @abstractmethod
+    def __call__(self, value: object) -> object:
+        """Executes the chat request based on the value (e.g. message(s)) passed in."""
+
+    @property
+    def total_tokens(self) -> int | None:
+        """
+        Sums the `total_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.sum(name='total_tokens')
+
+    @property
+    def cost(self) -> float | None:
+        """
+        Sums the `cost` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.sum(name='cost')
+
+
+class EmbeddingModel(LanguageModel):
+    """A model that produces an embedding for any given text input."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._history: list[EmbeddingRecord] = []
+
+    @abstractmethod
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
+        """
+        Execute the embedding request.
+
+        Returns a tuple. This tuple consists of two elements:
+        1. The embedding, which are represented as a list where each item corresponds to a Document
+        and contains the embedding (a list of floats).
+        2. An `EmbeddingRecord` object, which track of costs and other relevant metadata. The
+        record is added to the object's `history`. Only the embedding is returned to the user when
+        the object is called.
+        """
+
+    def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
+        """
+        Executes the embedding request based on the document(s) provided. Returns a list of
+        embeddings corresponding to the document(s). Adds a corresponding EmbeddingRecord record
+        to the object's `history`.
+
+        Args:
+            docs:
+                Either a list of Documents, single Document, or str. Returns the embedding that
+                correspond to the doc(s).
+        """
+        if not docs:
+            return []
+        if isinstance(docs, list):
+            if isinstance(docs[0], str):
+                docs = [Document(content=x) for x in docs]
+            else:
+                assert isinstance(docs[0], Document)
+        elif isinstance(docs, Document):
+            docs = [docs]
+        elif isinstance(docs, str):
+            docs = [Document(content=docs)]
+        else:
+            raise TypeError("Invalid type.")
+
+        embedding, metadata = self._run(docs=docs)
+        self._history.append(metadata)
+        return embedding
+
+    def _get_history(self) -> list[EmbeddingRecord]:
+        """A list of EmbeddingRecord that correspond to each embedding request."""
+        return self._history
+
+
+class PromptModel(LanguageModel):
+    """
+    The PromptModel class represents an LLM where each exchange (from the end-user's perspective)
+    is a string input (user's prompt) and string output (model's response). For example, an
+    exchange could represent a single prompt (input) and correpsonding response (output) from a
+    ChatGPT or InstructGPT model. It provides auxiliary methods to monitor the usage history of an
+    instantiated model, including metrics like tokens used.
+    """
+
+    def __init__(
+            self,
+            token_calculator: Callable[[str | list[str] | object], int],
+            cost_calculator: Callable[[int, int], float] | None = None) -> None:
+        super().__init__()
+        self._history: list[ExchangeRecord] = []
+        self._token_calculator = token_calculator
+        if cost_calculator:
+            self._cost_calculator = cost_calculator
+        else:
+            self._cost_calculator = lambda _in, _out: None
+
+    @abstractmethod
+    def _run(self, prompt: str) -> tuple[str | list[str] | object, dict]:
+        """
+        Subclasses should override this function and generate responses from the LLM.
+        TODO: returns dict metadata.
+        """
+
+    def __call__(self, prompt: str) -> str:
+        """
+        Executes a chat request based on the given prompt and returns a response.
+
+        Args:
+            prompt: The prompt or question to be sent to the model.
+        """
+        response, metadata = self._run(prompt)
+        input_tokens = self._token_calculator(prompt)
+        response_tokens = self._token_calculator(response)
+        total_tokens = input_tokens + response_tokens
+        cost = self._cost_calculator(input_tokens, response_tokens)
+        response = ExchangeRecord(
+            prompt=prompt,
+            response=response.strip(),
+            metadata=metadata,
+            input_tokens=input_tokens,
+            response_tokens=response_tokens,
+            total_tokens=total_tokens,
+            cost=cost,
+        )
+        self._history.append(response)
+        return response.response
+
+    def _get_history(self) -> list[ExchangeRecord]:
+        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
+        return self._history.copy()
+
+    @property
+    def previous_prompt(self) -> str | None:
+        """Returns the last/previous prompt used in chat model."""
+        return self.previous_record().prompt if self.previous_record() else None
+
+    @property
+    def previous_response(self) -> str | None:
+        """Returns the last/previous response used in chat model."""
+        return self.previous_record().response if self.previous_record() else None
+
+    @property
+    def input_tokens(self) -> int | None:
+        """
+        Sums the `input_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.sum(name='input_tokens')
+
+    @property
+    def response_tokens(self) -> int | None:
+        """
+        Sums the `response_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.sum(name='response_tokens')
+
+
+class MemoryManager(ABC):
+    """
+    Class that has logic to handle the memory (i.e. total context) of the messages sent to an
+    LLM.
+    """
+
+    @abstractmethod
+    def __call__(
+        self,
+        system_message: str,
+        history: list[ExchangeRecord],
+        prompt: str,
+        **kwargs: dict[str, Any]) -> str | list[str] | list[dict[str, str]]:
+        """
+        Takes the hisitory of messages and returns a modified/reduced list of messages based on the
+        memory strategy. Requires the system message and prompt to be passed in as well, since
+        those will affect the memory. Only the list of messages to send to the model should be
+        returned since those are the only messages that will be dynamically modified.
+        """
+
+
+class ChatMessageFormatter(ABC):
+    """
+    A ChatMessageFormatter is a class designed to be callable. Given specific inputs, (e.g. system
+    message, history of messages, and prompt), it the final prompt to send to the model (e.g. list
+    or string, depending on the type of model).
+    """
+
+    @abstractmethod
+    def __call__(
+            self,
+            system_message: str,
+            history: list[ExchangeRecord],
+            prompt: str,
+            ) -> list | str:
+        """
+        Takes the system message, history of messages, and prompt and returns a list of messages
+        (or a single message) to send to the model. Some models, such as OpenAI's ChatGPT takes a
+        list of dictionaries defining role/content pairs, while others, such as Llama, takes a
+        single string.
+        """
+
+
+class ChatModel(PromptModel):
+    """
+    The ChatModel class represents an LLM where each exchange (from the end-user's perspective)
+    is a string input (user's prompt) and string output (model's response). Unlike the PromptModel,
+    it provides additional methods to separate the chat history (prompt/response) from the
+    additional history that may be added (e.g. additional models for MemoryManager (e.g.
+    summarization/embeddings)).
+
+    Any MemoryManager object that is passed in that has a `history()` function will be included in
+    the `history()` of the underlying ChatModel object.
+    """
+
+    def __init__(
+            self,
+            system_message: str,
+            message_formatter: Callable[[str | None, list[ExchangeRecord] | None, str | None], list | str],  # noqa
+            token_calculator: Callable[[list[str]], int] | Callable[[str], int],
+            cost_calculator: Callable[[int, int], float] | None = None,
+            memory_manager: MemoryManager | None = None,
+            ):
+        """
+        Args:
+            system_message:
+                The content of the message associated with the "system" `role`.
+            message_formatter:
+                A callable that takes the system message, the history of messages, and the prompt
+                and returns a list of messages to send to the model.
+            token_calculator:
+                A callable that returns number of tokens in the message(s)
+            cost_calculator:
+                A callable that takes the number of tokens in the prompt and response and returns
+                the cost.
+            memory_manager:
+                A callable that takes the history of messages and returns a list of messages to
+                send to the model.
+        """
+        super().__init__(token_calculator=token_calculator, cost_calculator=cost_calculator)
+        self._chat_history: list[ExchangeRecord] = []
+        self.system_message = system_message
+        self._message_formatter = message_formatter
+        self._token_calculator = token_calculator
+        self._memory_manager = memory_manager
+        self._previous_messages = None
+
+    def __call__(self, prompt: str) -> str:
+        """
+        Executes a chat request based on the given prompt and returns a response.
+
+        Args:
+            prompt: The prompt or question to be sent to the model.
+        """
+        if self._memory_manager:
+            messages = self._memory_manager(
+                system_message=self.system_message,
+                history=self._chat_history,
+                prompt=prompt,
+                message_formatter=self._message_formatter,
+                token_calculator=self._token_calculator,
+                cost_calculator=self._cost_calculator,
+            )
+        else:
+            messages = self._message_formatter(
+                system_message=self.system_message,
+                history=self._chat_history,
+                prompt=prompt,
+            )
+        self._previous_messages = messages
+        response = super().__call__(prompt=messages)
+        self._history[-1].prompt = prompt
+        self._history[-1].metadata['messages'] = messages
+        # the reason to separate out the history from chat_history is so that subclasses can add
+        # additional history (via from e.g. memory_manager / summarization)
+        # without it being included in the chat history.
+        self._chat_history.append(self._history[-1])
+        return response
+
+    @property
+    def chat_history(self) -> list[ExchangeRecord]:
+        """Returns the chat history (prompt, response, metadata, etc.) for the model."""
+        return self._chat_history.copy()
+
+    def _get_history(self) -> list[ExchangeRecord]:
+        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
+        history = self._history.copy()
+        if self._memory_manager and _has_history(self._memory_manager):
+            history += self._memory_manager.history()
+        return history

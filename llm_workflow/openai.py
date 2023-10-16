@@ -5,17 +5,25 @@ from typing import Callable
 from functools import cache
 import tiktoken
 from tiktoken import Encoding
-from llm_workflow.base import Document
 from llm_workflow.internal_utilities import retry_handler
-from llm_workflow.models import (
+from llm_workflow.base import (
+    ChatModel,
+    Document,
     EmbeddingModel,
     EmbeddingRecord,
     ExchangeRecord,
     MemoryManager,
-    PromptModel,
     StreamingEvent,
 )
-from llm_workflow.resources import MODEL_COST_PER_TOKEN
+
+
+MODEL_COST_PER_TOKEN = {
+    'text-embedding-ada-002': 0.0001 / 1_000,
+    'gpt-4': {'input': 0.03 / 1_000, 'output': 0.06 / 1_000},
+    'gpt-4-32k': {'input': 0.06 / 1_000, 'output': 0.12 / 1_000},
+    'gpt-3.5-turbo': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
+    'gpt-3.5-turbo-16k': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
+}
 
 
 @cache
@@ -65,6 +73,29 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
                 num_tokens += tokens_per_name
     num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
     return num_tokens
+
+
+def message_formatter(
+        system_message: str | None,
+        history: list[ExchangeRecord] | None,
+        prompt: str | None) -> list[dict]:
+    """
+    A message formatter takes a system_message, list of messages (ExchangeRecord objects), and a
+    prompt, and formats them according to the best practices for interacting with the model.
+    """
+    # initial message; always keep system message regardless of memory_manager
+    messages = []
+    if system_message:
+        messages += [{'role': 'system', 'content': system_message}]
+    if history:
+        for message in history:
+            messages += [
+                {'role': 'user', 'content': message.prompt},
+                {'role': 'assistant', 'content': message.response},
+            ]
+    if prompt:
+        messages += [{'role': 'user', 'content': prompt}]
+    return messages
 
 
 class OpenAIEmbedding(EmbeddingModel):
@@ -118,7 +149,7 @@ class OpenAIEmbedding(EmbeddingModel):
         return MODEL_COST_PER_TOKEN[self.model_name]
 
 
-class OpenAIChat(PromptModel):
+class OpenAIChat(ChatModel):
     """
     A wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
     endpoint). More info here: https://platform.openai.com/docs/api-reference/chat.
@@ -136,9 +167,7 @@ class OpenAIChat(PromptModel):
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
-            memory_manager: MemoryManager | \
-                Callable[[list[ExchangeRecord]], list[ExchangeRecord]] | \
-                None = None,
+            memory_manager: MemoryManager | None = None,
             timeout: int = 10,
             ) -> None:
         """
@@ -165,17 +194,32 @@ class OpenAIChat(PromptModel):
             timeout:
                 timeout value passed to OpenAI model.
         """
-        super().__init__()
+        def cost_calculator(input_tokens: int, response_tokens: int) -> float:
+            model_costs = MODEL_COST_PER_TOKEN[self.model_name]
+            return (input_tokens * model_costs['input']) + \
+                (response_tokens * model_costs['output'])
+
+        def token_calculator(messages: str | list[dict]) -> int:
+            if isinstance(messages, str):
+                return num_tokens(model_name=model_name, value=messages)
+            if isinstance(messages, list):
+                return num_tokens_from_messages(model_name=model_name, messages=messages)
+            raise NotImplementedError(f"""token_calculator() is not implemented for messages of type {type(messages)}.""")  # noqa
+
+        super().__init__(
+            system_message=system_message,
+            message_formatter=message_formatter,
+            token_calculator=token_calculator,
+            cost_calculator=cost_calculator,
+            memory_manager=memory_manager,
+        )
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.streaming_callback = streaming_callback
         self.timeout = timeout
-        self._memory_manager = memory_manager
-        self._system_message = {'role': 'system', 'content': system_message}
-        self._previous_messages = None
 
-    def _run(self, prompt: str) -> ExchangeRecord:
+    def _run(self, messages: list[dict]) -> tuple[str, dict]:
         """
         `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
         user, assistant). This function builds the list of messages based on the history of
@@ -187,20 +231,6 @@ class OpenAIChat(PromptModel):
         (i.e. a ExchangeRecord object).
         """
         import openai
-        # build up messages from history
-        history = self.history().copy()
-        if self._memory_manager:
-            history = self._memory_manager(history=history)
-
-        # initial message; always keep system message regardless of memory_manager
-        messages = [self._system_message]
-        for message in history:
-            messages += [
-                {'role': 'user', 'content': message.prompt},
-                {'role': 'assistant', 'content': message.response},
-            ]
-        # add latest prompt to messages
-        messages += [{'role': 'user', 'content': prompt}]
         if self.streaming_callback:
             response = retry_handler()(
                 openai.ChatCompletion.create,
@@ -225,10 +255,6 @@ class OpenAIChat(PromptModel):
                 if delta:
                     self.streaming_callback(StreamingEvent(response=delta))
                     response_message += delta
-
-            prompt_tokens = num_tokens_from_messages(model_name=self.model_name, messages=messages)
-            completion_tokens = num_tokens(model_name=self.model_name, value=response_message)
-            total_tokens = prompt_tokens + completion_tokens
         else:
             response = retry_handler()(
                 openai.ChatCompletion.create,
@@ -239,23 +265,14 @@ class OpenAIChat(PromptModel):
                 timeout=self.timeout,
             )
             response_message = response['choices'][0]['message'].content
-            prompt_tokens = response['usage'].prompt_tokens
-            completion_tokens = response['usage'].completion_tokens
-            total_tokens = response['usage'].total_tokens
 
-        self._previous_messages = messages
-        cost = (prompt_tokens * self.cost_per_token['input']) + \
-            (completion_tokens * self.cost_per_token['output'])
-
-        return ExchangeRecord(
-            prompt=prompt,
-            response=response_message,
-            metadata={'model_name': self.model_name},
-            prompt_tokens=prompt_tokens,
-            response_tokens=completion_tokens,
-            total_tokens=total_tokens,
-            cost=cost,
-        )
+        metadata = {
+            'model_name': self.model_name,
+            'temperature': self.temperature,
+            'max_tokens': self.max_tokens,
+            'timeout': self.timeout,
+        }
+        return response_message, metadata
 
     @property
     def cost_per_token(self) -> dict:

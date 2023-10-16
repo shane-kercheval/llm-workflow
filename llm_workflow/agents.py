@@ -12,10 +12,9 @@ from typing import Any
 from collections.abc import Callable
 import functools
 
-from llm_workflow.base import Record, _has_history
+from llm_workflow.base import Record, _has_history, ExchangeRecord, LanguageModel
 from llm_workflow.internal_utilities import has_method, retry_handler
-from llm_workflow.models import ExchangeRecord, LanguageModel
-from llm_workflow.resources import MODEL_COST_PER_TOKEN
+from llm_workflow.openai import MODEL_COST_PER_TOKEN
 
 
 class ToolBase(ABC):
@@ -235,16 +234,16 @@ class OpenAIFunctionAgent(LanguageModel):
                 # max_tokens=self.max_tokens,
                 timeout=self.timeout,
             )
-        prompt_tokens = response['usage'].prompt_tokens
+        input_tokens = response['usage'].prompt_tokens
         completion_tokens = response['usage'].completion_tokens
         total_tokens = response['usage'].total_tokens
-        cost = (prompt_tokens * self.cost_per_token['input']) + \
+        cost = (input_tokens * self.cost_per_token['input']) + \
             (completion_tokens * self.cost_per_token['output'])
         record = ExchangeRecord(
             prompt=prompt,
             response='',
             metadata={'model_name': self.model_name},
-            prompt_tokens=prompt_tokens,
+            input_tokens=input_tokens,
             response_tokens=completion_tokens,
             total_tokens=total_tokens,
             cost=cost,

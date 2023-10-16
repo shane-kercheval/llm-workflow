@@ -6,7 +6,7 @@ import requests
 from typing import Callable
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from llm_workflow.internal_utilities import retry_handler
-from llm_workflow.models import ExchangeRecord, PromptModel, StreamingEvent
+from llm_workflow.base import ChatModel, ExchangeRecord, StreamingEvent
 
 
 def query_hugging_face_endpoint(
@@ -84,8 +84,8 @@ def num_tokens(
 
 def llama_message_formatter(
         system_message: str | None,
-        messages: list[ExchangeRecord],
-        prompt: str | None = None) -> list[str]:
+        history: list[ExchangeRecord] | None,
+        prompt: str | None) -> str:
     """
     A message formatter takes a list of messages (ExchangeRecord objects) and formats them
     according to the best practices for interacting with the model.
@@ -102,7 +102,7 @@ def llama_message_formatter(
     Args:
         system_message:
             The content of the message associated with the "system" `role`.
-        messages:
+        history:
             A list of ExchangeRecord objects, containing the prompt/response pairs.
         prompt:
             The next prompt to be sent to the model.
@@ -110,14 +110,17 @@ def llama_message_formatter(
     formatted_messages = []
     if system_message:
         formatted_messages.append(f"[INST] <<SYS>> {system_message} <</SYS>> [/INST]\n")
-    for message in messages:
-        formatted_messages.append(f"[INST] {message.prompt} [/INST]\n" + f"{message.response}\n")
+    if history:
+        for message in history:
+            formatted_messages.append(
+                f"[INST] {message.prompt} [/INST]\n" + f"{message.response}\n",
+            )
     if prompt:
         formatted_messages.append(f"[INST] {prompt} [/INST]\n")
-    return formatted_messages
+    return ''.join(formatted_messages)
 
 
-class HuggingFaceEndpointChat(PromptModel):
+class HuggingFaceEndpointChat(ChatModel):
     """
     A wrapper around a model being served via Hugging Face Endpoints. More info here:
     https://ui.endpoints.huggingface.co/.
@@ -127,7 +130,7 @@ class HuggingFaceEndpointChat(PromptModel):
     This class manages the messages that are sent to the model and, by default, sends all
     messages previously sent to the model in subsequent requests. Therefore, each object created
     represents a single conversation. The number of messages sent to the model can be controlled
-    via `memory_manager` (e.g. `MessageFormatterMaxTokensMemoryManager`).
+    via `memory_manager` (e.g. `LastNTokensMemoryManager`).
     """
 
     def __init__(
@@ -136,7 +139,7 @@ class HuggingFaceEndpointChat(PromptModel):
             system_message: str = 'You are a helpful assistant. Be concise and clear but give good explainations.',  # noqa
             message_formatter: Callable[[str, list[ExchangeRecord]], str] = llama_message_formatter,  # noqa
             temperature: float = 0.001,
-            calculate_num_tokens: Callable[[str], int] | None = None,
+            token_calculator: Callable[[str], int] = len,
             memory_manager: Callable[[list[ExchangeRecord]], list[str]] | None = None,
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             max_streaming_tokens: int = 10,
@@ -154,8 +157,9 @@ class HuggingFaceEndpointChat(PromptModel):
                 and returns a list of messages to send to the model.
             temperature:
                 The temperature to use when generating text. Defaults to 0.001 (must be > 0).
-            calculate_num_tokens:
+            token_calculator:
                 A callable that takes a string and returns the number of tokens in the string.
+                Defaults to `len` which returns the number of characters rather than "tokens".
             memory_manager:
                 A callable that takes the history of messages and returns a list of messages to
                 send to the model.
@@ -168,28 +172,21 @@ class HuggingFaceEndpointChat(PromptModel):
             timeout:
                 The maximum number of seconds to wait for a response from the model.
         """
-        super().__init__()
+        super().__init__(
+            system_message=system_message,
+            message_formatter=message_formatter,
+            token_calculator=token_calculator,
+            cost_calculator=None,
+            memory_manager=memory_manager,
+        )
         self.endpoint_url = endpoint_url
-        self._system_message = system_message
-        self._message_formatter = message_formatter
-        self.temperature = temperature
-        self._calculate_tokens = calculate_num_tokens
-        self._memory_manager = memory_manager
-        self._max_streaming_tokens = max_streaming_tokens
         self.streaming_callback = streaming_callback
+        self.temperature = temperature
+        self._max_streaming_tokens = max_streaming_tokens
         self._timeout = timeout
-        self._previous_messages = None
 
-    def _run(self, prompt: str) -> ExchangeRecord:
+    def _run(self, messages: str) -> ExchangeRecord:
         """Runs the model based on the prompt and returns the response."""
-        # build up messages from history
-        history = self.history().copy()
-        if self._memory_manager:
-            self._previous_messages = self._memory_manager(self._system_message, history, prompt)
-        else:
-            self._previous_messages = self._message_formatter(self._system_message, history, prompt)  # noqa
-
-        messages = ''.join(self._previous_messages)
         response = ""
         start = time.time()
         while True:
@@ -218,24 +215,10 @@ class HuggingFaceEndpointChat(PromptModel):
                 self.streaming_callback(StreamingEvent(response=delta))
             response += delta
 
-        if self._calculate_tokens:
-            prompt_tokens = self._calculate_tokens(messages)
-            completion_tokens = self._calculate_tokens(response)
-            total_tokens = prompt_tokens + completion_tokens
-        else:
-            prompt_tokens = None
-            completion_tokens = None
-            total_tokens = None
-
-        return ExchangeRecord(
-            prompt=prompt,
-            response=response.strip(),
-            metadata={
-                'endpoint_url': self.endpoint_url,
-                'messages': messages,
-                },
-            prompt_tokens=prompt_tokens,
-            response_tokens=completion_tokens,
-            total_tokens=total_tokens,
-            cost=None,
-        )
+        metadata = {
+            'endpoint_url': self.endpoint_url,
+            'temperature': self.temperature,
+            'max_streaming_tokens': self._max_streaming_tokens,
+            'timeout': self._timeout,
+        }
+        return response, metadata

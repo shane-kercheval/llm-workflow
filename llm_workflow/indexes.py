@@ -8,8 +8,7 @@ is ChromaDB which stores/retrieves documents based on embeddings, which allow fo
 from uuid import uuid4
 from abc import ABC, abstractmethod
 from typing import TypeVar
-from llm_workflow.base import Document, RecordKeeper
-from llm_workflow.models import EmbeddingModel, EmbeddingRecord
+from llm_workflow.base import Document, RecordKeeper, EmbeddingModel, EmbeddingRecord
 from llm_workflow.internal_utilities import create_hash
 
 

@@ -1,7 +1,6 @@
 """Tests Record objects in llm_workflow.base.py."""
 import re
-from llm_workflow.base import Record
-from llm_workflow.models import ExchangeRecord, EmbeddingRecord
+from llm_workflow.base import Record, ExchangeRecord, EmbeddingRecord
 
 
 def test_Record():  # noqa

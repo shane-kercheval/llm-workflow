@@ -2,8 +2,7 @@
 
 from time import sleep
 from llm_workflow.agents import OpenAIFunctionAgent, Tool, tool
-from llm_workflow.base import Record
-from llm_workflow.models import ExchangeRecord
+from llm_workflow.base import Record, ExchangeRecord
 
 
 def test_OpenAIToolAgent__Tool_class():  # noqa
@@ -90,9 +89,9 @@ def test_OpenAIToolAgent__Tool_class():  # noqa
     assert agent.history()[0].metadata['tool_name'] == fake_weather_tool.name
     assert 'location' in agent.history()[0].metadata['tool_args']
     assert 'unit' in agent.history()[0].metadata['tool_args']
-    assert agent.history()[0].prompt_tokens > 0
+    assert agent.history()[0].input_tokens > 0
     assert agent.history()[0].response_tokens > 0
-    assert agent.history()[0].total_tokens == agent.history()[0].prompt_tokens + agent.history()[0].response_tokens  # noqa
+    assert agent.history()[0].total_tokens == agent.history()[0].input_tokens + agent.history()[0].response_tokens  # noqa
     assert agent.history()[0].total_tokens > 0
     assert agent.history()[0].cost > 0
     assert isinstance(agent.history()[1], Record)
@@ -113,9 +112,9 @@ def test_OpenAIToolAgent__Tool_class():  # noqa
     assert fake_stock_tool.name in agent.history()[2].response
     assert agent.history()[2].metadata['tool_name'] == fake_stock_tool.name
     assert 'symbol' in agent.history()[2].metadata['tool_args']
-    assert agent.history()[2].prompt_tokens > 0
+    assert agent.history()[2].input_tokens > 0
     assert agent.history()[2].response_tokens > 0
-    assert agent.history()[2].total_tokens == agent.history()[2].prompt_tokens + agent.history()[2].response_tokens  # noqa
+    assert agent.history()[2].total_tokens == agent.history()[2].input_tokens + agent.history()[2].response_tokens  # noqa
     assert agent.history()[2].total_tokens > 0
     assert agent.history()[2].cost > 0
     assert isinstance(agent.history()[3], Record)
@@ -128,9 +127,9 @@ def test_OpenAIToolAgent__Tool_class():  # noqa
     assert agent.history()[4].prompt == question
     assert agent.history()[4].response == ''
     assert 'tool_name' not in agent.history()[4].metadata
-    assert agent.history()[4].prompt_tokens > 0
+    assert agent.history()[4].input_tokens > 0
     assert agent.history()[4].response_tokens > 0
-    assert agent.history()[4].total_tokens == agent.history()[4].prompt_tokens + agent.history()[4].response_tokens  # noqa
+    assert agent.history()[4].total_tokens == agent.history()[4].input_tokens + agent.history()[4].response_tokens  # noqa
     assert agent.history()[4].total_tokens > 0
     assert agent.history()[4].cost > 0
 
@@ -187,9 +186,9 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     assert agent.history()[0].metadata['tool_name'] == fake_weather.name
     assert 'location' in agent.history()[0].metadata['tool_args']
     assert 'unit' in agent.history()[0].metadata['tool_args']
-    assert agent.history()[0].prompt_tokens > 0
+    assert agent.history()[0].input_tokens > 0
     assert agent.history()[0].response_tokens > 0
-    assert agent.history()[0].total_tokens == agent.history()[0].prompt_tokens + agent.history()[0].response_tokens  # noqa
+    assert agent.history()[0].total_tokens == agent.history()[0].input_tokens + agent.history()[0].response_tokens  # noqa
     assert agent.history()[0].total_tokens > 0
     assert agent.history()[0].cost > 0
 
@@ -201,9 +200,9 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     assert fake_stock.name in agent.history()[1].response
     assert agent.history()[1].metadata['tool_name'] == fake_stock.name
     assert 'symbol' in agent.history()[1].metadata['tool_args']
-    assert agent.history()[1].prompt_tokens > 0
+    assert agent.history()[1].input_tokens > 0
     assert agent.history()[1].response_tokens > 0
-    assert agent.history()[1].total_tokens == agent.history()[1].prompt_tokens + agent.history()[1].response_tokens  # noqa
+    assert agent.history()[1].total_tokens == agent.history()[1].input_tokens + agent.history()[1].response_tokens  # noqa
     assert agent.history()[1].total_tokens > 0
     assert agent.history()[1].cost > 0
 
@@ -214,8 +213,8 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     assert agent.history()[2].prompt == question
     assert agent.history()[2].response == ''
     assert 'tool_name' not in agent.history()[2].metadata
-    assert agent.history()[2].prompt_tokens > 0
+    assert agent.history()[2].input_tokens > 0
     assert agent.history()[2].response_tokens > 0
-    assert agent.history()[2].total_tokens == agent.history()[2].prompt_tokens + agent.history()[2].response_tokens  # noqa
+    assert agent.history()[2].total_tokens == agent.history()[2].input_tokens + agent.history()[2].response_tokens  # noqa
     assert agent.history()[2].total_tokens > 0
     assert agent.history()[2].cost > 0

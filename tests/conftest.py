@@ -1,6 +1,9 @@
 """Configures the pytests."""
 import os
 from collections.abc import Callable
+import re
+from time import sleep
+from typing import Any
 import pytest
 import requests
 import random
@@ -9,36 +12,131 @@ from faker import Faker
 import numpy as np
 from dotenv import load_dotenv
 from unittest.mock import MagicMock
-
-
-from llm_workflow.base import Document
-from llm_workflow.models import EmbeddingModel, EmbeddingRecord, ExchangeRecord, PromptModel
+from llm_workflow.hugging_face import llama_message_formatter
+from llm_workflow.base import (
+    ChatModel,
+    Document,
+    EmbeddingModel,
+    EmbeddingRecord,
+    ExchangeRecord,
+    MemoryManager,
+    PromptModel,
+)
 
 load_dotenv()
 
 
-class MockChat(PromptModel):
+class MockPromptModel(PromptModel):
     """Used for unit tests to mock the behavior of an LLM."""
 
     def __init__(
             self,
-            token_counter: Callable[[str], int] | None = None,
-            cost_per_token: float | None = None,
-            return_prompt: str | None = None ) -> None:
+            token_calculator: Callable[[str | list[str] | object], int],
+            cost_calculator: Callable[[int, int], float] | None = None,
+            return_prompt: str | None = None) -> None:
         """
         Used to test base classes.
 
         Args:
-            token_counter:
-                custom token counter to check total_tokens
-            cost_per_token:
-                custom costs to check costs
+            token_calculator:
+                custom token counter
+            cost_calculator:
+                callable to calculate costs
             return_prompt:
                 if not None, prepends the string to the prompt and returns it as a response
         """
-        super().__init__()
-        self.token_counter = token_counter
-        self.cost_per_token = cost_per_token
+        super().__init__(
+            token_calculator=token_calculator,
+            cost_calculator=cost_calculator,
+        )
+        self.return_prompt = return_prompt
+
+    def _run(self, prompt: str) -> tuple[str | list[str] | object, dict]:
+        if self.return_prompt:
+            response = self.return_prompt + prompt
+        else:
+            fake = Faker()
+            response = ' '.join([fake.word() for _ in range(random.randint(10, 100))])
+
+        return response, {'return_prompt': self.return_prompt}
+
+
+class MockCostMemoryManager(MemoryManager):
+    """
+    Used to mock the behavior of an MemoryManager that has associated costs e.g. summariziation via
+    LLM.
+    """
+
+    def __init__(self, cost: float | None) -> None:
+        self._history = []
+        self.cost = cost
+
+    def history(self):  # noqa
+        return self._history
+
+    def __call__(
+            self,
+            system_message: str,
+            history: list[ExchangeRecord],
+            prompt: str,
+            **kwargs: dict[str, Any]) -> str | list[str] | list[dict[str, str]]:
+        """Mocks a call to a memory memanager."""
+        message_formatter = kwargs['message_formatter']
+        message = message_formatter(system_message, None, None)
+        for record in history:
+            record = record.model_copy()  # noqa
+            message += message_formatter(None, [record], None)
+        message += message_formatter(None, None, prompt)
+        cost = self.cost
+        if cost:
+            cost *= (len(prompt) + len(message))
+        self._history.append(ExchangeRecord(
+            prompt=prompt,
+            response=message,
+            metadata={'model_name': 'memory'},
+            input_tokens=len(prompt),
+            response_tokens=len(message),
+            total_tokens=len(prompt) + len(message),
+            cost=cost,
+        ))
+        sleep(0.1)
+        return message
+
+
+class MockChatModel(ChatModel):
+    """Used for unit tests to mock the behavior of an LLM."""
+
+    def __init__(
+            self,
+            token_calculator: Callable[[str | list[str] | object], int],
+            cost_calculator: Callable[[int, int], float] | None = None,
+            return_prompt: str | None = None,
+            message_formatter: Callable[[str, list[ExchangeRecord]], str] | None = None,
+            memory_manager: MemoryManager | None = None) -> None:
+        """
+        Used to test base classes.
+
+        Args:
+            token_calculator:
+                custom token counter to calculate total_tokens
+            cost_calculator:
+                callable to calculate costs
+            return_prompt:
+                if not None, prepends the string to the prompt and returns it as a response
+            message_formatter:
+                custom message formatter to format messages
+            memory_manager:
+                custom memory manager to manage memory
+        """
+        if message_formatter is None:
+            message_formatter = llama_message_formatter
+        super().__init__(
+            system_message="This is a system message.",
+            message_formatter=message_formatter,
+            token_calculator=token_calculator,
+            cost_calculator=cost_calculator,
+            memory_manager=memory_manager,
+        )
         self.return_prompt = return_prompt
 
     def _run(self, prompt: str) -> ExchangeRecord:
@@ -47,19 +145,7 @@ class MockChat(PromptModel):
         else:
             fake = Faker()
             response = ' '.join([fake.word() for _ in range(random.randint(10, 100))])
-        prompt_tokens = self.token_counter(prompt) if self.token_counter else None
-        response_tokens = self.token_counter(response) if self.token_counter else None
-        total_tokens = prompt_tokens + response_tokens if self.token_counter else None
-        cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return ExchangeRecord(
-            prompt=prompt,
-            response=response,
-            total_tokens=total_tokens,
-            prompt_tokens=prompt_tokens,
-            response_tokens=response_tokens,
-            cost=cost,
-            metadata={'model_name': 'mock'},
-        )
+        return response, {'model_name': 'mock'}
 
 
 class MockRandomEmbeddings(EmbeddingModel):
@@ -191,3 +277,9 @@ def conversation_sum():  # noqa
 @pytest.fixture()
 def hugging_face_endpoint() -> str:  # noqa
     return os.getenv('HUGGING_FACE_ENDPOINT_UNIT_TESTS')
+
+
+def pattern_found(value: str, pattern: str) -> bool:
+    """Returns True if the pattern is found in the value."""
+    pattern = re.compile(pattern)
+    return bool(pattern.match(value))

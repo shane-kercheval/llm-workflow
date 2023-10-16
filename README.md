@@ -45,7 +45,7 @@ response = workflow(prompt)
 print(response)                         # ```python\n def mask_email_addresses(string): ...
 print(workflow.sum('cost'))             # 0.0034
 print(workflow.sum('total_tokens'))     # 1961
-print(workflow.sum('prompt_tokens'))    # 1104
+print(workflow.sum('input_tokens'))    # 1104
 print(workflow.sum('response_tokens'))  # 857
 print(workflow.history())               # list of Record objects containing prompt/response/usage
 ```
@@ -176,7 +176,7 @@ Total costs/tokens for all activity in the workflow:
 ```python
 print(f"Cost:             ${workflow.sum('cost'):.4f}")
 print(f"Total Tokens:      {workflow.sum('total_tokens'):,}")
-print(f"Prompt Tokens:     {workflow.sum('prompt_tokens'):,}")
+print(f"Prompt Tokens:     {workflow.sum('input_tokens'):,}")
 print(f"Response Tokens:   {workflow.sum('response_tokens'):,}")
 ```
 
@@ -362,7 +362,7 @@ We can also track costs:
 ```python
 print(f"Cost:            ${workflow.sum('cost'):.4f}")
 print(f"Total Tokens:     {workflow.sum('total_tokens'):,}")
-print(f"Prompt Tokens:    {workflow.sum('prompt_tokens'):,}")
+print(f"Prompt Tokens:    {workflow.sum('input_tokens'):,}")
 print(f"Response Tokens:  {workflow.sum('response_tokens'):,}")
 # to get the number of embedding tokens, sum `total_tokens` across only EmbeddingRecord objects
 print(f"Embedding Tokens: {workflow.sum('total_tokens', types=EmbeddingRecord):,}")
@@ -507,3 +507,10 @@ In the terminal, in the project directory, run the following command to run lint
 ```commandline
 make tests
 ```
+
+The `.env` file must contain the following key/values:
+
+- `OPENAI_API_KEY`
+- `STACK_OVERFLOW_KEY`
+- `HUGGING_FACE_API_KEY`
+- `HUGGING_FACE_ENDPOINT_UNIT_TESTS` which should contain the endpointurl for a lamma-2 endpoint (or model that expects the same message formatting (e.g. `[INST]`, `<<SYS>>`, etc.))

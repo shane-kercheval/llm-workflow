@@ -17,8 +17,8 @@ These classes can be used with, for example, the OpenAIChat model by passing a M
 to the memory_manager variable when initializing the model object.
 """
 
-from typing import Callable
-from llm_workflow.models import MemoryManager, ExchangeRecord
+from typing import Any
+from llm_workflow.base import MemoryManager, ExchangeRecord, PromptModel
 
 
 class LastNExchangesManager(MemoryManager):
@@ -28,77 +28,12 @@ class LastNExchangesManager(MemoryManager):
         super().__init__()
         self.last_n_exchanges = last_n_exchanges
 
-    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
-        """
-        Takes a list of `ExchangeRecord` objects and returns the last `n` messages based on the
-        `last_n_message` variable set during initialization.
-        """
-        if self.last_n_exchanges == 0:
-            return []
-        return history[-self.last_n_exchanges:]
-
-
-class TokenWindowManager(MemoryManager):
-    """Returns the last x number of messages that are within a certain threshold of tokens."""
-
-    def __init__(self, last_n_tokens: int) -> None:
-        super().__init__()
-        self.last_n_tokens = last_n_tokens
-
-    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
-        """
-        Takes a list of `ExchangeRecord` objects and returns the last x messages where the
-        aggregated number of tokens is less than the `last_n_message` variable set during
-        initialization.
-        """
-        history = reversed(history)
-        memory = []
-        tokens_used = 0
-        for message in history:
-            # if the message's tokens plus the tokens that are already used in the memory is more
-            # than the threshold then we need to break and avoid adding more memory
-            if message.total_tokens + tokens_used > self.last_n_tokens:
-                break
-            memory.append(message)
-            tokens_used += message.total_tokens
-        return reversed(memory)
-
-
-class MessageFormatterMaxTokensMemoryManager(MemoryManager):
-    """
-    For models that require a specific message format e.g. "[INST] ... [/INST], this class will
-    keep as many recent messages that remain under the token limit. The system messages will always
-    be retained.
-
-    Returns a list of formatted messages that are under the token limit.
-    """
-
-    def __init__(
-            self,
-            last_n_tokens: int,
-            calculate_num_tokens: Callable[[str], int],
-            message_formatter: Callable[[str, list[ExchangeRecord]], str],
-            ) -> None:
-        """
-        Args:
-            last_n_tokens:
-                The maximum number of tokens that can be used (and returned) in the messages.
-            calculate_num_tokens:
-                A function that takes a string and returns the number of tokens it contains.
-            message_formatter:
-                A function that takes a system message, a list of messages, and a prompt and
-                returns a list of formatted messages.
-        """
-        super().__init__()
-        self.last_n_tokens = last_n_tokens
-        self._calculate_num_tokens = calculate_num_tokens
-        self._message_formatter = message_formatter
-
     def __call__(
             self,
             system_message: str | None,
             history: list[ExchangeRecord],
             prompt: str | None,
+            **kwargs: dict[str, Any],
             ) -> list[str]:
         """
         Args:
@@ -108,33 +43,178 @@ class MessageFormatterMaxTokensMemoryManager(MemoryManager):
                 A list of ExchangeRecord objects that represent the history of the conversation.
             prompt:
                 The prompt to be formatted and added to the memory.
+            kwargs:
+                The keyword arguments (e.g. message_formatter).
         """
+        message_formatter = kwargs['message_formatter']
+        history = None if self.last_n_exchanges == 0 else history[-self.last_n_exchanges:]
+        return message_formatter(system_message, history, prompt)
+
+
+class LastNTokensMemoryManager(MemoryManager):
+    """
+    For models that require a specific message format e.g. "[INST] ... [/INST], this class will
+    keep as many recent messages that remain under the token limit. The system messages will always
+    be retained.
+
+    Returns a list of formatted messages that are under the token limit.
+    """
+
+    def __init__(self, last_n_tokens: int) -> None:
+        """
+        Args:
+            last_n_tokens:
+                The maximum number of tokens that can be used (and returned) in the messages.
+        """
+        super().__init__()
+        self.last_n_tokens = last_n_tokens
+
+    def __call__(  # noqa
+            self,
+            system_message: str | None,
+            history: list[ExchangeRecord],
+            prompt: str | None,
+            **kwargs: dict[str, Any],
+            ) -> list[str]:
+        """
+        Args:
+            system_message:
+                The system message to be formatted and added to the memory.
+            history:
+                A list of ExchangeRecord objects that represent the history of the conversation.
+            prompt:
+                The prompt to be formatted and added to the memory.
+            kwargs:
+                The keyword arguments (e.g. message_formatter).
+        """
+        # the output of message_formatter is either a single string a or list of messages
+        # (e.g. strings, dicts, etc.)
+        # if it's a string then we know that the output is a single message and we have to convert
+        # it to a list so that we can iterate over it and reverse it
+        message_formatter = kwargs['message_formatter']
+        token_calculator = kwargs['token_calculator']
+        test_formatting = message_formatter(system_message=None, history=None, prompt='test')
+        if isinstance(test_formatting, str):
+            is_list = False
+        elif isinstance(test_formatting, list):
+            is_list = True
+        else:
+            raise ValueError(
+                "The output of message_formatter must be either a string or a list of strings.",
+            )
+        if system_message:
+            system_message = message_formatter(system_message, [], None)
+            system_tokens = token_calculator(system_message)
+            if not is_list:
+                system_message = [system_message]
+        else:
+            system_tokens = 0
         if prompt:
-            memory = self._message_formatter(None, [], prompt)
-            prompt_tokens = self._calculate_num_tokens(memory[0])
+            memory = message_formatter(None, [], prompt)
+            prompt_tokens = token_calculator(memory)
+            if not is_list:
+                memory = [memory]
         else:
             prompt_tokens = 0
             memory = []
-        if system_message:
-            system_message = self._message_formatter(system_message, [], None)[0]
-            system_tokens = self._calculate_num_tokens(system_message)
-        else:
-            system_tokens = 0
 
+        tokens_used = system_tokens + prompt_tokens
+        assert tokens_used <= self.last_n_tokens, (
+            "The system message and prompt are too long to be added to the memory.",
+        )
         # start added the most recent messages to the memory
         history = reversed(history)
-        tokens_used = system_tokens + prompt_tokens
         for message in history:
             # if the message's tokens plus the tokens that are already used in the memory is more
             # than the threshold then we need to break and avoid adding more memory
-            formatted_message = self._message_formatter(None, [message], None)[0]
-            message_tokens = self._calculate_num_tokens(formatted_message)
+            formatted_message = message_formatter(None, [message], None)
+            message_tokens = token_calculator(formatted_message)
             if message_tokens + tokens_used > self.last_n_tokens:
                 break
-            memory.append(formatted_message)
+            if is_list:
+                # if the output is a list, then we need to reverse it so that when we reverse at
+                # the end of the function we get the correct order
+                formatted_message = list(reversed(formatted_message))
+            else:
+                formatted_message = [formatted_message]
+            memory += formatted_message
             tokens_used += message_tokens
 
         if system_message:
-            memory.append(system_message)
+            memory += system_message
 
-        return list(reversed(memory))
+        memory = list(reversed(memory))
+        return memory if is_list else ''.join(memory)
+
+
+class MessageSummaryMemoryManager(MemoryManager):
+    """TODO."""
+
+    def __init__(
+            self,
+            model: PromptModel,
+            message_threshold: int = 150,
+            summarize_instruction: str = 'Summarize the following while retaining the important information.',  # noqa
+            ) -> None:
+        """
+        Args:
+            model:
+                The model to use for summarizing messages.
+            message_threshold:
+                The maximum number of characters that a message (prompt/response) can be before it
+                is summarized.
+            summarize_instruction:
+                The instruction to use when summarizing messages.
+        """
+        super().__init__()
+        self._model = model
+        self._model.system_message = None  # for any chat models; we don't need/want a system msg
+        self._message_threshold = message_threshold
+        self._summarize_instruction = summarize_instruction
+        self._history = []
+        self._cache = {}
+
+    def __call__(
+        self,
+        system_message: str,
+        history: list[ExchangeRecord],
+        prompt: str,
+        **kwargs: dict[str, Any]) -> str | list[str] | list[dict[str, str]]:
+        """TODO."""
+        message_formatter = kwargs['message_formatter']
+        # for each of the previous prompt/responses in history, we want to summarize the prompt
+        # and response using the model; we want to cache the results so that we don't have to
+        # summarize the same prompt/response pair multiple times
+        summarized_records = []
+        for record in history:
+            if record.uuid not in self._cache:
+                if len(record.prompt) > self._message_threshold:
+                    summarized_prompt = self._model(self._summarize_format_message(record.prompt))
+                else:
+                    summarized_prompt = record.prompt
+                if len(record.response) > self._message_threshold:
+                    summarized_response = self._model(self._summarize_format_message(record.response))  # noqa
+                else:
+                    summarized_response = record.response
+                self._cache[record.uuid] = {
+                    'prompt': summarized_prompt,
+                    'response': summarized_response,
+                }
+            summarized_records.append(ExchangeRecord(
+                prompt=self._cache[record.uuid]['prompt'],
+                response=self._cache[record.uuid]['response'],
+            ))
+
+        return message_formatter(
+            system_message,
+            summarized_records,
+            prompt,
+        )
+
+    def _summarize_format_message(self, message: str) -> str:
+        """TODO."""
+        return f"{self._summarize_instruction}:\n\n```\n{message}\n```"
+
+    def history(self) -> list[ExchangeRecord]:
+        """TODO."""
+        return self._model.history()

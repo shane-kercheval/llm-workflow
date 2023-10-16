@@ -1,8 +1,15 @@
 """Test Session class."""
 from time import sleep
 import pytest
-from llm_workflow.base import Workflow, Record, Session
-from llm_workflow.models import EmbeddingRecord, LanguageModel, ExchangeRecord, TokenUsageRecord
+from llm_workflow.base import (
+    EmbeddingRecord,
+    ExchangeRecord,
+    LanguageModel,
+    Record,
+    Session,
+    TokenUsageRecord,
+    Workflow,
+)
 
 
 class MockHistoricalUsageRecords(LanguageModel):
@@ -32,7 +39,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0
     assert session.sum('total_tokens') == 0
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 0
+    assert session.sum('input_tokens') == 0
     assert session.sum('response_tokens') == 0
     assert len(session) == 0
 
@@ -45,7 +52,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0
     assert session.sum('total_tokens') == 0
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 0
+    assert session.sum('input_tokens') == 0
     assert session.sum('response_tokens') == 0
     assert len(session) == 1
 
@@ -59,7 +66,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0
     assert session.sum('total_tokens') == 0
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 0
+    assert session.sum('input_tokens') == 0
     assert session.sum('response_tokens') == 0
     assert len(session) == 2
 
@@ -77,7 +84,7 @@ def test_Session():  # noqa
         response='response',
         cost=0.5,
         total_tokens=103,
-        prompt_tokens=34,
+        input_tokens=34,
         response_tokens=53,
     )
     record_f = EmbeddingRecord(
@@ -97,7 +104,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0
     assert session.sum('total_tokens') == 0
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 0
+    assert session.sum('input_tokens') == 0
     assert session.sum('response_tokens') == 0
     assert len(session) == 3
 
@@ -112,7 +119,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0
     assert session.sum('total_tokens') == 0
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 0
+    assert session.sum('input_tokens') == 0
     assert session.sum('response_tokens') == 0
     assert len(session) == 3
 
@@ -126,7 +133,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0.01
     assert session.sum('total_tokens') == 100
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 0
+    assert session.sum('input_tokens') == 0
     assert session.sum('response_tokens') == 0
     assert len(session) == 3
 
@@ -142,7 +149,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0.51
     assert session.sum('total_tokens') == 203
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 34
+    assert session.sum('input_tokens') == 34
     assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
@@ -157,7 +164,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0.51
     assert session.sum('total_tokens') == 203
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 34
+    assert session.sum('input_tokens') == 34
     assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
@@ -172,7 +179,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0.51
     assert session.sum('total_tokens') == 203
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 34
+    assert session.sum('input_tokens') == 34
     assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
@@ -187,7 +194,7 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0.51
     assert session.sum('total_tokens') == 203
     assert session.sum('total_tokens', EmbeddingRecord) == 0
-    assert session.sum('prompt_tokens') == 34
+    assert session.sum('input_tokens') == 34
     assert session.sum('response_tokens') == 53
     assert len(session) == 4
 
@@ -202,6 +209,6 @@ def test_Session():  # noqa
     assert session.sum('cost') == 0.51 + 0.7
     assert session.sum('total_tokens') == 203 + 1_002
     assert session.sum('total_tokens', EmbeddingRecord) == 1_002
-    assert session.sum('prompt_tokens') == 34
+    assert session.sum('input_tokens') == 34
     assert session.sum('response_tokens') == 53
     assert len(session) == 4
