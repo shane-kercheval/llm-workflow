@@ -3,6 +3,7 @@ chromadb
 coverage
 duckduckgo-search
 faker
+joblib
 openai
 markdown
 markdownify
