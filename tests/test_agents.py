@@ -67,10 +67,7 @@ def test_OpenAIToolAgent__Tool_class():  # noqa
         required= ['symbol'],
     )
 
-    agent = OpenAIFunctionAgent(
-        model_name='gpt-3.5-turbo',
-        tools=[fake_weather_tool, fake_stock_tool],
-    )
+    agent = OpenAIFunctionAgent(tools=[fake_weather_tool, fake_stock_tool])
 
     question = "What is the temperature in Seattle WA."
     response = agent(question)
@@ -171,7 +168,7 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     assert isinstance(fake_stock, Tool)
 
     agent = OpenAIFunctionAgent(
-        model_name='gpt-3.5-turbo',
+        model_name='gpt-3.5-turbo-0613',
         tools=[fake_weather, fake_stock],
     )
 

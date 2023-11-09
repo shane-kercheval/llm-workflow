@@ -111,9 +111,9 @@ Here's the full example from the snippet above (alternatively, see [this noteboo
 from llm_workflow.base import Workflow
 from llm_workflow.openai import OpenAIChat
 
-prompt_enhancer = OpenAIChat(model_name='gpt-3.5-turbo')
+prompt_enhancer = OpenAIChat()
 # different model/object, therefore different message history (i.e. conversation)
-chat_assistant = OpenAIChat(model_name='gpt-3.5-turbo')
+chat_assistant = OpenAIChat()
 
 def prompt_template(user_prompt: str) -> str:
     return "Improve the user's request, below, by expanding the request " \
@@ -321,7 +321,7 @@ duckduckgo_search = DuckDuckGoSearch(top_n=3)
 embeddings_model = OpenAIEmbedding(model_name='text-embedding-ada-002')
 document_index = ChromaDocumentIndex(embeddings_model=embeddings_model, n_results=3)
 prompt_template = DocSearchTemplate(doc_index=document_index, n_docs=3)
-chat_model = OpenAIChat(model_name='gpt-3.5-turbo')
+chat_model = OpenAIChat()
 
 def scrape_urls(search_results):
     """
@@ -393,12 +393,12 @@ from llm_workflow.compare import CompareModels, ModelDefinition
 # Comparing GPT-3.5 Turbo, GPT-4, and Mistral 7B
 model_definitions = [
     ModelDefinition(
-        create=lambda: OpenAIChat(model_name='gpt-3.5-turbo'),
+        create=lambda: OpenAIChat(model_name='gpt-3.5-turbo-1106'),
         description='GPT-3.5 Turbo',
     ),
     ModelDefinition(
-        create=lambda: OpenAIChat(model_name='gpt-4'),
-        description='GPT-4',
+        create=lambda: OpenAIChat(model_name='gpt-4-1106-preview'),
+        description='GPT-4 Turbo',
     ),
     ModelDefinition(
         create=lambda: HuggingFaceEndpointChat(

@@ -459,7 +459,7 @@ def _comparison_to_html(comparison: CompareModels) -> str:
             rows_html += '<tr>'
             rows_html += f'<td colspan="{len(model_scenarios)}" style="vertical-align: top; text-align: center;" >'  # noqa
             rows_html += '<h3>Prompt</h3><br>'
-            rows_html += f'{scenario.prompts[0]}<br><br>'
+            rows_html += f'{scenario.prompts[i]}<br><br>'
             rows_html += '</td>'
             rows_html += '</tr>'
             # create a row for the response
