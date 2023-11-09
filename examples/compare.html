@@ -102,13 +102,13 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <body>
     <h1>Summary</h1>
     <table border="1" style="width: fit-content; table-layout: fixed;">
-<tr><th style="width: 150px;"></th><th style="width: 200px; font-weight: bold;">GPT-3.5 Turbo 4K (legacy)</th><th style="width: 200px; font-weight: bold;">GPT-3.5 Turbo 16K</th></tr>
-<tr><td style="font-weight: bold;">Time</td><td>18.07 seconds</td><td>6.01 seconds (<span style="color: green;">-66.7% decrease</span>)</td></tr>
-<tr><td style="font-weight: bold;">Response Characters</td><td>3,039</td><td>1,859 (<span style="color: black;">-38.8% decrease</span>)</td></tr>
-<tr><td style="font-weight: bold;">Response Characters per second</td><td>168.2</td><td>309.3 (<span style="color: green;">83.8% increase</span>)</td></tr>
-<tr><td style="font-weight: bold;">Num code blocks</td><td>6</td><td>6 (<span style="color: black;">0.0% decrease</span>)</td></tr>
-<tr><td style="font-weight: bold;">Percent Passing Code blocks</td><td>83.3%</td><td>83.3% (<span style="color: red;">0.0% decrease</span>)</td></tr>
-<tr><td style="font-weight: bold;">Cost</td><td>$0.00211</td><td>$0.00122 (<span style="color: green;">-42.2% decrease</span>)</td></tr>
+<tr><th style="width: 150px;"></th><th style="width: 200px; font-weight: bold;">GPT-3.5 Turbo 4K (legacy)</th><th style="width: 200px; font-weight: bold;">GPT-3.5 Turbo 16K</th><th style="width: 200px; font-weight: bold;">GPT-4 (legacy)</th><th style="width: 200px; font-weight: bold;">GPT-4 Turbo</th></tr>
+<tr><td style="font-weight: bold;">Time</td><td>18.58 seconds</td><td>6.37 seconds (<span style="color: green;">-65.7% decrease</span>)</td><td>41.57 seconds (<span style="color: red;">123.7% increase</span>)</td><td>38.19 seconds (<span style="color: red;">105.5% increase</span>)</td></tr>
+<tr><td style="font-weight: bold;">Response Characters</td><td>3,044</td><td>1,712 (<span style="color: black;">-43.8% decrease</span>)</td><td>1,838 (<span style="color: black;">-39.6% decrease</span>)</td><td>5,235 (<span style="color: black;">72.0% increase</span>)</td></tr>
+<tr><td style="font-weight: bold;">Response Characters per second</td><td>163.8</td><td>268.8 (<span style="color: green;">64.1% increase</span>)</td><td>44.2 (<span style="color: red;">-73.0% decrease</span>)</td><td>137.1 (<span style="color: red;">-16.3% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Num code blocks</td><td>6</td><td>6 (<span style="color: black;">0.0% decrease</span>)</td><td>5 (<span style="color: black;">-16.7% decrease</span>)</td><td>5 (<span style="color: black;">-16.7% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Percent Passing Code blocks</td><td>83.3%</td><td>66.7% (<span style="color: red;">-20.0% decrease</span>)</td><td>100.0% (<span style="color: green;">20.0% increase</span>)</td><td>40.0% (<span style="color: red;">-52.0% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Cost</td><td>$0.00210</td><td>$0.00117 (<span style="color: green;">-44.0% decrease</span>)</td><td>$0.03924 (<span style="color: red;">1772.6% increase</span>)</td><td>$0.04273 (<span style="color: red;">1939.1% increase</span>)</td></tr>
 </table>
     <br><br>
     <h1>Use Cases</h1>
@@ -116,64 +116,102 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
             <table border="1" style="width:100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th>GPT-3.5 Turbo 4K (legacy)</th><th>GPT-3.5 Turbo 16K</th>
+                        <th>GPT-3.5 Turbo 4K (legacy)</th><th>GPT-3.5 Turbo 16K</th><th>GPT-4 (legacy)</th><th>GPT-4 Turbo</th>
                     </tr>
                 </thead>
                 <tr><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
-<tr><td style="border: none;">Time</td><td style="border: none;"><code>8.54 seconds</code></td></tr>
-<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,206</code></td></tr>
-<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>141.2</code></td></tr>
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>6.70 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,211</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>180.8</code></td></tr>
 <tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
 <tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
-<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.00092</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.00091</code></td></tr>
 </table>
 </td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
-<tr><td style="border: none;">Time</td><td style="border: none;"><code>2.73 seconds</code></td></tr>
-<tr><td style="border: none;">Characters</td><td style="border: none;"><code>799</code></td></tr>
-<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>292.2</code></td></tr>
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>3.40 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>857</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>252.3</code></td></tr>
 <tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
 <tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
-<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.00056</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.00058</code></td></tr>
 </table>
-</td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a function that returns the sum of two numbers.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Here is an example of a function that returns the sum of two numbers:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
+</td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>16.68 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>629</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>37.7</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.01518</code></td></tr>
+</table>
+</td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>14.22 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,289</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>90.7</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>66.7%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.01228</code></td></tr>
+</table>
+</td></tr><tr><td colspan="4" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a function that returns the sum of two numbers.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure! Here's a simple function in Python that takes two numbers as input and returns their sum:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sum_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
 </code></pre></div>
 
-<p>You can call this function by passing in two numbers as arguments, like this:</p>
-<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">add_numbers</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<p>You can use this function by calling it and passing in two numbers as arguments. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">sum_numbers</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># Output: 8</span>
 </code></pre></div>
 
-<p>In this example, the <code>add_numbers</code> function takes two parameters <code>num1</code> and <code>num2</code>, and returns their sum using the <code>+</code> operator.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here's a simple function in Python that returns the sum of two numbers:</p>
+<p>Feel free to modify the function to suit your needs. Let me know if you have any other questions!</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here's an example of a simple function in Python that returns the sum of two numbers:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
 </code></pre></div>
 
 <p>You can use this function by passing two numbers as arguments, like this:</p>
 <div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">add_numbers</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># This will print 8</span>
-</code></pre></div></td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure! Here are a few assertion statements to validate the <code>add_numbers</code> function:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Test case 1: Positive numbers</span>
-<span class="k">assert</span> <span class="n">add_numbers</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="mi">8</span>
-
-<span class="c1"># Test case 2: Negative numbers</span>
-<span class="k">assert</span> <span class="n">add_numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">15</span>
-
-<span class="c1"># Test case 3: Zero and positive number</span>
-<span class="k">assert</span> <span class="n">add_numbers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span> <span class="o">==</span> <span class="mi">7</span>
-
-<span class="c1"># Test case 4: Zero and negative number</span>
-<span class="k">assert</span> <span class="n">add_numbers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">3</span>
-
-<span class="c1"># Test case 5: Positive number and zero</span>
-<span class="k">assert</span> <span class="n">add_numbers</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
-
-<span class="c1"># Test case 6: Negative number and zero</span>
-<span class="k">assert</span> <span class="n">add_numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">8</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># This will output 8</span>
+</code></pre></div></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure, here is a simple function in Python that does that:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_two_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
 </code></pre></div>
 
-<p>These assertion statements compare the output of the <code>add_numbers</code> function with the expected result. If the function returns the expected result, the assertion passes silently. Otherwise, it raises an <code>AssertionError</code> indicating that the function is not working as expected.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a few assertion statements to validate the <code>add_numbers</code> function:</p>
+<p>You can use this function like this:</p>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">add_two_numbers</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># Outputs: 12</span>
+</code></pre></div></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Below is an example of a simple function in Python that takes two numbers as arguments and returns their sum:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sum_two_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
+
+<span class="c1"># Example usage:</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">sum_two_numbers</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The sum is:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+
+<p>When you run this code, it will output:</p>
+<div class="highlight"><pre><span></span><code>The sum is: 15
+</code></pre></div>
+
+<p>You can call the <code>sum_two_numbers</code> function with any two numbers you'd like to add together.</p></td></tr><tr><td colspan="4" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a few assertion statements that validate the <code>sum_numbers</code> function:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test case 1: Positive numbers</span>
+<span class="k">assert</span> <span class="n">sum_numbers</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="mi">8</span>
+
+<span class="c1"># Test case 2: Negative numbers</span>
+<span class="k">assert</span> <span class="n">sum_numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">15</span>
+
+<span class="c1"># Test case 3: Zero and positive number</span>
+<span class="k">assert</span> <span class="n">sum_numbers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span> <span class="o">==</span> <span class="mi">7</span>
+
+<span class="c1"># Test case 4: Zero and negative number</span>
+<span class="k">assert</span> <span class="n">sum_numbers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">3</span>
+
+<span class="c1"># Test case 5: Positive number and zero</span>
+<span class="k">assert</span> <span class="n">sum_numbers</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span>
+
+<span class="c1"># Test case 6: Negative number and zero</span>
+<span class="k">assert</span> <span class="n">sum_numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">8</span>
+</code></pre></div>
+
+<p>These assertion statements will raise an <code>AssertionError</code> if the function does not return the expected result. If all the assertions pass without raising any errors, it means that the function is working correctly.</p>
+<p>Let me know if you need any further assistance!</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a few assertion statements to validate the <code>add_numbers</code> function:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
 
@@ -185,7 +223,28 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;All assertions passed successfully!&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p>When you run this code, it will only print "All assertions passed successfully!" if all the assertions are true. If any of the assertions fail, it will raise an AssertionError.</p></td></tr>
+<p>When you run this code, if all the assertions pass, you will see the message "All assertions passed successfully!" If any of the assertions fail, you will see an AssertionError with details about which assertion failed.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure, here are some assertion statements to validate the function:</p>
+<div class="highlight"><pre><span></span><code><span class="k">assert</span> <span class="n">add_two_numbers</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span> <span class="o">==</span> <span class="mi">12</span><span class="p">,</span> <span class="s2">&quot;Should be 12&quot;</span>
+<span class="k">assert</span> <span class="n">add_two_numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Should be 0&quot;</span>
+<span class="k">assert</span> <span class="n">add_two_numbers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Should be 0&quot;</span>
+<span class="k">assert</span> <span class="n">add_two_numbers</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span> <span class="o">==</span> <span class="mi">300</span><span class="p">,</span> <span class="s2">&quot;Should be 300&quot;</span>
+</code></pre></div>
+
+<p>These statements will throw an AssertionError if the function does not return the expected result.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>To validate the <code>sum_two_numbers</code> function, you can write several assertion statements to check if the function is returning the expected results for given inputs. Here's how you can do it:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sum_two_numbers</span><span class="p">(</span><span class="n">num1</span><span class="p">,</span> <span class="n">num2</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">num1</span> <span class="o">+</span> <span class="n">num2</span>
+
+<span class="c1"># Assertion statements</span>
+<span class="k">assert</span> <span class="n">sum_two_numbers</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="mi">15</span><span class="p">,</span> <span class="s2">&quot;Should be 15&quot;</span>
+<span class="k">assert</span> <span class="n">sum_two_numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Should be 0&quot;</span>
+<span class="k">assert</span> <span class="n">sum_two_numbers</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Should be 0&quot;</span>
+<span class="k">assert</span> <span class="n">sum_two_numbers</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">15</span><span class="p">,</span> <span class="s2">&quot;Should be -15&quot;</span>
+<span class="k">assert</span> <span class="n">sum_two_numbers</span><span class="p">(</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">)</span> <span class="o">==</span> <span class="mf">6.0</span><span class="p">,</span> <span class="s2">&quot;Should be 6.0&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;All tests passed!&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>When you run this code, if all assertions are true, it will output "All tests passed!" If any of the assertions fail, an <code>AssertionError</code> will be raised with the message provided, indicating that the function did not return the expected value for the inputs given in that assertion.</p></td></tr>
             </table>
             <br>
             <div class="centered-line"></div>
@@ -194,26 +253,42 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
             <table border="1" style="width:100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th>GPT-3.5 Turbo 4K (legacy)</th><th>GPT-3.5 Turbo 16K</th>
+                        <th>GPT-3.5 Turbo 4K (legacy)</th><th>GPT-3.5 Turbo 16K</th><th>GPT-4 (legacy)</th><th>GPT-4 Turbo</th>
                     </tr>
                 </thead>
                 <tr><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
-<tr><td style="border: none;">Time</td><td style="border: none;"><code>9.52 seconds</code></td></tr>
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>11.89 seconds</code></td></tr>
 <tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,833</code></td></tr>
-<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>192.5</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>154.2</code></td></tr>
 <tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
 <tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>66.7%</code></td></tr>
 <tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.00119</code></td></tr>
 </table>
 </td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
-<tr><td style="border: none;">Time</td><td style="border: none;"><code>3.28 seconds</code></td></tr>
-<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,060</code></td></tr>
-<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>323.5</code></td></tr>
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>2.97 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>855</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>287.7</code></td></tr>
 <tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
-<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>66.7%</code></td></tr>
-<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.00066</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>33.3%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.00059</code></td></tr>
 </table>
-</td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Generate a function that masks email addresses.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure! Here's a Python function that masks email addresses by replacing characters in the local part of the email with asterisks (*):</p>
+</td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>24.88 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,209</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>48.6</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>2</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.02406</code></td></tr>
+</table>
+</td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
+<tr><td style="border: none;">Time</td><td style="border: none;"><code>23.97 seconds</code></td></tr>
+<tr><td style="border: none;">Characters</td><td style="border: none;"><code>3,946</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>164.6</code></td></tr>
+<tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>2</code></td></tr>
+<tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>0.0%</code></td></tr>
+<tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.03045</code></td></tr>
+</table>
+</td></tr><tr><td colspan="4" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Generate a function that masks email addresses.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure! Here's a Python function that masks email addresses by replacing characters in the local part of the email with asterisks (*):</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
     <span class="n">local_part</span><span class="p">,</span> <span class="n">domain</span> <span class="o">=</span> <span class="n">email</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span>
     <span class="n">masked_local_part</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_part</span><span class="p">)</span>
@@ -228,17 +303,58 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </code></pre></div>
 
 <p>This function splits the email address into the local part and the domain using the <code>split()</code> method. Then, it creates a masked local part by replacing each character with an asterisk using the <code>*</code> operator. Finally, it concatenates the masked local part with the domain and returns the masked email address.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure! Here's a simple Python function that masks email addresses by replacing the characters before the "@" symbol with asterisks:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
-    <span class="n">username</span><span class="p">,</span> <span class="n">domain</span> <span class="o">=</span> <span class="n">email</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span>
-    <span class="n">masked_username</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">username</span><span class="p">)</span>
-    <span class="n">masked_email</span> <span class="o">=</span> <span class="n">masked_username</span> <span class="o">+</span> <span class="s1">&#39;@&#39;</span> <span class="o">+</span> <span class="n">domain</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">re</span>
+
+<span class="k">def</span> <span class="nf">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
+    <span class="n">masked_email</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^@]+&#39;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="s1">&#39;*&#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)),</span> <span class="n">email</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">masked_email</span>
 </code></pre></div>
 
 <p>You can use this function to mask email addresses like this:</p>
-<div class="highlight"><pre><span></span><code><span class="n">masked_email</span> <span class="o">=</span> <span class="n">mask_email</span><span class="p">(</span><span class="s1">&#39;example@email.com&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">masked_email</span><span class="p">)</span>  <span class="c1"># Output: ********@email.com</span>
-</code></pre></div></td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a few assertion statements to validate the <code>mask_email()</code> function:</p>
+<div class="highlight"><pre><span></span><code><span class="n">email</span> <span class="o">=</span> <span class="s2">&quot;example@email.com&quot;</span>
+<span class="n">masked</span> <span class="o">=</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">masked</span><span class="p">)</span>  <span class="c1"># Output: ********@email.com</span>
+</code></pre></div></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure, here's a simple Python function that masks email addresses:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">email_parts</span> <span class="o">=</span> <span class="n">email</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span>
+        <span class="c1"># Mask first part</span>
+        <span class="n">masked_part</span> <span class="o">=</span> <span class="n">email_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;****&quot;</span> <span class="o">+</span> <span class="n">email_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># Combine masked part and domain</span>
+        <span class="n">masked_email</span> <span class="o">=</span> <span class="n">masked_part</span> <span class="o">+</span> <span class="s1">&#39;@&#39;</span> <span class="o">+</span> <span class="n">email_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">masked_email</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;An error occurred: &quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+
+<p>This function masks all characters in the local part of the email (before the '@') except for the first and last characters. If the email is not in a valid format, it will return <code>None</code> and print the error.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Below is a Python function that masks email addresses by replacing the characters in the local part of the email with asterisks, except for the first and last character, and leaving the domain part unchanged.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">re</span>
+
+<span class="k">def</span> <span class="nf">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">):</span>
+    <span class="c1"># Check if the email address is valid</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[^@]+@[^@]+\.[^@]+&quot;</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid email address&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Split the email address into local and domain parts</span>
+    <span class="n">local_part</span><span class="p">,</span> <span class="n">domain_part</span> <span class="o">=</span> <span class="n">email</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;@&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Mask the local part, keeping the first and last character unmasked</span>
+    <span class="n">masked_local</span> <span class="o">=</span> <span class="n">local_part</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;*&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">local_part</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">local_part</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_part</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">local_part</span>
+
+    <span class="c1"># Combine the masked local part with the domain part</span>
+    <span class="n">masked_email</span> <span class="o">=</span> <span class="n">masked_local</span> <span class="o">+</span> <span class="s2">&quot;@&quot;</span> <span class="o">+</span> <span class="n">domain_part</span>
+
+    <span class="k">return</span> <span class="n">masked_email</span>
+
+<span class="c1"># Example usage:</span>
+<span class="n">email</span> <span class="o">=</span> <span class="s2">&quot;example@example.com&quot;</span>
+<span class="n">masked_email</span> <span class="o">=</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">masked_email</span><span class="p">)</span>  <span class="c1"># Output: e******e@example.com</span>
+</code></pre></div>
+
+<p>This function first checks if the provided email address is valid using a regular expression. Then it splits the email into the local and domain parts. It masks the local part by replacing all but the first and last characters with asterisks. If the local part is only one or two characters long, it doesn't mask any characters. Finally, it combines the masked local part with the domain part to return the masked email address.</p>
+<p>Keep in mind that this is a simple implementation and may not cover all edge cases for email address formats. Adjustments may be needed based on the specific requirements for masking and the expected format of the email addresses.</p></td></tr><tr><td colspan="4" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a few assertion statements to validate the <code>mask_email()</code> function:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test case 1: Masking email with alphanumeric local part</span>
 <span class="n">email</span> <span class="o">=</span> <span class="s1">&#39;example123@example.com&#39;</span>
 <span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;*********@example.com&#39;</span>
@@ -261,17 +377,64 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </code></pre></div>
 
 <p>These assertion statements compare the output of the <code>mask_email()</code> function with the expected masked email address. If the function is working correctly, all the assertions should pass without raising any exceptions.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a few assertion statements to validate the <code>mask_email</code> function:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Test case 1: Masking a simple email address</span>
-<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s1">&#39;test@email.com&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;****@email.com&#39;</span>
-
-<span class="c1"># Test case 2: Masking an email address with a longer username</span>
-<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s1">&#39;myemail123@email.com&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;*********@email.com&#39;</span>
-
-<span class="c1"># Test case 3: Masking an email address with a different domain</span>
-<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s1">&#39;user123@example.com&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;*****@example.com&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;john.doe@example.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;****.***@example.com&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;jane.smith123@gmail.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;****.********@gmail.com&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;user1234@domain.co.uk&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;******@domain.co.uk&quot;</span>
 </code></pre></div>
 
-<p>These assertion statements will help ensure that the <code>mask_email</code> function is working as expected.</p></td></tr>
+<p>These assertions will help ensure that the <code>mask_email</code> function is working as expected.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Sure, here are some assertion statements to validate the function:</p>
+<div class="highlight"><pre><span></span><code><span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;john.doe@example.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;j****e@example.com&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;jane_doe@example.co.uk&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;j****e@example.co.uk&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;test@test.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;t****t@test.com&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;a@b.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;a****a@b.com&quot;</span>
+</code></pre></div>
+
+<p>These assertions check that the function correctly masks the local part of the email address, leaving only the first and last characters visible. If any of these assertions fail, it means there's a bug in the function.</p></td><td style="vertical-align: top;"><h3>Response</h3><br><p>Here are a few assertion statements to validate the <code>mask_email</code> function. These assertions will test various scenarios, including typical use cases, edge cases, and invalid input.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test typical email addresses</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;john.doe@example.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;j*******e@example.com&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to mask typical email&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;jane.smith@subdomain.example.co.uk&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;j*********h@subdomain.example.co.uk&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to mask email with subdomain&quot;</span>
+
+<span class="c1"># Test single and two-letter local parts</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;a@example.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;a@example.com&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to handle single-letter local part&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;ab@example.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;ab@example.com&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to handle two-letter local part&quot;</span>
+
+<span class="c1"># Test email addresses with numbers and special characters</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;user123@example.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;u*****3@example.com&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to mask email with numbers&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;n.o-r_e+p.l.y@example.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;n***********y@example.com&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to mask email with special characters&quot;</span>
+
+<span class="c1"># Test email addresses with different domain lengths</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;info@x.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;i**o@x.com&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to mask short domain&quot;</span>
+<span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;contact@very-long-domain-name.com&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;c********t@very-long-domain-name.com&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to mask long domain&quot;</span>
+
+<span class="c1"># Test invalid email addresses (should raise ValueError)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;invalidemail.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Failed to raise error for missing @ symbol&quot;</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;missingdomain@.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Failed to raise error for missing domain name&quot;</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;@missinglocalpart.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Failed to raise error for missing local part&quot;</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">mask_email</span><span class="p">(</span><span class="s2">&quot;missingatsymbol.com&quot;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Failed to raise error for missing @ symbol&quot;</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;All assertions passed.&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>These assertions cover a range of valid email formats, including those with subdomains, special characters, and varying lengths of local parts. They also check for invalid email formats to ensure the function raises a <code>ValueError</code> as expected. If any of the assertions fail, an AssertionError will be raised with a message indicating which test case failed. If all assertions pass, it will print "All assertions passed."</p></td></tr>
             </table>
             <br>
             <div class="centered-line"></div>

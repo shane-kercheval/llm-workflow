@@ -4,6 +4,7 @@ from typing import TypeVar
 from collections.abc import Callable
 import time
 import textwrap
+from joblib import Parallel, delayed
 from pydantic import BaseModel
 import markdown
 from llm_workflow.internal_utilities import execute_code_blocks, extract_code_blocks
@@ -185,21 +186,27 @@ class CompareModels:
 
         self.prompts = prompts
         self._model_definitions = model_definitions
+        self.scenarios = []
 
     def __call__(self):
-        """Runs the prompts/scenarios."""
+        """Runs each scenarios against all models."""
         self.scenarios = []
-        for prompts in self.prompts:
-            runs = []
-            for create_model in self._model_definitions:
-                scenario = Scenario(
-                    model=create_model.create(),  # create a new model for each run
-                    description=create_model.description,
-                )
-                scenario(prompts=prompts)
-                runs.append(scenario)
+        for scenario_prompts in self.prompts:
+            # Use joblib's Parallel and delayed functions to run in parallel
+            runs = Parallel(n_jobs=-1)(
+                delayed(self._run_scenario)(create_model, scenario_prompts)
+                for create_model in self._model_definitions
+            )
             self.scenarios.append(runs)
-        assert len(self.scenarios) == len(self.prompts)
+
+    def _run_scenario(self, create_model: Callable, prompts: list[str]) -> Scenario:
+        """Runs a single scenario for a model and set of prompts."""
+        scenario = Scenario(
+            model=create_model.create(),
+            description=create_model.description,
+        )
+        scenario(prompts=prompts)
+        return scenario
 
     @property
     def num_scenarios(self) -> int:
