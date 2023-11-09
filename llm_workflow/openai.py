@@ -193,7 +193,7 @@ class OpenAIChat(ChatModel):
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             memory_manager: MemoryManager | None = None,
-            timeout: int = 10,
+            timeout: int = 30,
             seed: int | None = None,
             ) -> None:
         """
