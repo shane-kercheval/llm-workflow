@@ -1,6 +1,5 @@
 """Utilities to compare the responses and performance of different models."""
 
-from concurrent.futures import ProcessPoolExecutor
 from typing import TypeVar
 from collections.abc import Callable
 import time

@@ -103,9 +103,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <h1>Summary</h1>
     <table border="1" style="width: fit-content; table-layout: fixed;">
 <tr><th style="width: 150px;"></th><th style="width: 200px; font-weight: bold;">Mock Model 1</th><th style="width: 200px; font-weight: bold;">Mock Model 2</th></tr>
-<tr><td style="font-weight: bold;">Time</td><td>0.00 seconds</td><td>0.00 seconds (<span style="color: green;">-20.0% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Time</td><td>0.00 seconds</td><td>0.00 seconds (<span style="color: red;">28.6% increase</span>)</td></tr>
 <tr><td style="font-weight: bold;">Response Characters</td><td>2,761</td><td>1,847 (<span style="color: black;">-33.1% decrease</span>)</td></tr>
-<tr><td style="font-weight: bold;">Response Characters per second</td><td>1158047334.4</td><td>968359936.0 (<span style="color: red;">-16.4% decrease</span>)</td></tr>
+<tr><td style="font-weight: bold;">Response Characters per second</td><td>1654353334.9</td><td>860764387.6 (<span style="color: red;">-48.0% decrease</span>)</td></tr>
 <tr><td style="font-weight: bold;">Num code blocks</td><td>6</td><td>5 (<span style="color: black;">-16.7% decrease</span>)</td></tr>
 <tr><td style="font-weight: bold;">Percent Passing Code blocks</td><td>83.3%</td><td>100.0% (<span style="color: green;">20.0% increase</span>)</td></tr>
 <tr><td style="font-weight: bold;">Cost</td><td>$1.00000</td><td>$0.00000 (<span style="color: green;">-100.0% decrease</span>)</td></tr>
@@ -122,7 +122,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
                 <tr><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
 <tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
 <tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,019</code></td></tr>
-<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>712332629.3</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>1424665258.7</code></td></tr>
 <tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>3</code></td></tr>
 <tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
 <tr><td style="border: none;">Cost</td><td style="border: none;"><code>$0.50000</code></td></tr>
@@ -152,7 +152,7 @@ print(result)  # Output: 8
 <p>You can use this function like this:</p>
 <div class="highlight"><pre><span></span><code>result = sum_two_numbers(5, 3)
 print(result)  # Outputs: 8
-</code></pre></div></td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a function that returns the sum of two numbers.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>sum_numbers</code> function:</p>
+</code></pre></div></td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a few assertion statements validating the function.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>sum_numbers</code> function:</p>
 <div class="highlight"><pre><span></span><code>assert sum_numbers(5, 3) == 8
 assert sum_numbers(-10, 10) == 0
 </code></pre></div>
@@ -188,7 +188,7 @@ assert sum_two_numbers(100, 200) == 300, &quot;Should be 300&quot;
 </td><td style="vertical-align: top;"><table style="border-collapse: collapse; width: auto;">
 <tr><td style="border: none;">Time</td><td style="border: none;"><code>0.00 seconds</code></td></tr>
 <tr><td style="border: none;">Characters</td><td style="border: none;"><code>1,222</code></td></tr>
-<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>1281359872.0</code></td></tr>
+<tr><td style="border: none;">Characters per second</td><td style="border: none;"><code>1025087897.6</code></td></tr>
 <tr><td style="border: none;">Num code blocks</td><td style="border: none;"><code>2</code></td></tr>
 <tr><td style="border: none;">Percent Passing Code blocks</td><td style="border: none;"><code>100.0%</code></td></tr>
 </table>
@@ -220,7 +220,7 @@ assert sum_two_numbers(100, 200) == 300, &quot;Should be 300&quot;
         return None
 </code></pre></div>
 
-<p>This function masks all characters of the local part of the email (before the '@') except for the first and last characters with asterisks ('*'). Please note that this is a simple masking function and may not be suitable for all use cases.</p></td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Generate a function that masks email addresses.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>mask_email()</code> function:</p>
+<p>This function masks all characters of the local part of the email (before the '@') except for the first and last characters with asterisks ('*'). Please note that this is a simple masking function and may not be suitable for all use cases.</p></td></tr><tr><td colspan="2" style="vertical-align: top; text-align: center;" ><h3>Prompt</h3><br>Write a couple assertion statements validating the function.<br><br></td></tr><tr><td style="vertical-align: top;"><h3>Response</h3><br><p>Certainly! Here are a couple of assertion statements to validate the <code>mask_email()</code> function:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test case 1: Masking email with alphanumeric local part</span>
 <span class="n">email1</span> <span class="o">=</span> <span class="s1">&#39;example123@example.com&#39;</span>
 <span class="k">assert</span> <span class="n">mask_email</span><span class="p">(</span><span class="n">email1</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;***********@example.com&#39;</span>
