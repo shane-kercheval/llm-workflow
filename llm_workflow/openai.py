@@ -18,11 +18,32 @@ from llm_workflow.base import (
 
 
 MODEL_COST_PER_TOKEN = {
+    # "Prices are per 1,000 tokens. You can think of tokens as pieces of words, where 1,000 tokens
+    # is about 750 words. This paragraph is 35 tokens."
+    # https://openai.com/pricing
+    # https://platform.openai.com/docs/models
+    ####
+    # Embedding models
+    ####
     'text-embedding-ada-002': 0.0001 / 1_000,
-    'gpt-4': {'input': 0.03 / 1_000, 'output': 0.06 / 1_000},
-    'gpt-4-32k': {'input': 0.06 / 1_000, 'output': 0.12 / 1_000},
-    'gpt-3.5-turbo': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
-    'gpt-3.5-turbo-16k': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
+    ####
+    # Chat Models
+    ####
+    # GPT-4-Turbo 128K
+    'gpt-4-1106-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
+    # GPT-3.5-Turbo 16K
+    'gpt-3.5-turbo-1106': {'input': 0.001 / 1_000, 'output': 0.002 / 1_000},
+    ####
+    # legacy models
+    ####
+    # GPT-4
+    'gpt-4-0613': {'input': 0.03 / 1_000, 'output': 0.06 / 1_000},
+    # GPT-4- 32K
+    # 'gpt-4-32k-0613': {'input': 0.06 / 1_000, 'output': 0.12 / 1_000},
+    # GPT-3.5-Turbo 4K
+    'gpt-3.5-turbo-0613': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
+    # GPT-3.5-Turbo 16K
+    'gpt-3.5-turbo-16k-0613': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
 }
 
 
@@ -49,6 +70,9 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
         "gpt-4-32k-0314",
         "gpt-4-0613",
         "gpt-4-32k-0613",
+        # todo: verify once .ipynb is updated
+        "gpt-4-1106-preview",
+        "gpt-3.5-turbo-1106",
         }:
         tokens_per_message = 3
         tokens_per_name = 1
@@ -58,10 +82,10 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
     elif "gpt-3.5-turbo" in model_name:
         # Warning: gpt-3.5-turbo may update over time.
         # Returning num tokens assuming gpt-3.5-turbo-0613
-        return num_tokens_from_messages(model_name="gpt-3.5-turbo-0613", messages=messages)
+        return num_tokens_from_messages(model_name="gpt-3.5-turbo-1106", messages=messages)
     elif "gpt-4" in model_name:
         # Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.
-        return num_tokens_from_messages(model_name="gpt-4-0613", messages=messages)
+        return num_tokens_from_messages(model_name="gpt-4-1106-preview", messages=messages)
     else:
         raise NotImplementedError(f"""num_tokens_from_messages() is not implemented for model {model_name}. See https://github.com/openai/openai-python/blob/main/chatml.md for information on how messages are converted to tokens.""")  # noqa
     num_tokens = 0
@@ -103,7 +127,7 @@ class OpenAIEmbedding(EmbeddingModel):
 
     def __init__(
             self,
-            model_name: str,
+            model_name: str = 'text-embedding-ada-002',
             doc_prep: Callable[[str], str] = lambda x: x.strip().replace('\n', ' '),
             timeout: int = 10,
             ) -> None:
@@ -122,16 +146,17 @@ class OpenAIEmbedding(EmbeddingModel):
         self.timeout = timeout
 
     def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
-        import openai
+        from openai import OpenAI
         texts = [self.doc_prep(x.content) for x in docs]
+        client = OpenAI()
         response = retry_handler()(
-            openai.Embedding.create,
+            client.embeddings.create,
             input = texts,
             model=self.model_name,
             timeout=self.timeout,
         )
-        total_tokens = response['usage']['total_tokens']
-        embedding = [x['embedding'] for x in response['data']]
+        total_tokens = response.usage.total_tokens
+        embedding = [x.embedding for x in response.data]
         metadata = EmbeddingRecord(
             metadata={'model_name': self.model_name},
             total_tokens=total_tokens,
@@ -162,18 +187,19 @@ class OpenAIChat(ChatModel):
 
     def __init__(
             self,
-            model_name: str,
+            model_name: str = 'gpt-3.5-turbo-1106',
             temperature: float = 0,
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             memory_manager: MemoryManager | None = None,
             timeout: int = 10,
+            seed: int | None = None,
             ) -> None:
         """
         Args:
             model_name:
-                e.g. 'gpt-3.5-turbo'
+                e.g. 'gpt-3.5-turbo-1106'
             temperature:
                 "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will
                 make the output more random, while lower values like 0.2 will make it more focused
@@ -193,6 +219,8 @@ class OpenAIChat(ChatModel):
                 messages sent to the OpenAI model.
             timeout:
                 timeout value passed to OpenAI model.
+            seed:
+                seed value passed to OpenAI model.
         """
         def cost_calculator(input_tokens: int, response_tokens: int) -> float:
             model_costs = MODEL_COST_PER_TOKEN[self.model_name]
@@ -218,11 +246,12 @@ class OpenAIChat(ChatModel):
         self.max_tokens = max_tokens
         self.streaming_callback = streaming_callback
         self.timeout = timeout
+        self.seed = seed
 
     def _run(self, messages: list[dict]) -> tuple[str, dict]:
         """
-        `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
-        user, assistant). This function builds the list of messages based on the history of
+        `client.chat.completions.create` expects a list of messages with various roles (i.e.
+        system, user, assistant). This function builds the list of messages based on the history of
         messages and based on an optional 'memory_manager' that filters the history based on
         it's own logic. The `system_message` is always the first message regardless if a
         `memory_manager` is passed in.
@@ -230,25 +259,24 @@ class OpenAIChat(ChatModel):
         The use of a streaming callback does not change the output returned from calling the object
         (i.e. a ExchangeRecord object).
         """
-        import openai
+        from openai import OpenAI
+        client = OpenAI()
         if self.streaming_callback:
             response = retry_handler()(
-                openai.ChatCompletion.create,
+                client.chat.completions.create,
                 model=self.model_name,
                 messages=messages,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 timeout=self.timeout,
                 stream=True,
+                seed=self.seed,
             )
             # extract the content/token from the streaming response and send to the callback
             # build up the message so that we can calculate usage/costs and send back the same
             # ExchangeRecord response that we would return if we weren't streaming
             def get_delta(chunk):  # noqa
-                delta = chunk['choices'][0]['delta']
-                if 'content' in delta:
-                    return delta['content']
-                return None
+                return chunk.choices[0].delta.content
             response_message = ''
             for chunk in response:
                 delta = get_delta(chunk)
@@ -257,14 +285,15 @@ class OpenAIChat(ChatModel):
                     response_message += delta
         else:
             response = retry_handler()(
-                openai.ChatCompletion.create,
+                client.chat.completions.create,
                 model=self.model_name,
                 messages=messages,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 timeout=self.timeout,
+                seed=self.seed,
             )
-            response_message = response['choices'][0]['message'].content
+            response_message = response.choices[0].message.content
 
         metadata = {
             'model_name': self.model_name,

@@ -187,15 +187,15 @@ class OpenAIFunctionAgent(LanguageModel):
 
     def __init__(
             self,
-            model_name: str,
             tools: list[Tool],
+            model_name: str = 'gpt-3.5-turbo-1106',
             system_message: str = "Decide which function to use. Only use the functions you have been provided with. Don't make assumptions about what values to plug into functions.",  # noqa
             timeout: int = 10,
         ) -> dict | None:
         """
         Args:
             model_name:
-                e.g. 'gpt-3.5-turbo'
+                e.g. 'gpt-3.5-turbo-1106'
             tools:
                 a list of Tool objects (created with the `Tool` class or `tool` decorator).
             system_message:
@@ -217,7 +217,7 @@ class OpenAIFunctionAgent(LanguageModel):
         selected tool (which is a callable) is called and passed the arguments determined by
         OpenAI. The response from the tool is retuned by the agent object.
         """
-        import openai
+        from openai import OpenAI
         messages = [
             {"role": "system", "content": self._system_message},
             {"role": "user", "content": prompt},
@@ -225,8 +225,9 @@ class OpenAIFunctionAgent(LanguageModel):
         # we want to track to track costs/etc.; but we don't need the history to build up memory
         # essentially, for now, this class won't have any memory/context of previous questions;
         # it's only used to decide which tools/functions to call
+        client = OpenAI()
         response = retry_handler()(
-                openai.ChatCompletion.create,
+                client.chat.completions.create,
                 model=self.model_name,
                 messages=messages,
                 functions=[x.to_dict() for x in self._tools],
@@ -234,9 +235,9 @@ class OpenAIFunctionAgent(LanguageModel):
                 # max_tokens=self.max_tokens,
                 timeout=self.timeout,
             )
-        input_tokens = response['usage'].prompt_tokens
-        completion_tokens = response['usage'].completion_tokens
-        total_tokens = response['usage'].total_tokens
+        input_tokens = response.usage.prompt_tokens
+        completion_tokens = response.usage.completion_tokens
+        total_tokens = response.usage.total_tokens
         cost = (input_tokens * self.cost_per_token['input']) + \
             (completion_tokens * self.cost_per_token['output'])
         record = ExchangeRecord(
@@ -249,10 +250,10 @@ class OpenAIFunctionAgent(LanguageModel):
             cost=cost,
         )
         self._history.append(record)
-        function_call = response["choices"][0]["message"].get('function_call')
+        function_call = response.choices[0].message.function_call
         if function_call:
-            function_name = function_call['name']
-            function_args = json.loads(function_call['arguments'])
+            function_name = function_call.name
+            function_args = json.loads(function_call.arguments)
             record.response = f"tool: '{function_name}' - {function_args}"
             record.metadata['tool_name'] = function_name
             record.metadata['tool_args'] = function_args
