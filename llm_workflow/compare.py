@@ -32,10 +32,11 @@ class Scenario:
             model:
                 A callable model that accepts a single string argument and returns a string
                 response.
-                NOTE: The model must track its memory and state internally so that it responses
-                accordingly to each successive prompt.
-                The model may optionally have a cost attribute that represents the cost of running
-                the model (e.g. cost per tokens).
+                NOTE: In order to support multiple (successive) prompts (i.e. more than one item
+                passed to __call__) the model must track its memory and state internally so that it
+                responds accordingly to each successive prompt.
+                NOTE: The model may optionally have a cost attribute that represents the cost of
+                running the model (e.g. total cost or cost per token/character).
             description:
                 A description of the scenario (e.g. the name of the model).
         """
@@ -143,10 +144,12 @@ class ModelDefinition(BaseModel):
 
         The model needs to be a callable that accepts a single string argument and returns a string
         response.
-        NOTE: The model must track its memory and state internally so that it responses
-        accordingly to each successive prompt.
-        The model may optionally have a cost attribute that represents the cost of running
-        the model (e.g. cost per tokens).
+
+        NOTE: In order to support multiple (successive) prompts (i.e. more than one item
+        passed to __call__) the model must track its memory and state internally so that it
+        responds accordingly to each successive prompt.
+        NOTE: The model may optionally have a cost attribute that represents the cost of
+        running the model (e.g. total cost or cost per token/character).
     description:
         A description of the scenario (e.g. the name of the model).
     """
