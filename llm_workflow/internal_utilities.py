@@ -103,7 +103,7 @@ def extract_code_blocks(markdown_text: str) -> list[str]:
 
 def execute_code_blocks(
         code_blocks: list[str],
-        local_namespace: dict | None = None) -> list[Exception]:
+        global_namespace: dict | None = None) -> list[Exception]:
     """
     Execute code blocks and determine if the code blocks run successfully.
 
@@ -113,20 +113,23 @@ def execute_code_blocks(
     Args:
         code_blocks:
             A list of code blocks to be executed.
-        local_namespace:
-            A dictionary containing the local namespace for the code blocks. If None, an empty
+        global_namespace:
+            A dictionary containing the global namespace for the code blocks. If None, an empty
             dictionary is used. This is useful for passing in variables that are needed for the
             code blocks to run. This is also useful if you need to keep track of the state of the
-            local namespace after the code blocks have been executed (e.g. if you want to use
+            global namespace after the code blocks have been executed (e.g. if you want to use
             variables or functions that were created during a previous call to this function.)
+        global_namespace:
+            A dictionary containing the global namespace for the code blocks. If None, an empty
+            dictionary is used.
     """
     block_results = []
-    if local_namespace is None:
-        local_namespace = {}
+    if global_namespace is None:
+        global_namespace = {}
     for code in code_blocks:
         try:
             with contextlib.redirect_stdout(io.StringIO()):
-                _ = exec(code, {}, local_namespace)
+                _ = exec(code, global_namespace)
             block_results.append(None)
         except Exception as e:
             block_results.append(e)

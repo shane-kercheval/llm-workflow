@@ -74,3 +74,53 @@ model_2:
       ```
 
       These assertions check that the function correctly masks the email addresses. If the function is working correctly, these assertions will pass silently. If the function is not working correctly, one or more of these assertions will raise an `AssertionError`.
+model_regex:
+  description: uses regex but does not import re so this code should fail if there isn't a preprocessor to import re
+  responses:
+    - |
+      To mask emails using regular expressions (regex) in Python, you can create a function that searches for email addresses in a given text and replaces them with a mask, such as "@". Here's a Python function that does this:
+
+      ```
+      def mask_emails(text, mask="*****@*****"):
+          # Define a regular expression pattern for matching email addresses
+          email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+          # Use re.sub() to replace matched email addresses with the mask
+          masked_text = re.sub(email_pattern, mask, text)
+          return masked_text
+
+      # Example usage:
+      text_with_emails = "Please contact john.doe@example.com for more information."
+      masked_text = mask_emails(text_with_emails)
+      print(masked_text)
+      ```
+      In this code:
+
+          We import the re module for regular expressions.
+          The mask_emails function takes two arguments: text (the input text containing email addresses) and mask (the string to replace email addresses with, defaulting to "@").
+          We define a regular expression pattern email_pattern for matching email addresses. This pattern is a basic one and may not cover all possible valid email address formats, but it should work for many common cases.
+          We use re.sub() to find and replace all occurrences of the email pattern in the input text with the specified mask.
+          Finally, the function returns the modified text with email addresses masked.
+
+      You can use this function to mask email addresses in any text by providing the input text as an argument.
+    - |
+      Certainly! Here are a couple of assertion statements to validate the mask_emails function:
+
+      ```
+      # Example usage:
+      text_with_emails = "Please contact john.doe@example.com for more information."
+      masked_text = mask_emails(text_with_emails)
+
+      # Assertion 1: Check if the email address is masked in the result
+      assert "john.doe@example.com" not in masked_text
+
+      # Assertion 2: Check if the masked text has the correct format
+      assert masked_text == "Please contact *****@***** for more information."
+      ```
+
+      In these assertions:
+
+          Assertion 1 checks that the email address "john.doe@example.com" is not present in the masked_text. This ensures that the function has successfully masked the email address.
+
+          Assertion 2 checks if the masked_text has the correct format, which is "Please contact @ for more information." This ensures that the function has replaced the email address with the specified mask.
+
+      You can add these assertions to your code to ensure that the mask_emails function is working as expected and providing the desired masking behavior for email addresses.
