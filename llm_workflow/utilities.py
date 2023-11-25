@@ -5,7 +5,7 @@ from itertools import islice
 import os
 import re
 import requests
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from llm_workflow.base import Document, RecordKeeper, SearchRecord
 from llm_workflow.exceptions import RequestError
@@ -142,7 +142,7 @@ class StackAnswer(BaseModel):
         self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
         self.markdown = html_to_markdown(self.body)
 
-    @validator('creation_date')
+    @field_validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
         """Convert from string to datetime."""
         return datetime.fromtimestamp(value)
@@ -176,7 +176,7 @@ class StackQuestion(BaseModel):
         self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
         self.markdown = html_to_markdown(self.body)
 
-    @validator('creation_date')
+    @field_validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
         """Convert from string to datetime."""
         return datetime.fromtimestamp(value)
