@@ -62,12 +62,13 @@ def test_scenario__conversation_sum__model_1__with_costs(conversation_sum):  # n
             expected_code_block_3,
         ],
     ]
+    assert scenario.code_namespace['result'] == 8  # from `result = sum_numbers(5, 3)`
     assert scenario.duration_seconds is not None
     assert scenario.duration_seconds > 0
     assert scenario.num_response_chars == len("".join(model_1_responses))
     assert scenario.response_chars_per_second > 0
     assert scenario.num_code_blocks == 3
-    assert scenario.code_block_results == [[None, None], [None]]
+    assert scenario.code_block_errors == [[None, None], [None]]
     assert scenario.num_successful_code_blocks == 3
     assert scenario.percent_successful_code_blocks == 1.0
     assert scenario.cost == 0.5
@@ -109,12 +110,13 @@ def test_scenario__conversation_sum__model_2__with_costs(conversation_sum):  # n
             expected_code_block_3,
         ],
     ]
+    assert scenario.code_namespace['result'] == 8  # from `result = sum_numbers(5, 3)`
     assert scenario.duration_seconds is not None
     assert scenario.duration_seconds > 0
     assert scenario.num_response_chars == len("".join(model_2_responses))
     assert scenario.response_chars_per_second > 0
     assert scenario.num_code_blocks == 3
-    assert scenario.code_block_results == [[None, None], [None]]
+    assert scenario.code_block_errors == [[None, None], [None]]
     assert scenario.num_successful_code_blocks == 3
     assert scenario.percent_successful_code_blocks == 1.0
     assert scenario.cost is None
@@ -168,8 +170,8 @@ def test_scenario__conversation_mask_email__model_1__with_costs(conversation_mas
     assert scenario.num_response_chars == len("".join(model_1_responses))
     assert scenario.response_chars_per_second > 0
     assert scenario.num_code_blocks == 3
-    assert scenario.code_block_results[0] == [None, None]
-    assert isinstance(scenario.code_block_results[1][0], AssertionError)
+    assert scenario.code_block_errors[0] == [None, None]
+    assert isinstance(scenario.code_block_errors[1][0], AssertionError)
     assert scenario.num_successful_code_blocks == 2
     assert scenario.percent_successful_code_blocks == 2 /3
     assert scenario.cost == 0.5
@@ -219,7 +221,92 @@ def test_scenario__conversation_mask_email__model_2__without_costs(conversation_
     assert scenario.num_response_chars == len("".join(model_2_responses))
     assert scenario.response_chars_per_second > 0
     assert scenario.num_code_blocks == 2
-    assert scenario.code_block_results == [[None], [None]]
+    assert scenario.code_block_errors == [[None], [None]]
+    assert scenario.num_successful_code_blocks == 2
+    assert scenario.percent_successful_code_blocks == 1
+    assert scenario.cost is None
+
+def test_scenario__conversation_sum__model_regex__setup(conversation_mask_email):  # noqa
+    ####
+    # Without setup code the code blocks should fail because there is no `re` module
+    ####
+    prompts = conversation_mask_email['prompts']
+    model_regex_responses = conversation_mask_email['model_regex']['responses']
+    model = MockChatModel(
+        prompts=prompts,
+        responses=model_regex_responses,
+        cost=None,
+    )
+    scenario = Scenario(
+        model=model,
+        description="Mock Chat Model",
+    )
+    scenario(prompts)
+    assert str(scenario)
+    assert scenario.description == "Mock Chat Model"
+    assert scenario.prompts == prompts
+    assert scenario.responses == model_regex_responses
+    expected_code_block_1 = dedent(r"""
+        def mask_emails(text, mask="*****@*****"):
+            # Define a regular expression pattern for matching email addresses
+            email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+            # Use re.sub() to replace matched email addresses with the mask
+            masked_text = re.sub(email_pattern, mask, text)
+            return masked_text
+
+        # Example usage:
+        text_with_emails = "Please contact john.doe@example.com for more information."
+        masked_text = mask_emails(text_with_emails)
+        print(masked_text)
+        """).strip()
+    expected_code_block_2 = dedent("""
+        # Example usage:
+        text_with_emails = "Please contact john.doe@example.com for more information."
+        masked_text = mask_emails(text_with_emails)
+
+        # Assertion 1: Check if the email address is masked in the result
+        assert "john.doe@example.com" not in masked_text
+
+        # Assertion 2: Check if the masked text has the correct format
+        assert masked_text == "Please contact *****@***** for more information."
+        """).strip()
+    assert expected_code_block_1 == scenario.code_blocks[0][0]
+    assert expected_code_block_2 == scenario.code_blocks[1][0]
+    assert scenario.duration_seconds is not None
+    assert scenario.duration_seconds > 0
+    assert scenario.num_response_chars == len("".join(model_regex_responses))
+    assert scenario.response_chars_per_second > 0
+    assert scenario.num_code_blocks == 2
+    assert isinstance(scenario.code_block_errors[0][0], NameError)
+    assert isinstance(scenario.code_block_errors[1][0], NameError)
+    assert scenario.num_successful_code_blocks == 0
+    assert scenario.percent_successful_code_blocks == 0
+    assert scenario.cost is None
+
+    ####
+    # With setup code, the code blocks should pass
+    ####
+    scenario = Scenario(
+        model=model,
+        description="Mock Chat Model",
+        code_setup="import re",
+    )
+    scenario(prompts)
+    assert str(scenario)
+    assert scenario.description == "Mock Chat Model"
+    assert scenario.prompts == prompts
+    assert scenario.responses == model_regex_responses
+    assert expected_code_block_1 == scenario.code_blocks[0][0]
+    assert expected_code_block_2 == scenario.code_blocks[1][0]
+      # from code that was executed
+    assert scenario.code_namespace['masked_text'] == 'Please contact *****@***** for more information.'  # noqa
+    assert scenario.duration_seconds is not None
+    assert scenario.duration_seconds > 0
+    assert scenario.num_response_chars == len("".join(model_regex_responses))
+    assert scenario.response_chars_per_second > 0
+    assert scenario.num_code_blocks == 2
+    # now the code blocks should pass
+    scenario.code_block_errors == [[None], [None]]
     assert scenario.num_successful_code_blocks == 2
     assert scenario.percent_successful_code_blocks == 1
     assert scenario.cost is None
