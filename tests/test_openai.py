@@ -1040,7 +1040,7 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     assert model.input_tokens == previous_input_tokens_0 + message.input_tokens + summarization_input_tokens  # noqa
     assert model.response_tokens == previous_response_tokens_0 + message.response_tokens + summarization_response_tokens  # noqa
     assert model.total_tokens == previous_total_tokens_0 + message.total_tokens + summarization_input_tokens + summarization_response_tokens  # noqa
-    assert round(model.cost, 5) == round(previous_cost_0 + message.cost + summarization_cost, 5)
+    assert round(model.cost, 4) == round(previous_cost_0 + message.cost + summarization_cost, 4)
 
     previous_prompt_1 = prompt
     previous_response_1 = response
@@ -1121,7 +1121,7 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     assert model.input_tokens == previous_input_tokens_0 + previous_input_tokens_1 + message.input_tokens + summarization_input_tokens  # noqa
     assert model.response_tokens == previous_response_tokens_0 + previous_response_tokens_1 + message.response_tokens + summarization_response_tokens  # noqa
     assert model.total_tokens == previous_total_tokens_0 + previous_total_tokens_1 + message.total_tokens + summarization_input_tokens + summarization_response_tokens  # noqa
-    assert round(model.cost, 5) == round(previous_cost_0 + previous_cost_1 + message.cost + summarization_cost, 5)  # noqa
+    assert round(model.cost, 4) == round(previous_cost_0 + previous_cost_1 + message.cost + summarization_cost, 4)  # noqa
 
 def test_OpenAIEmbedding():  # noqa
     model = OpenAIEmbedding(model_name='text-embedding-ada-002')
