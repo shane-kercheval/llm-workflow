@@ -8,6 +8,7 @@ openai
 markdown
 markdownify
 numpy
+pandas
 pydantic
 pygments
 pypirc
