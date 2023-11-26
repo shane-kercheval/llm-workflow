@@ -4,6 +4,7 @@ from collections.abc import Callable
 import re
 from time import sleep
 from typing import Any
+import pandas as pd
 import pytest
 import requests
 import random
@@ -264,18 +265,22 @@ def is_endpoint_available(url: str) -> bool:
 
 
 @pytest.fixture()
-def conversation_mask_email():  # noqa
+def conversation_mask_email() -> dict:
+    """Returns a mock llm  conversation for masking emails."""
     with open('tests/test_data/compare/mock_conversation__mask_email_function.yml') as f:
         return yaml.safe_load(f)
 
+
 @pytest.fixture()
-def conversation_sum():  # noqa
+def conversation_sum() -> dict:
+    """Returns a mock llm  conversation for summing numbers."""
     with open('tests/test_data/compare/mock_conversation__sum_function.yml') as f:
         return yaml.safe_load(f)
 
 
 @pytest.fixture()
-def hugging_face_endpoint() -> str:  # noqa
+def hugging_face_endpoint() -> str:
+    """Returns the endpoint for the hugging face API."""
     return os.getenv('HUGGING_FACE_ENDPOINT_UNIT_TESTS')
 
 
@@ -283,3 +288,9 @@ def pattern_found(value: str, pattern: str) -> bool:
     """Returns True if the pattern is found in the value."""
     pattern = re.compile(pattern)
     return bool(pattern.match(value))
+
+
+@pytest.fixture()
+def credit_data() -> pd.DataFrame:
+    """Returns a dataframe with credit data."""
+    return pd.read_csv('tests/test_data/data/credit.csv')

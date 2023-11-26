@@ -1,0 +1,61 @@
+
+Answer the question at the end of the text as truthfully and accurately as possible. Use the metadata of the python objects as appropriate. Tailor your response according to the most relevant objects. Don't use the if they don't appear relevant.
+
+Here is the metadata:
+
+```
+A pd.DataFrame `my_df` that contains the following columns with the following types of values:
+
+`checking_balance`: [<class 'str'>]
+`months_loan_duration`: [<class 'int'>]
+`credit_history`: [<class 'str'>]
+`purpose`: [<class 'str'>]
+`amount`: [<class 'int'>]
+`savings_balance`: [<class 'str'>]
+`employment_duration`: [<class 'str'>]
+`percent_of_income`: [<class 'int'>]
+`years_at_residence`: [<class 'int'>]
+`age`: [<class 'int'>]
+`other_credit`: [<class 'str'>]
+`housing`: [<class 'str'>]
+`existing_loans_count`: [<class 'int'>]
+`job`: [<class 'str'>]
+`dependents`: [<class 'int'>]
+`phone`: [<class 'str'>]
+`default`: [<class 'str'>]
+
+The following numeric columns contain the following summary statistics:
+
+                       count      mean          std  ...     50%      75%      max
+months_loan_duration  1000.0    20.903    12.058814  ...    18.0    24.00     72.0
+amount                1000.0  3271.258  2822.736876  ...  2319.5  3972.25  18424.0
+percent_of_income     1000.0     2.973     1.118715  ...     3.0     4.00      4.0
+years_at_residence    1000.0     2.845     1.103718  ...     3.0     4.00      4.0
+age                   1000.0    35.546    11.375469  ...    33.0    42.00     75.0
+existing_loans_count  1000.0     1.407     0.577654  ...     1.0     2.00      4.0
+dependents            1000.0     1.155     0.362086  ...     1.0     1.00      2.0
+
+[7 rows x 8 columns]
+
+The following non-numeric columns contain the following unique values and corresponding value counts:
+
+`checking_balance`: {'unknown': 394, '< 0 DM': 274, '1 - 200 DM': 269, '> 200 DM': 63}
+`credit_history`: {'good': 530, 'critical': 293, 'poor': 88, 'very good': 49, 'perfect': 40}
+`purpose`: {'furniture/appliances': 473, 'car': 337, 'business': 97, 'education': 59, 'renovations': 22, 'car0': 12}
+`savings_balance`: {'< 100 DM': 603, 'unknown': 183, '100 - 500 DM': 103, '500 - 1000 DM': 63, '> 1000 DM': 48}
+`employment_duration`: {'1 - 4 years': 339, '> 7 years': 253, '4 - 7 years': 174, '< 1 year': 172, 'unemployed': 62}
+`other_credit`: {'none': 814, 'bank': 139, 'store': 47}
+`housing`: {'own': 713, 'rent': 179, 'other': 108}
+`job`: {'skilled': 630, 'unskilled': 200, 'management': 148, 'unemployed': 22}
+`phone`: {'no': 596, 'yes': 404}
+`default`: {'no': 700, 'yes': 300}
+
+```
+
+----
+
+Here is the question:
+
+```
+This is my question.
+```
