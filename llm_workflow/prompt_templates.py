@@ -202,11 +202,12 @@ class PythonObjectMetadataTemplate(PromptTemplate):
         """Return a prompt that contains the metadata of the objects."""
         super().__call__(prompt)
         metadata = []
+        extracted_variables = []
         if self._extract_variables:
-            variables = extract_variables(prompt)
-            self._extracted_variables_last_call = variables
+            extracted_variables = extract_variables(prompt)
+            self._extracted_variables_last_call = extracted_variables
             # if no variables are found, then no metadata is used
-            for variable in variables:
+            for variable in extracted_variables:
                 if variable in self.objects:
                     if isinstance(self.objects[variable], tuple):
                         obj, func = self.objects[variable]
@@ -224,6 +225,10 @@ class PythonObjectMetadataTemplate(PromptTemplate):
                     metadata.append(func(obj, object_name))
                 else:
                     metadata.append(extract_metadata(obj, object_name))
+        if extracted_variables:
+            for variable in extracted_variables:
+                prompt = prompt.replace(f'@{variable}', f'`{variable}`')
+
         if metadata:
             metadata = '\n\n---\n\n'.join(metadata)
             return self.template.\

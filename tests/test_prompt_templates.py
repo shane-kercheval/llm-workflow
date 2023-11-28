@@ -174,7 +174,7 @@ def test_PythonObjectMetadataTemplate__extract_variables__true__variable_not_fou
         raise_not_found_error=False,  # do not raise error if variable is not found
     )
     result = template(prompt='This is a question about @credit_data dataset.')
-    assert result == 'This is a question about @credit_data dataset.'
+    assert result == 'This is a question about `credit_data` dataset.'
     assert template._extracted_variables_last_call == {'credit_data'}
 
     template = PythonObjectMetadataTemplate(
@@ -195,7 +195,7 @@ def test_PythonObjectMetadataTemplate__extract_variables__true(credit_data):  # 
     )
     result = template(prompt='This is a question about @credit_data dataset.')
     assert template._extracted_variables_last_call == {'credit_data'}
-    assert 'This is a question about @credit_data dataset.' in result
+    assert 'This is a question about `credit_data` dataset.' in result
     assert 'credit_data' in result
     assert 'my_dict' not in result
     assert 'checking_balance' in result
@@ -208,7 +208,7 @@ def test_PythonObjectMetadataTemplate__extract_variables__true(credit_data):  # 
 
     result = template(prompt='This is a question about @my_dict.')
     assert template._extracted_variables_last_call == {'my_dict'}
-    assert 'This is a question about @my_dict.' in result
+    assert 'This is a question about `my_dict`.' in result
     assert 'credit_data' not in result
     assert 'my_dict' in result
     assert 'checking_balance' not in result
@@ -229,7 +229,7 @@ def test_PythonObjectMetadataTemplate__extract_variables__true(credit_data):  # 
     template.add_object('my_dict', {'a': 1, 'b': 2})
     result = template(prompt='This is a question about @my_dict and @credit_data.')
     assert template._extracted_variables_last_call == {'my_dict', 'credit_data'}
-    assert 'This is a question about @my_dict and @credit_data.' in result
+    assert 'This is a question about `my_dict` and `credit_data`.' in result
     assert 'credit_data' in result
     assert 'my_dict' in result
     assert 'checking_balance' in result
@@ -249,7 +249,7 @@ def test_PythonObjectMetadataTemplate__custom_functions(credit_data):  # noqa
     )
     result = template(prompt='This is a question about @credit_data dataset.')
     assert template._extracted_variables_last_call == {'credit_data'}
-    assert 'This is a question about @credit_data dataset.' in result
+    assert 'This is a question about `credit_data` dataset.' in result
     assert 'custom function: credit_data - (1000, 17)' in result
     assert 'credit_data' in result
     file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dataframe__custom_functions.txt'  # noqa
@@ -266,7 +266,7 @@ def test_PythonObjectMetadataTemplate__custom_functions(credit_data):  # noqa
     template.add_object('my_dict', ({'a': 1, 'b': 2}, lambda obj, name: f'custom dict function: {name} - {len(obj)}'))  # noqa
     result = template(prompt='This is a question about @my_dict and @credit_data.')
     assert template._extracted_variables_last_call == {'my_dict', 'credit_data'}
-    assert 'This is a question about @my_dict and @credit_data.' in result
+    assert 'This is a question about `my_dict` and `credit_data`.' in result
     assert 'custom df function: credit_data - (1000, 17)' in result
     assert 'custom dict function: my_dict - 2' in result
     file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dataframe_dict__custom_functions.txt'  # noqa
