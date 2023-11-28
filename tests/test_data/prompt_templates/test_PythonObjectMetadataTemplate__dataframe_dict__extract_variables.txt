@@ -4,10 +4,6 @@ Answer the question at the end of the text as truthfully and accurately as possi
 Here is the metadata:
 
 ```
-A python dictionary `my_dict` with keys: ['a', 'b']
-
----
-
 A pd.DataFrame `credit_data` that contains the following numeric and non-numeric columns:
 
 
@@ -39,6 +35,10 @@ Here are the non-numeric columns and corresponding value counts:
 
 
 Use both the numeric and non-numeric columns as appropriate.
+
+---
+
+A python dictionary `my_dict` with keys: ['a', 'b']
 ```
 
 ----

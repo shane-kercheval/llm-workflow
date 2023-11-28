@@ -4,11 +4,11 @@ Answer the question at the end of the text as truthfully and accurately as possi
 Here is the metadata:
 
 ```
-custom dict function: my_dict - 2
+custom df function: credit_data - (1000, 17)
 
 ---
 
-custom df function: credit_data - (1000, 17)
+custom dict function: my_dict - 2
 ```
 
 ----
