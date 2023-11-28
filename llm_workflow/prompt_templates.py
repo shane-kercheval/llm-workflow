@@ -12,9 +12,9 @@ from typing import Callable
 import pandas as pd
 from functools import singledispatch
 
-from pydantic import BaseModel
 from llm_workflow.base import Record, RecordKeeper
 from llm_workflow.indexes import DocumentIndex
+from llm_workflow.internal_utilities import extract_variables
 from llm_workflow.resources import (
     PROMPT_TEMPLATE__INCLUDE_DOCUMENTS,
     PROMPT_TEMPLATE__PYTHON_METADATA,
@@ -123,17 +123,17 @@ def _(obj: list, obj_name: str | None = None) -> str:
 def _(obj: pd.DataFrame, obj_name: str | None = None) -> str:
     # extract data types
     obj_name = f' `{obj_name}` ' if obj_name else ' '
-    metadata = f"A pd.DataFrame{obj_name}that contains the following columns with the following types of values:\n\n"  # noqa
-    for column in obj.columns:
-        metadata += f"`{column}`: {obj[column].apply(type).unique()}\n"
+    metadata = f"A pd.DataFrame{obj_name}that contains the following numeric and non-numeric columns:\n\n"  # noqa
+    # for column in obj.columns:
+    #     metadata += f"`{column}`: {obj[column].apply(type).unique()}\n"
 
     # extract summary stats for numeric columns
     describe = obj.describe()
-    metadata += "\nThe following numeric columns contain the following summary statistics:\n\n"
+    metadata += "\nHere are the numeric columns and corresponding summary statistics:\n\n"
     metadata += str(describe.transpose())
 
     # extract summary stats for non-numeric columns
-    metadata += "\n\nThe following non-numeric columns contain the following unique values and corresponding value counts:\n\n"  # noqa
+    metadata += "\n\nHere are the non-numeric columns and corresponding value counts:\n\n"
     for column in [x for x in obj.columns if x not in describe.columns]:
         unique_values = obj[column]\
             .value_counts(sort=True, ascending=False, normalize=False, dropna=False)
@@ -142,15 +142,9 @@ def _(obj: pd.DataFrame, obj_name: str | None = None) -> str:
             metadata += f"`{column}`: {top_10}\n"
         else:
             metadata += f"`{column}` (top {len(top_10)} out of {len(unique_values)} unique values): {top_10}\n"  # noqa
+
+    metadata += "\n\nUse both the numeric and non-numeric columns as appropriate."
     return metadata
-
-
-class MetadataMetadata(BaseModel):
-    """Metadata about the metadata; used to extract/create the metadata."""
-
-    obj: object
-    object_name: str | None = None
-    extract_func: Callable | None = None
 
 
 class PythonObjectMetadataTemplate(PromptTemplate):
@@ -167,59 +161,90 @@ class PythonObjectMetadataTemplate(PromptTemplate):
 
     def __init__(
             self,
-            metadatas: list[MetadataMetadata],
-            template: str | None = None) -> None:
+            objects: dict[str, object | tuple[object, Callable]] | None = None,
+            template: str | None = None,
+            extract_variables: bool = True,
+            raise_not_found_error: bool = True) -> None:
         """
         Initialize the object.
 
+        NOTE: If metadatas contains multiple objects with the same object_name, then an error is
+        raised.
+
+        NOTE: If metadata is not used, then the prompt is not modified.
+
         Args:
-            metadatas:
-                Information (metadata) about how to extract metadata from the objects that are
-                provided.
+            objects:
+                A dictionary of objects that are used to construct the prompt. The keys of the
+                dictionary are the names of the objects. The values of the dictionary are either
+                the objects themselves or a tuple of the object and a function that is used to
+                extract the metadata from the object. If the function is not provided, then the
+                default function (extract_metadata) is used.
             template:
                 The template that is used to construct the prompt. The template must contain
                 "{{metadata}}" and "{{prompt}}" within the string.
+            extract_variables:
+                If True, extract variables in the prompt that start with @ (e.g. `@my_variable)
+                and use the variables' metadata in the prompt. If False, then use the metadata of
+                all of the objects in the prompt.
+            raise_not_found_error:
+                If True, raise an error if the @'d objects in the prompt don't have corresponding
+                matches in the metadatas.
         """
         super().__init__()
-        self.metadatas = metadatas
+        self.objects = objects if objects else {}
         self.template = template if template else PROMPT_TEMPLATE__PYTHON_METADATA
+        self._extract_variables = extract_variables
+        self._raise_not_found_error = raise_not_found_error
+        self._extracted_variables_last_call = None
 
     def __call__(self, prompt: str) -> str:
         """Return a prompt that contains the metadata of the objects."""
         super().__call__(prompt)
-        results = []
-        for metadata in self.metadatas:
-            func = metadata.extract_func if metadata.extract_func else extract_metadata
-            results.append(func(metadata.obj, metadata.object_name))
-        results = '\n\n---\n\n'.join(results)
-        return self.template.\
-            replace('{{metadata}}', results if results else 'No Metadata').\
-            replace('{{prompt}}', prompt)
+        metadata = []
+        if self._extract_variables:
+            variables = extract_variables(prompt)
+            self._extracted_variables_last_call = variables
+            # if no variables are found, then no metadata is used
+            for variable in variables:
+                if variable in self.objects:
+                    if isinstance(self.objects[variable], tuple):
+                        obj, func = self.objects[variable]
+                        metadata.append(func(obj, variable))
+                    else:
+                        metadata.append(extract_metadata(self.objects[variable], variable))
+                elif self._raise_not_found_error:
+                    assert variable in self.objects, \
+                        f"Variable {variable} not found in list of objects."
+        elif self.objects:
+            # use metadata from all objects
+            for object_name, obj in self.objects.items():
+                if isinstance(obj, tuple):
+                    obj, func = obj  # noqa
+                    metadata.append(func(obj, object_name))
+                else:
+                    metadata.append(extract_metadata(obj, object_name))
+        if metadata:
+            metadata = '\n\n---\n\n'.join(metadata)
+            return self.template.\
+                replace('{{metadata}}', metadata if metadata else 'No Metadata').\
+                replace('{{prompt}}', prompt)
+
+        return prompt
 
 
-# class PythonObjectSelectorTemplate(PromptTemplate):
-#     """Injects metadata based on matches to @object_name used in prompt."""
+    def add_object(self, object_name: str, obj: object | tuple[object, Callable]) -> None:
+        """
+        Add an object to the list of objects used to construct the prompt.
 
-#     def __init__(
-#             self,
-#             metadatas: list[MetadataMetadata],
-#             template: str | None = None,
-#             error_if_not_found: bool = True) -> None:
-#         """
-#         Initialize the object.
-
-#         Args:
-#             metadatas:
-#                 Information (metadata) about how to extract metadata from the objects that are
-#                 provided.
-#             template:
-#                 The template that is used to construct the prompt. The template must contain
-#                 "{{metadata}}" and "{{prompt}}" within the string.
-#             error_if_not_found:
-#                 If True, raise an error if the @'d objects in the prompt don't have corresponding
-#                 matches in the metadatas.
-#         """
-#         super().__init__()
-#         self.metadatas = metadatas
-#         self.template = template if template else PROMPT_TEMPLATE__PYTHON_METADATA
-#         self.erro4r_if_not_found = error_if_not_found
+        Args:
+            object_name:
+                The name of the object.
+            obj:
+                The object itself or a tuple of the object and a function that is used to extract
+                the metadata from the object. If the function is not provided, then the default
+                function (extract_metadata) is used.
+        """
+        assert object_name not in self.objects, \
+            f"Object with name {object_name} already exists."
+        self.objects[object_name] = obj

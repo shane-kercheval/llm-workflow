@@ -134,3 +134,10 @@ def execute_code_blocks(
         except Exception as e:
             block_results.append(e)
     return block_results
+
+
+def extract_variables(value: str) -> set[str]:
+    """Extract variables in the format of "@variable" from a string."""
+    # The regex pattern looks for @ followed by word characters or underscores and
+    # ensures that it is not preceded by a word character or dot.
+    return set(re.findall(r'(?<![\w.])@([a-zA-Z0-9_]+)(?![a-zA-Z0-9_]*\.[a-zA-Z0-9_])', value))
