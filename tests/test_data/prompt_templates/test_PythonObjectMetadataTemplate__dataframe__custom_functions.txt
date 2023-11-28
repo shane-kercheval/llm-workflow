@@ -1,0 +1,16 @@
+
+Answer the question at the end of the text as truthfully and accurately as possible. Use the metadata of the python objects as appropriate. Tailor your response according to the most relevant objects. Don't use the if they don't appear relevant.
+
+Here is the metadata:
+
+```
+custom function: credit_data - (1000, 17)
+```
+
+----
+
+Here is the question:
+
+```
+This is a question about @credit_data dataset.
+```

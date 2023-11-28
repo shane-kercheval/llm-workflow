@@ -1,4 +1,10 @@
-A pd.DataFrame that contains the following numeric and non-numeric columns:
+
+Answer the question at the end of the text as truthfully and accurately as possible. Use the metadata of the python objects as appropriate. Tailor your response according to the most relevant objects. Don't use the if they don't appear relevant.
+
+Here is the metadata:
+
+```
+A pd.DataFrame `credit_data` that contains the following numeric and non-numeric columns:
 
 
 Here are the numeric columns and corresponding summary statistics:
@@ -29,3 +35,16 @@ Here are the non-numeric columns and corresponding value counts:
 
 
 Use both the numeric and non-numeric columns as appropriate.
+
+---
+
+A python dictionary `my_dict` with keys: ['a', 'b']
+```
+
+----
+
+Here is the question:
+
+```
+This is a question about @my_dict and @credit_data.
+```

@@ -1,11 +1,11 @@
 """Test llm_workflow.indexes.py."""
 import chromadb
 import pandas as pd
+import pytest
 from llm_workflow.base import Document
 from llm_workflow.indexes import ChromaDocumentIndex
 from llm_workflow.prompt_templates import (
     DocSearchTemplate,
-    MetadataMetadata,
     PythonObjectMetadataTemplate,
     extract_metadata,
 )
@@ -83,23 +83,35 @@ def test_extract_metadata__pandas_dataframe(credit_data: pd.DataFrame):  # noqa
         f.write(results)
 
 
-def test_PythonObjectMetadataTemplate(credit_data: pd.DataFrame):  # noqa
-    template = PythonObjectMetadataTemplate(metadatas=[])
-    assert 'This is my question.' in template(prompt='This is my question.')
+def test_PythonObjectMetadataTemplate__extract_variables__false(credit_data: pd.DataFrame):  # noqa
+    template = PythonObjectMetadataTemplate(extract_variables=False)
+    # ensure prompt is not modified if no metadata is found
+    assert template(prompt='This is my question.') == 'This is my question.'
+    assert template._extracted_variables_last_call is None
 
-    template = PythonObjectMetadataTemplate(metadatas=[
-        MetadataMetadata(obj=credit_data),
-    ])
+
+    template = PythonObjectMetadataTemplate(objects={}, extract_variables=False)
+    # ensure prompt is not modified if no metadata is found
+    assert template(prompt='This is my question.') == 'This is my question.'
+    assert template._extracted_variables_last_call is None
+
+    template = PythonObjectMetadataTemplate(
+        objects={'credit_data': credit_data},
+        extract_variables=False,
+    )
     result = template(prompt='This is my question.')
+    assert template._extracted_variables_last_call is None
     assert 'This is my question.' in result
-    assert 'my_df' not in result
-    assert 'checking_balance' in result
-    assert 'months_loan_duration' in result
+    assert 'credit_data' in result  # ensure object name is included
+    assert 'checking_balance' in result  # ensure non-numeric columns are not included
+    assert 'months_loan_duration' in result  # ensure numeric columns are not included
 
-    template = PythonObjectMetadataTemplate(metadatas=[
-        MetadataMetadata(obj=credit_data, object_name='my_df'),
-    ])
+    template = PythonObjectMetadataTemplate(
+        objects={'my_df': credit_data},
+        extract_variables=False,
+    )
     result = template(prompt='This is my question.')
+    assert template._extracted_variables_last_call is None
     assert 'This is my question.' in result
     assert 'my_df' in result
     assert 'checking_balance' in result
@@ -108,19 +120,158 @@ def test_PythonObjectMetadataTemplate(credit_data: pd.DataFrame):  # noqa
     with open(file_path, 'w') as f:
         f.write(result)
 
-
-    template = PythonObjectMetadataTemplate(metadatas=[
-        MetadataMetadata(obj=credit_data, object_name='my_df'),
-        MetadataMetadata(obj={'a': 1, 'b': 2}),
-    ])
+    template = PythonObjectMetadataTemplate(
+        objects={'my_df': credit_data, 'my_dict': {'a': 1, 'b': 2}},
+        extract_variables=False,
+    )
     result = template(prompt='This is my question.')
+    assert template._extracted_variables_last_call is None
     assert 'This is my question.' in result
     assert 'my_df' in result
+    assert 'my_dict' in result
     assert 'checking_balance' in result
     assert 'months_loan_duration' in result
     assert 'python dictionary' in result
     assert "['a', 'b']" in result
-    assert 'my_dict' not in result
     file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dataframe__dict.txt'  # noqa
     with open(file_path, 'w') as f:
         f.write(result)
+
+
+def test_PythonObjectMetadataTemplate__extract_variables__true__no_variables(credit_data: pd.DataFrame):  # noqa
+    """Test scenario where no variables are used."""
+    template = PythonObjectMetadataTemplate(extract_variables=True)
+    # ensure prompt is not modified if no metadata is found
+    assert template(prompt='This is my question.') == 'This is my question.'
+    assert template._extracted_variables_last_call == set()
+
+    template = PythonObjectMetadataTemplate(objects={}, extract_variables=True)
+    # ensure prompt is not modified if no metadata is found
+    assert template(prompt='This is my question.') == 'This is my question.'
+    assert template._extracted_variables_last_call == set()
+
+    template = PythonObjectMetadataTemplate(
+        objects={'credit_data': credit_data},
+        extract_variables=True,
+    )
+    result = template(prompt='This is my question.')
+    assert template._extracted_variables_last_call == set()
+    assert result == 'This is my question.'
+    # `credit_data` is not used in the prompt, so it is not included in the metadata
+    assert 'credit_data' not in result
+    assert 'checking_balance' not in result
+    assert 'months_loan_duration' not in result
+
+def test_PythonObjectMetadataTemplate__extract_variables__true__variable_not_found():  # noqa
+    """
+    Test scenario where variable is used but not found in context with/without
+    raise_not_found_error.
+    """
+    ####
+    template = PythonObjectMetadataTemplate(
+        objects=None,
+        extract_variables=True,
+        raise_not_found_error=False,  # do not raise error if variable is not found
+    )
+    result = template(prompt='This is a question about @credit_data dataset.')
+    assert result == 'This is a question about @credit_data dataset.'
+    assert template._extracted_variables_last_call == {'credit_data'}
+
+    template = PythonObjectMetadataTemplate(
+        objects=None,
+        extract_variables=True,
+        raise_not_found_error=True,  # raise error if variable is not found
+    )
+    with pytest.raises(AssertionError):
+        _ = template(prompt='This is a question about @non_existant_variable dataset.')
+    assert template._extracted_variables_last_call == {'non_existant_variable'}
+
+
+def test_PythonObjectMetadataTemplate__extract_variables__true(credit_data):  # noqa
+    template = PythonObjectMetadataTemplate(
+        objects={'credit_data': credit_data, 'my_dict': {'a': 1, 'b': 2}},
+        extract_variables=True,
+        raise_not_found_error=True,
+    )
+    result = template(prompt='This is a question about @credit_data dataset.')
+    assert template._extracted_variables_last_call == {'credit_data'}
+    assert 'This is a question about @credit_data dataset.' in result
+    assert 'credit_data' in result
+    assert 'my_dict' not in result
+    assert 'checking_balance' in result
+    assert 'months_loan_duration' in result
+    assert 'python dictionary' not in result
+    assert "['a', 'b']" not in result
+    file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dataframe__extract_variables.txt'  # noqa
+    with open(file_path, 'w') as f:
+        f.write(result)
+
+    result = template(prompt='This is a question about @my_dict.')
+    assert template._extracted_variables_last_call == {'my_dict'}
+    assert 'This is a question about @my_dict.' in result
+    assert 'credit_data' not in result
+    assert 'my_dict' in result
+    assert 'checking_balance' not in result
+    assert 'months_loan_duration' not in result
+    assert 'python dictionary' in result
+    assert "['a', 'b']" in result
+    file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dict__extract_variables.txt'  # noqa
+    with open(file_path, 'w') as f:
+        f.write(result)
+
+    # test adding objects after instantiation
+    template = PythonObjectMetadataTemplate(
+        objects=None,
+        extract_variables=True,
+        raise_not_found_error=True,
+    )
+    template.add_object('credit_data', credit_data)
+    template.add_object('my_dict', {'a': 1, 'b': 2})
+    result = template(prompt='This is a question about @my_dict and @credit_data.')
+    assert template._extracted_variables_last_call == {'my_dict', 'credit_data'}
+    assert 'This is a question about @my_dict and @credit_data.' in result
+    assert 'credit_data' in result
+    assert 'my_dict' in result
+    assert 'checking_balance' in result
+    assert 'months_loan_duration' in result
+    assert 'python dictionary' in result
+    assert "['a', 'b']" in result
+    file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dataframe_dict__extract_variables.txt'  # noqa
+    with open(file_path, 'w') as f:
+        f.write(result)
+
+
+def test_PythonObjectMetadataTemplate__custom_functions(credit_data):  # noqa
+    template = PythonObjectMetadataTemplate(
+        objects={'credit_data': (credit_data, lambda obj, name: f'custom function: {name} - {obj.shape}')},  # noqa
+        extract_variables=True,
+        raise_not_found_error=True,
+    )
+    result = template(prompt='This is a question about @credit_data dataset.')
+    assert template._extracted_variables_last_call == {'credit_data'}
+    assert 'This is a question about @credit_data dataset.' in result
+    assert 'custom function: credit_data - (1000, 17)' in result
+    assert 'credit_data' in result
+    file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dataframe__custom_functions.txt'  # noqa
+    with open(file_path, 'w') as f:
+        f.write(result)
+
+    # test adding objects after instantiation
+    template = PythonObjectMetadataTemplate(
+        objects=None,
+        extract_variables=True,
+        raise_not_found_error=True,
+    )
+    template.add_object('credit_data', (credit_data, lambda obj, name: f'custom df function: {name} - {obj.shape}'))  # noqa
+    template.add_object('my_dict', ({'a': 1, 'b': 2}, lambda obj, name: f'custom dict function: {name} - {len(obj)}'))  # noqa
+    result = template(prompt='This is a question about @my_dict and @credit_data.')
+    assert template._extracted_variables_last_call == {'my_dict', 'credit_data'}
+    assert 'This is a question about @my_dict and @credit_data.' in result
+    assert 'custom df function: credit_data - (1000, 17)' in result
+    assert 'custom dict function: my_dict - 2' in result
+    file_path = 'tests/test_data/prompt_templates/test_PythonObjectMetadataTemplate__dataframe_dict__custom_functions.txt'  # noqa
+    with open(file_path, 'w') as f:
+        f.write(result)
+
+
+

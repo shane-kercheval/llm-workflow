@@ -4,27 +4,10 @@ Answer the question at the end of the text as truthfully and accurately as possi
 Here is the metadata:
 
 ```
-A pd.DataFrame `my_df` that contains the following columns with the following types of values:
+A pd.DataFrame `my_df` that contains the following numeric and non-numeric columns:
 
-`checking_balance`: [<class 'str'>]
-`months_loan_duration`: [<class 'int'>]
-`credit_history`: [<class 'str'>]
-`purpose`: [<class 'str'>]
-`amount`: [<class 'int'>]
-`savings_balance`: [<class 'str'>]
-`employment_duration`: [<class 'str'>]
-`percent_of_income`: [<class 'int'>]
-`years_at_residence`: [<class 'int'>]
-`age`: [<class 'int'>]
-`other_credit`: [<class 'str'>]
-`housing`: [<class 'str'>]
-`existing_loans_count`: [<class 'int'>]
-`job`: [<class 'str'>]
-`dependents`: [<class 'int'>]
-`phone`: [<class 'str'>]
-`default`: [<class 'str'>]
 
-The following numeric columns contain the following summary statistics:
+Here are the numeric columns and corresponding summary statistics:
 
                        count      mean          std  ...     50%      75%      max
 months_loan_duration  1000.0    20.903    12.058814  ...    18.0    24.00     72.0
@@ -37,7 +20,7 @@ dependents            1000.0     1.155     0.362086  ...     1.0     1.00      2
 
 [7 rows x 8 columns]
 
-The following non-numeric columns contain the following unique values and corresponding value counts:
+Here are the non-numeric columns and corresponding value counts:
 
 `checking_balance`: {'unknown': 394, '< 0 DM': 274, '1 - 200 DM': 269, '> 200 DM': 63}
 `credit_history`: {'good': 530, 'critical': 293, 'poor': 88, 'very good': 49, 'perfect': 40}
@@ -51,9 +34,11 @@ The following non-numeric columns contain the following unique values and corres
 `default`: {'no': 700, 'yes': 300}
 
 
+Use both the numeric and non-numeric columns as appropriate.
+
 ---
 
-A python dictionary with keys: ['a', 'b']
+A python dictionary `my_dict` with keys: ['a', 'b']
 ```
 
 ----

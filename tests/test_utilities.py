@@ -11,6 +11,7 @@ from llm_workflow.internal_utilities import (
     create_hash,
     execute_code_blocks,
     extract_code_blocks,
+    extract_variables,
     has_method,
     has_property,
     retry_handler,
@@ -608,3 +609,84 @@ def test__execute_code_blocks__with_global_namespace(conversation_sum):  # noqa
     assert len(results) == 2
     assert results[0] is None
     assert isinstance(results[1], AssertionError)
+
+def test__extract_variables():  # noqa
+    assert extract_variables('') == set()
+    assert extract_variables('This is an email shane@email.com not a variable.') == set()
+    assert extract_variables('This is not an email shane@email and not a variable.') == set()
+    assert extract_variables('shane@email.com') == set()
+    assert extract_variables('.@email.com') == set()
+    assert extract_variables('@email.com') == set()
+    assert extract_variables('@email') == {'email'}
+    text = 'This is a variable @my_variable and should be extracted'
+    results = extract_variables(text)
+    assert results == {'my_variable'}
+    text = 'This variable is at the end of a sentence @my_variable!'
+    results = extract_variables(text)
+    assert results == {'my_variable'}
+    text = 'This has two @my_variable and another @my_variable.'
+    results = extract_variables(text)
+    assert results == {'my_variable'}
+    text = 'This has three @my_variable and another @my_variable and @my_variable.'
+    results = extract_variables(text)
+    assert results == {'my_variable'}
+    text = '@_my_var_1 and @_my_var_2_.'
+    results = extract_variables(text)
+    assert results == {'_my_var_1', '_my_var_2_'}
+    text = '@_my_var_1 and @_my_var_2_. This is another sentence'
+    results = extract_variables(text)
+    assert results == {'_my_var_1', '_my_var_2_'}
+    text = '@_my_var_1 and @_my_var_2_; this is some more text.'
+    results = extract_variables(text)
+    assert results == {'_my_var_1', '_my_var_2_'}
+    text = 'A variable with number @var1234 should match.'
+    results = extract_variables(text)
+    assert results == {'var1234'}
+    text = 'A variable with underscore @var_name should match.'
+    results = extract_variables(text)
+    assert results == {'var_name'}
+    text = 'Multiple @@ signs should not confuse @@var.'
+    results = extract_variables(text)
+    assert results == {'var'}
+    text = 'Variable at the end of a line @end_of_line\n'
+    results = extract_variables(text)
+    assert results == {'end_of_line'}
+    # text = 'Variables next to each other @var1@var2'
+    # results = extract_variables(text)
+    # assert results == {'var1', 'var2'}
+    text = 'Variable in parentheses (@var_in_paren).'
+    results = extract_variables(text)
+    assert results == {'var_in_paren'}
+    text = 'Variable in brackets [@var_in_brackets].'
+    results = extract_variables(text)
+    assert results == {'var_in_brackets'}
+    text = 'Variable with punctuation @var_punc!'
+    results = extract_variables(text)
+    assert results == {'var_punc'}
+    text = 'Variable with comma, @var_comma, should match.'
+    results = extract_variables(text)
+    assert results == {'var_comma'}
+    text = 'Variables with leading underscores @_underscore_var should match.'
+    results = extract_variables(text)
+    assert results == {'_underscore_var'}
+    text = 'Variable followed by a special character @special$ should match.'
+    results = extract_variables(text)
+    assert results == {'special'}
+    text = 'Variable inside quotes "@quoted_var" should match.'
+    results = extract_variables(text)
+    assert results == {'quoted_var'}
+    text = 'A tricky case with email-like pattern @not_an_email@domain.com'
+    results = extract_variables(text)
+    assert results == {'not_an_email'}
+    text = 'Multiple variables separated by comma @var1, @var2, and @var3.'
+    results = extract_variables(text)
+    assert results == {'var1', 'var2', 'var3'}
+    text = 'Multiple variables separated by comma and backtick `@var1`, `@var2`, and `@var3`.'
+    results = extract_variables(text)
+    assert results == {'var1', 'var2', 'var3'}
+    text = 'Variable followed by a period and space @var_period. should match.'
+    results = extract_variables(text)
+    assert results == {'var_period'}
+    text = 'Variable followed by other symbols @var_symbols?! should match.'
+    results = extract_variables(text)
+    assert results == {'var_symbols'}
