@@ -22,7 +22,7 @@ Here is the question:
 
 PROMPT_TEMPLATE__PYTHON_METADATA = \
 """
-Answer the question at the end of the text as truthfully and accurately as possible. Use the metadata of the python objects as appropriate. Tailor your response according to the most relevant objects. Don't use the if they don't appear relevant.
+Answer the question at the end of the text as truthfully and accurately as possible. Use the metadata of the python objects as appropriate. Tailor your response according to the most relevant objects. Don't use the metadata if they don't appear relevant.
 
 Here is the metadata:
 
