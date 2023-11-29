@@ -148,7 +148,18 @@ class LastNTokensMemoryManager(MemoryManager):
 
 
 class MessageSummaryMemoryManager(MemoryManager):
-    """TODO."""
+    """
+    The MessageSummaryMemoryManager class summarizes messages that exceed a certain threshold. The
+    treshold is applied to both the prompt and the response, individually. The summaries are
+    generated using a model provided to the __init__ method. The summaries are cached so that the
+    same prompt/response pair is not summarized multiple times.
+
+    NOTE: One improvement might be ot only summarize messages after the total number of tokens (or
+    characters) across all messages exceeds a certain threshold. This would prevent summarizing
+    messages when the overall number of tokens is relatively small. Another improvement might be
+    to add logic to ensure the overall number of tokens (or characters) across all messages does
+    not exceed a certain threshold (e.g. the context window threshold for the model).
+    """
 
     def __init__(
             self,
@@ -161,8 +172,8 @@ class MessageSummaryMemoryManager(MemoryManager):
             model:
                 The model to use for summarizing messages.
             message_threshold:
-                The maximum number of characters that a message (prompt/response) can be before it
-                is summarized.
+                The maximum number of characters that a message (the prompt or the response,
+                individually) can be before it is summarized.
             summarize_instruction:
                 The instruction to use when summarizing messages.
         """
@@ -180,7 +191,21 @@ class MessageSummaryMemoryManager(MemoryManager):
         history: list[ExchangeRecord],
         prompt: str,
         **kwargs: dict[str, Any]) -> str | list[str] | list[dict[str, str]]:
-        """TODO."""
+        """
+        Initialize the object.
+
+        Args:
+            system_message:
+                The system message passed to the `message_formatter` of the summarizer model.
+            history:
+                The history of messages to summarize.
+            prompt:
+                The prompt from the user, which is used to construct the final message sent to the
+                final model.
+            kwargs:
+                A mechanism for passing additional arguments to MemoryManager objects specific to
+                the MemoryManager implementation.
+        """
         message_formatter = kwargs['message_formatter']
         # for each of the previous prompt/responses in history, we want to summarize the prompt
         # and response using the model; we want to cache the results so that we don't have to
@@ -205,6 +230,8 @@ class MessageSummaryMemoryManager(MemoryManager):
                 response=self._cache[record.uuid]['response'],
             ))
 
+        # we need to delegate to the message_formatter to format the system message and prompt
+        # because this may change depending on the model
         return message_formatter(
             system_message,
             summarized_records,
@@ -212,9 +239,16 @@ class MessageSummaryMemoryManager(MemoryManager):
         )
 
     def _summarize_format_message(self, message: str) -> str:
-        """TODO."""
+        """Formats the prompt sent to the summarizer model."""
         return f"{self._summarize_instruction}:\n\n```\n{message}\n```"
 
     def history(self) -> list[ExchangeRecord]:
-        """TODO."""
+        """
+        Exposes the history of the underlying summarizer model. This is necesssary because Workflow
+        objects build up history by checking for a `history` method on the the underlying tasks. By
+        exposing the history of the underlying summarizer model (which is then exposed in the
+        history method of the ChatModel object), we can ensure that the calls to summarize messages
+        are included in the history of the primary model and workflow (if applicable), along with
+        costs, tokens used, etc.).
+        """
         return self._model.history()
