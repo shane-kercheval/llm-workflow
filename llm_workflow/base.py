@@ -421,7 +421,10 @@ class PromptModel(LanguageModel):
     def _run(self, prompt: str) -> tuple[str | list[str] | object, dict]:
         """
         Subclasses should override this function and generate responses from the LLM.
-        TODO: returns dict metadata.
+        This function should return a tuple. The first element of the tuple is the response from
+        the LLM. The second element is a dictionary containing metadata associated with the
+        response. This metadata is used to create an `ExchangeRecord` object, which is added to the
+        `history` of the object.
         """
 
     def __call__(self, prompt: str) -> str:
