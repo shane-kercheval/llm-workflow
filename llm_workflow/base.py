@@ -530,6 +530,13 @@ class ChatModel(PromptModel):
     additional history that may be added (e.g. additional models for MemoryManager (e.g.
     summarization/embeddings)).
 
+    A ChatModel is supplied with a `message_formatter` and `memory_manager` object. The
+    `message_formatter` is used to generate the final prompt to send to the model. The
+    `memory_manager` is used to modify the history of messages sent to the model, which is
+    important for models that have a limited context. This is handled in the base class, because
+    the memory manager depends on the message formatter and possibly other objects (e.g.
+    token_calculator or cost_calculator).
+
     Any MemoryManager object that is passed in that has a `history()` function will be included in
     the `history()` of the underlying ChatModel object.
     """
