@@ -108,11 +108,13 @@ def test_OpenAIToolAgent__Tool_class():  # noqa
     assert fake_weather_tool.description == fake_weather.description
     assert fake_weather_tool.inputs == fake_weather.inputs
     assert fake_weather_tool.required == fake_weather.required
+    assert fake_weather_tool.to_dict() == fake_weather.to_dict()
 
     assert fake_stock_tool.name == fake_stock.name
     assert fake_stock_tool.description == fake_stock.description
     assert fake_stock_tool.inputs == fake_stock.inputs
     assert fake_stock_tool.required == fake_stock.required
+    assert fake_stock_tool.to_dict() == fake_stock.to_dict()
 
     agent = OpenAIFunctionAgent(tools=[fake_weather_tool, fake_stock_tool])
 
@@ -183,7 +185,7 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     assert isinstance(fake_stock, Tool)
 
     agent = OpenAIFunctionAgent(
-        model_name='gpt-3.5-turbo-0613',
+        model_name='gpt-3.5-turbo-1106',
         tools=[fake_weather, fake_stock],
     )
 
@@ -242,14 +244,15 @@ def test_OpenAIToolAgent__tools_via_yaml():  # noqa
     assert tools['ask_weather'].description == fake_weather.description
     assert tools['ask_weather'].inputs == fake_weather.inputs
     assert tools['ask_weather'].required == fake_weather.required
-
+    assert tools['ask_weather'].to_dict() == fake_weather.to_dict()
     assert tools['ask_stock_price'].name == fake_stock.name
     assert tools['ask_stock_price'].description == fake_stock.description
     assert tools['ask_stock_price'].inputs == fake_stock.inputs
     assert tools['ask_stock_price'].required == fake_stock.required
+    assert tools['ask_stock_price'].to_dict() == fake_stock.to_dict()
 
     tools = OpenAIFunctions(
-        model_name='gpt-3.5-turbo-0613',
+        model_name='gpt-3.5-turbo-1106',
         tools=tools.values(),
     )
 
