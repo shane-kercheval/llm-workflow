@@ -84,28 +84,33 @@ class ToolBase(ABC):
 
 class Tool(ToolBase):
     """
-    A tool is a callable object that has a name, description, and other properties that describe
+    A tool is an object that has a name, description, and other properties that describe
     the tool. The name, description, etc., may be passed to an LLM (e.g. OpenAI "functions") and,
     therefore, should be a useful description for the LLM.
 
-    This class wraps a callable object.
+    A tool object is callable if a function is passed into callable_obj in the constructor.
     """
 
     def __init__(
             self,
-            callable_obj: Callable,
             name: str,
             description: str,
             inputs: dict,
-            required: list[str] | None = None):
-        self._callable_obj = callable_obj
+            required: list[str] | None = None,
+            callable_obj: Callable | None = None):
         self._name = name
         self._description = description
         self._inputs = inputs
         self._required = required
+        self._callable_obj = callable_obj
 
     def __call__(self, *args, **kwargs) -> Any:  # noqa
         return self._callable_obj(*args, **kwargs)
+
+    @classmethod
+    def from_dict(cls, dictionary):  # noqa
+        """Returns a Tool object from a dictionary."""
+        return cls(**dictionary)
 
     @property
     def name(self) -> str:
@@ -163,13 +168,16 @@ def tool(name: str, description: str, inputs: dict, required: list[str] | None =
         @functools.wraps(callable_obj)
         def wrapper(*args, **kwargs):  # noqa: ANN003, ANN002, ANN202
             return callable_obj(*args, **kwargs)
-        return Tool(wrapper, name, description, inputs, required)
+        return Tool(name, description, inputs, required, wrapper)
     return decorator
 
 
-class OpenAIFunctionAgent(LanguageModel):
+class OpenAIFunctions(LanguageModel):
     """
     Wrapper around OpenAI "functions" (https://platform.openai.com/docs/guides/gpt/function-calling).
+
+    Calling the objec returns a list of tuples, where each tuple contains a Tool object and a
+    dictionary of arguments (chosen by OpenAI) to pass to the tool.
 
     From OpenAI:
 
@@ -177,10 +185,6 @@ class OpenAIFunctionAgent(LanguageModel):
         model intelligently choose to output a JSON object containing arguments to call those
         functions. This is a new way to more reliably connect GPT's capabilities with external
         tools and APIs.
-
-    This class uses the OpenAI "functions" api to decide which tool to use; the selected tool
-    (which is a callable) is called and passed the arguments determined by OpenAI.
-    The response from the tool is retuned by the agent object.
 
     See this notebooks for an example: https://github.com/shane-kercheval/llm-workflow/blob/main/examples/agents.ipynb
     """
@@ -205,17 +209,24 @@ class OpenAIFunctionAgent(LanguageModel):
         """
         super().__init__()
         self.model_name = model_name
-        self._tools = tools
+        self._tools = {}
+        for tool in tools:
+            if tool.name in self._tools:
+                raise ValueError(f"Tool name '{tool.name}' is already in use.")
+            self._tools[tool.name] = tool
         self._system_message = system_message
         self._history = []
         self.timeout = timeout
 
 
-    def __call__(self, prompt: object) -> object:
+    def __call__(self, prompt: object) -> list[tuple[Tool, dict]]:
         """
         Uses the OpenAI "functions" api to decide which tool to call based on the `prompt`. The
         selected tool (which is a callable) is called and passed the arguments determined by
         OpenAI. The response from the tool is retuned by the agent object.
+
+        Returns a list of tuples, where each tuple contains a Tool object and a dictionary of
+        arguments (chosen by OpenAI) to pass to the tool.
         """
         from openai import OpenAI
         messages = [
@@ -226,11 +237,13 @@ class OpenAIFunctionAgent(LanguageModel):
         # essentially, for now, this class won't have any memory/context of previous questions;
         # it's only used to decide which tools/functions to call
         client = OpenAI()
+        tools = [{'type': 'function', 'function': x.to_dict()} for x in self._tools.values()]
+        tools[0]
         response = retry_handler()(
                 client.chat.completions.create,
                 model=self.model_name,
                 messages=messages,
-                functions=[x.to_dict() for x in self._tools],
+                tools=tools,
                 temperature=0,
                 # max_tokens=self.max_tokens,
                 timeout=self.timeout,
@@ -250,16 +263,17 @@ class OpenAIFunctionAgent(LanguageModel):
             cost=cost,
         )
         self._history.append(record)
-        function_call = response.choices[0].message.function_call
-        if function_call:
-            function_name = function_call.name
-            function_args = json.loads(function_call.arguments)
-            record.response = f"tool: '{function_name}' - {function_args}"
-            record.metadata['tool_name'] = function_name
-            record.metadata['tool_args'] = function_args
-            for tool in self._tools:
-                if function_name == tool.name:
-                    return tool(**function_args)
+        tool_calls = response.choices[0].message.tool_calls
+        if tool_calls:
+            tool_calls = [
+                (self._tools[x.function.name], json.loads(x.function.arguments))
+                for x in tool_calls
+            ]
+            tool_names = ' | '.join([x[0].name for x in tool_calls])
+            record.response = f"tools: {tool_names}"
+            record.metadata['tool_names'] = tool_names
+            record.metadata['tool_args'] = ' | '.join([str(x[1]) for x in tool_calls])
+            return tool_calls
         return None
 
 
@@ -275,6 +289,34 @@ class OpenAIFunctionAgent(LanguageModel):
 
 
     def _get_history(self) -> list[Record]:
+        """Returns a list of Records corresponding to any OpenAI call."""
+        return self._history
+
+
+class OpenAIFunctionAgent(OpenAIFunctions):
+    """
+    Overrides OpenAIFunctions to return the response from the tool selected (rather than a list of
+    tools/arguments).
+
+    NOTE: This implementation only extracts and calls the first tool returned by OpenAI.
+    This class uses the OpenAI "functions" api to decide which tool to use; the selected tool
+    (which is a callable) is called and passed the arguments determined by OpenAI.
+    The response from the tool is retuned by the agent object.
+    """
+
+    def __call__(self, prompt: object) -> str:
+        """
+        Uses the OpenAI "functions" api to decide which tool to call based on the `prompt`. The
+        selected tool (which is a callable) is called and passed the arguments determined by
+        OpenAI. The response from the tool is retuned by the agent object.
+        """
+        tool_calls = super().__call__(prompt)
+        if tool_calls:
+            tool, args = tool_calls[0]
+            return tool(**args)
+        return None
+
+    def _get_history(self) -> list[Record]:
         """
         Returns a list of Records corresponding to any OpenAI call as well as any Record object
         associated with the underlying tools' history.
@@ -285,7 +327,7 @@ class OpenAIFunctionAgent(LanguageModel):
         related to the use of the Agent. As a best practice, you should only include tool objects
         that have not been previously instantiated/used.
         """
-        histories = [tool.history() for tool in self._tools if _has_history(tool)]
+        histories = [tool.history() for tool in self._tools.values() if _has_history(tool)]
         # Concatenate all the lists into a single list
         histories = [record for sublist in histories for record in sublist]
         histories += self._history

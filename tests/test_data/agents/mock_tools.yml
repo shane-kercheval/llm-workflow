@@ -1,0 +1,23 @@
+- name: ask_weather
+  description: Use this function to answer questions about the weather for a particular city.
+  inputs:
+    location:
+      description: The city and state, e.g. San Francisco, CA
+      type: string
+    unit:
+      description: The temperature unit to use. The model needs to infer this from the `location`.
+      type: string
+      enum:
+        - celsius
+        - fahrenheit
+  required:
+    - location
+    - unit
+- name: ask_stock_price
+  description: Use this function to answer questions about the the stock price for a particular stock symbol.
+  inputs:
+    symbol:
+      description: The stock symbol, e.g. 'AAPL'
+      type: string
+  required:
+    - symbol
