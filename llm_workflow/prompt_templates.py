@@ -228,9 +228,8 @@ class PythonObjectMetadataTemplate(PromptTemplate):
                     metadata.append(extract_metadata(obj, object_name))
 
         if metadata:
-            metadata = '\n\n---\n\n'.join(metadata)
             return self.template.\
-                replace('{{metadata}}', metadata if metadata else 'No Metadata').\
+                replace('{{metadata}}', '\n\n---\n\n'.join(metadata)).\
                 replace('{{prompt}}', prompt)
 
         return prompt
