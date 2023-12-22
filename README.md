@@ -7,7 +7,7 @@
 
 Here is a quick example showing how to use `OpenAIChat` class. More complex examples are shown below and in the `examples` folder.
 
-```
+```python
 from llm_workflow.openai import OpenAIChat
 
 model = OpenAIChat()
@@ -16,7 +16,7 @@ model("What is the capital of France?")
 
 > The capital of France is Paris.
 
-```
+```python
 print(f"Total Cost:            ${model.cost:.5f}")
 print(f"Total Tokens:          {model.total_tokens:,}")
 print(f"Total Prompt Tokens:   {model.input_tokens:,}")
