@@ -3,6 +3,33 @@
 
 # llm-workflow
 
+`llm-workflow` is a light framework for using LLMs. It contains classes for models (e.g. OpenAI) as well as constructing 'workflows' and 'agents'. The model objects implement memory tracking, making it an easy way to have conversations with LLMs.
+
+Here is a quick example showing how to use `OpenAIChat` class. More complex examples are shown below and in the `examples` folder.
+
+```python
+from llm_workflow.openai import OpenAIChat
+
+model = OpenAIChat()
+model("What is the capital of France?")
+```
+
+> The capital of France is Paris.
+
+```python
+print(f"Total Cost:            ${model.cost:.5f}")
+print(f"Total Tokens:          {model.total_tokens:,}")
+print(f"Total Prompt Tokens:   {model.input_tokens:,}")
+print(f"Total Response Tokens: {model.response_tokens:,}")
+```
+
+> Total Cost:            $0.00004
+> Total Tokens:          31
+> Total Prompt Tokens:   24
+> Total Response Tokens: 7
+
+---
+
 A `workflow` is an object that executes a sequence of tasks. Each `task` is a callable that can optionally track history. **The output of one task serves as the input to the next task in the workflow.** Pretty simple.
 
 The purpose of this library is to offer a simple pattern for developing LLM workflows. First, it reduces the need for users to write repetitive/boilerplate code. Second, by establishing a standardized interface for tasks (e.g. specifying how a task tracks history), a workflow can serve as a means of aggregating information from all tasks, such as token usage, costs, and more. Additionally, this approach enables us to examine each step within the workflow and within a specific task, making the workflow transparent and facilitating debugging and comprehension.
