@@ -3,9 +3,9 @@
 
 # llm-workflow
 
-`llm-workflow` is a light framework for using LLMs. It contains classes for models (e.g. OpenAI) as well as constructing 'workflows' and 'agents'. The model objects implement memory tracking, making it an easy way to have conversations. 
+`llm-workflow` is a light framework for using LLMs. It contains classes for models (e.g. OpenAI) as well as constructing 'workflows' and 'agents'. The model objects implement memory tracking, making it an easy way to have conversations with LLMs.
 
-Here is a quick example showing how to use OpenAI. More complex examples are shown below and in the `examples` folder.
+Here is a quick example showing how to use `OpenAIChat` class. More complex examples are shown below and in the `examples` folder.
 
 ```
 from llm_workflow.openai import OpenAIChat
