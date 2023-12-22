@@ -159,6 +159,7 @@ class MockRandomEmbeddings(EmbeddingModel):
         super().__init__()
         self.token_counter = token_counter
         self.cost_per_token = cost_per_token
+        self.lookup = []
 
     def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingRecord]:
         rng = np.random.default_rng()
@@ -166,6 +167,9 @@ class MockRandomEmbeddings(EmbeddingModel):
         total_tokens = sum(self.token_counter(x.content) for x in docs) \
             if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
+        self.lookup += embeddings
+        len(self.lookup)
+        len(embeddings)
         return embeddings, EmbeddingRecord(
             total_tokens=total_tokens,
             cost=cost,

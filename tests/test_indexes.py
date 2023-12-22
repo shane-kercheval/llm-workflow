@@ -2,6 +2,7 @@
 import chromadb
 import pytest
 from uuid import uuid4
+import numpy as np
 from llm_workflow.base import Document, Record
 from llm_workflow.indexes import ChromaDocumentIndex, DocumentIndex
 from tests.conftest import MockABCDEmbeddings, MockRandomEmbeddings
@@ -87,11 +88,25 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert embeddings_model._history[0].cost == initial_expected_cost
 
     # verify documents and embeddings where added to collection
+    # documents may not be in the same ordre
     collection_docs = collection.get(include = ['documents', 'metadatas', 'embeddings'])
-    assert collection_docs['documents'] == [x.content for x in fake_docs_abcd]
-    assert collection_docs['metadatas'] == [x.metadata for x in fake_docs_abcd]
+    _zipped = zip(
+        collection_docs['documents'],
+        collection_docs['metadatas'],
+        collection_docs['embeddings'],
+    )
+    found_docs = [
+        (Document(content=content, metadata=meta), embed)
+        for content, meta, embed in _zipped
+    ]
+    found_docs = sorted(found_docs, key=lambda x: x[0].metadata['id'])
+    found_embeddings = [x[1] for x in found_docs]
+    found_docs = [x[0] for x in found_docs]
+
+    assert [x.content for x in found_docs] == [x.content for x in fake_docs_abcd]
+    assert [x.metadata for x in found_docs] == [x.metadata for x in fake_docs_abcd]
     assert len(collection_docs['ids']) == 4
-    assert collection_docs['embeddings'] == list(embeddings_model.lookup.values())
+    assert found_embeddings == list(embeddings_model.lookup.values())
 
     # search based on first doc
     results = chroma_db.search(value=fake_docs_abcd[1], n_results=3)
@@ -151,31 +166,62 @@ def test_chroma_add_document_without_metadata():  # noqa
     # test without passing a collection
     doc_index = ChromaDocumentIndex(embeddings_model=embeddings_model)
     docs = [
-        Document(content='This is a document'),
-        Document(content='This is a another document'),
-        Document(content='This is a another another document'),
+        Document(content='A. This is a document'),
+        Document(content='B. This is a another document'),
+        Document(content='C. This is a another another document'),
     ]
     doc_index.add(docs=docs)
     collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
-    assert collection_docs['documents'] == [x.content for x in docs]
-    assert collection_docs['metadatas'] == [ {'': ''},  {'': ''},  {'': ''}]
-    assert len(collection_docs['ids']) == len(docs)
+    # verify documents and embeddings where added to collection
+    # documents may not be in the same ordre
+    _zipped = zip(
+        collection_docs['documents'],
+        collection_docs['embeddings'],
+    )
+    found_docs = [(Document(content=content), embed) for content, embed in _zipped]
+    found_docs = sorted(found_docs, key=lambda x: x[0].content)
+    found_embeddings = [x[1] for x in found_docs]
+    found_docs = [x[0] for x in found_docs]
+
+    assert [x.content for x in found_docs] == [x.content for x in docs]
+    assert [x.metadata for x in found_docs] == [x.metadata for x in docs]
     assert len(collection_docs['embeddings']) == len(docs)
+    assert len(collection_docs['ids']) == len(docs)
+    assert collection_docs['metadatas'] == [ {'': ''},  {'': ''},  {'': ''}]
+    assert (np.array(found_embeddings).round(4) == np.array(embeddings_model.lookup[0:3]).round(4)).all()  # noqa
 
     results = doc_index.search(value=docs[0], n_results=1)
     assert 'distance' in results[0].metadata
 
     # test adding same documents
     new_docs = [
-        Document(content='New Doc 1', metadata={'id': 0}),
-        Document(content='New Doc 2', metadata={'id': 1}),
+        Document(content='D. New Doc 1', metadata={'id': 0}),
+        Document(content='E. New Doc 2', metadata={'id': 1}),
     ]
     doc_index.add(docs=docs + new_docs)
     collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
-    assert collection_docs['documents'] == [x.content for x in docs + new_docs]
-    assert collection_docs['metadatas'] == [ {'': ''},  {'': ''},  {'': ''}, {'id': 0}, {'id': 1}]
-    assert len(collection_docs['ids']) == len(docs + new_docs)
+    # verify documents and embeddings where added to collection
+    # documents may not be in the same ordre
+    _zipped = zip(
+        collection_docs['documents'],
+        collection_docs['metadatas'],
+        collection_docs['embeddings'],
+    )
+    found_docs = [
+        (Document(content=content, metadata=meta), embed)
+        for content, meta, embed in _zipped
+    ]
+    found_docs = sorted(found_docs, key=lambda x: x[0].content)
+    found_embeddings = [x[1] for x in found_docs]
+    found_docs = [x[0] for x in found_docs]
+
+    assert [x.content for x in found_docs] == [x.content for x in docs + new_docs]
+    assert [x.metadata for x in found_docs] == [x.metadata or {'': ''} for x in docs + new_docs]
     assert len(collection_docs['embeddings']) == len(docs + new_docs)
+    assert len(collection_docs['ids']) == len(docs + new_docs)
+    # skip index 3 because it is added from .search above
+    expected_embeddings = embeddings_model.lookup[0:3] + embeddings_model.lookup[4:]
+    assert (np.array(found_embeddings).round(4) == np.array(expected_embeddings).round(4)).all()
 
     results = doc_index.search(value=docs[0], n_results=1)
     assert 'distance' in results[0].metadata
@@ -208,9 +254,9 @@ def test_chroma_without_collection_or_embeddings_model():  # noqa
     assert chroma_db.cost == 0
 
     docs = [
-        Document(content="This is a document about basketball.", metadata={'id': 0}),
-        Document(content="This is a document about baseball.", metadata={'id': 1}),
-        Document(content="This is a document about football.", metadata={'id': 2}),
+        Document(content="A. This is a document about basketball.", metadata={'id': 0}),
+        Document(content="B. This is a document about baseball.", metadata={'id': 1}),
+        Document(content="C. This is a document about football.", metadata={'id': 2}),
     ]
     chroma_db.add(docs=docs)
     assert chroma_db.total_tokens == 0
@@ -219,8 +265,17 @@ def test_chroma_without_collection_or_embeddings_model():  # noqa
 
     # verify documents and embeddings where added to collection
     collection_docs = chroma_db._collection.get(include = ['documents', 'metadatas', 'embeddings'])
-    assert collection_docs['documents'] == [x.content for x in docs]
-    assert collection_docs['metadatas'] == [x.metadata for x in docs]
+    # verify documents and embeddings where added to collection
+    # documents may not be in the same ordre
+    _zipped = zip(
+        collection_docs['documents'],
+        collection_docs['metadatas'],
+    )
+    found_docs = [Document(content=content, metadata=meta) for content, meta in _zipped]
+    found_docs = sorted(found_docs, key=lambda x: x.metadata['id'])
+
+    assert [x.content for x in found_docs] == [x.content for x in docs]
+    assert [x.metadata for x in found_docs] == [x.metadata for x in docs]
     assert len(collection_docs['ids']) == len(docs)
     assert len(collection_docs['embeddings']) == len(docs)
 
