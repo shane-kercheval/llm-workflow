@@ -6,12 +6,12 @@ import pytest
 from llm_workflow.hugging_face import (
     HuggingFaceEndpointChat,
     get_tokenizer,
-    llama_message_formatter,
     num_tokens,
     query_hugging_face_endpoint,
 )
 from llm_workflow.base import ExchangeRecord, StreamingEvent
 from llm_workflow.memory import LastNExchangesManager, LastNTokensMemoryManager
+from llm_workflow.message_formatters import llama_message_formatter
 from tests.conftest import is_endpoint_available, pattern_found
 
 

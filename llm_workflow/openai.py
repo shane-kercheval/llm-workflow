@@ -11,10 +11,10 @@ from llm_workflow.base import (
     Document,
     EmbeddingModel,
     EmbeddingRecord,
-    ExchangeRecord,
     MemoryManager,
     StreamingEvent,
 )
+from llm_workflow.message_formatters import openai_message_formatter
 
 
 MODEL_COST_PER_TOKEN = {
@@ -99,29 +99,6 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
     return num_tokens
 
 
-def message_formatter(
-        system_message: str | None,
-        history: list[ExchangeRecord] | None,
-        prompt: str | None) -> list[dict]:
-    """
-    A message formatter takes a system_message, list of messages (ExchangeRecord objects), and a
-    prompt, and formats them according to the best practices for interacting with the model.
-    """
-    # initial message; always keep system message regardless of memory_manager
-    messages = []
-    if system_message:
-        messages += [{'role': 'system', 'content': system_message}]
-    if history:
-        for message in history:
-            messages += [
-                {'role': 'user', 'content': message.prompt},
-                {'role': 'assistant', 'content': message.response},
-            ]
-    if prompt:
-        messages += [{'role': 'user', 'content': prompt}]
-    return messages
-
-
 class OpenAIEmbedding(EmbeddingModel):
     """A wrapper around the OpenAI Embedding model that tracks token usage and costs."""
 
@@ -190,7 +167,7 @@ class OpenAIChat(ChatModel):
             model_name: str = 'gpt-3.5-turbo-1106',
             temperature: float = 0,
             max_tokens: int = 2000,
-            system_message: str = 'You are a helpful assistant.',
+            system_message: str = 'You are a helpful AI assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             memory_manager: MemoryManager | None = None,
             timeout: int = 30,
@@ -236,7 +213,7 @@ class OpenAIChat(ChatModel):
 
         super().__init__(
             system_message=system_message,
-            message_formatter=message_formatter,
+            message_formatter=openai_message_formatter,
             token_calculator=token_calculator,
             cost_calculator=cost_calculator,
             memory_manager=memory_manager,

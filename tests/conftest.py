@@ -263,7 +263,7 @@ def is_endpoint_available(url: str) -> bool:
         pass
 
     if not available:
-        print('Endpoint Not available.')
+        print(f'Endpoint Not available: {url}')
 
     return available
 
@@ -286,6 +286,11 @@ def conversation_sum() -> dict:
 def hugging_face_endpoint() -> str:
     """Returns the endpoint for the hugging face API."""
     return os.getenv('HUGGING_FACE_ENDPOINT_UNIT_TESTS')
+
+@pytest.fixture()
+def llama_cpp_endpoint() -> str:
+    """Returns the endpoint for the hugging face API."""
+    return os.getenv('LLAMA_CPP_ENDPOINT_UNIT_TESTS')
 
 
 def pattern_found(value: str, pattern: str) -> bool:
