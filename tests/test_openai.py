@@ -429,7 +429,7 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     # previous memory is the input to ChatGPT
     assert len(model._previous_messages) == 2  # system/user
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == prompt
 
@@ -534,7 +534,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
@@ -588,7 +588,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     # previous memory is the input to ChatGPT
     # The last message should contain shane, but not this one
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
@@ -632,7 +632,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
