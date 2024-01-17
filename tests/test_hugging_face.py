@@ -179,7 +179,7 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -339,7 +339,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -474,7 +474,7 @@ def test_HuggingFaceEndpointChat__memory_manager__100_tokens(hugging_face_endpoi
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -584,7 +584,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -691,7 +691,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_0(huggin
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
