@@ -8,10 +8,10 @@ from llm_workflow.memory import (
     LastNTokensMemoryManager,
     MessageSummaryMemoryManager,
 )
+from llm_workflow.message_formatters import openai_message_formatter
 from llm_workflow.openai import (
     OpenAIChat,
     OpenAIEmbedding,
-    message_formatter,
     num_tokens,
     num_tokens_from_messages,
     MODEL_COST_PER_TOKEN,
@@ -73,15 +73,15 @@ def test_num_tokens_from_messages():  # noqa
     with pytest.raises(NotImplementedError):
         num_tokens_from_messages(model_name='<not implemented>', messages=example_messages)
 
-def test_message_formatter():  # noqa
-    assert message_formatter(None, None, None) == []
-    messages = message_formatter('System message', None, None)
+def test_openai_message_formatter():  # noqa
+    assert openai_message_formatter(None, None, None) == []
+    messages = openai_message_formatter('System message', None, None)
     assert messages == [{'role': 'system', 'content': 'System message'}]
-    messages = message_formatter(None, [ExchangeRecord(prompt='prompt', response='response')], None)  # noqa
+    messages = openai_message_formatter(None, [ExchangeRecord(prompt='prompt', response='response')], None)  # noqa
     assert messages == [{'role': 'user', 'content': 'prompt'}, {'role': 'assistant', 'content': 'response'}]  # noqa
-    messages = message_formatter(None, None, 'prompt')
+    messages = openai_message_formatter(None, None, 'prompt')
     assert messages == [{'role': 'user', 'content': 'prompt'}]
-    messages = message_formatter(
+    messages = openai_message_formatter(
         'System message',
         [ExchangeRecord(prompt='prompt', response='response')],
         'New Prompt.',
@@ -429,7 +429,7 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     # previous memory is the input to ChatGPT
     assert len(model._previous_messages) == 2  # system/user
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == prompt
 
@@ -534,7 +534,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
@@ -588,7 +588,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     # previous memory is the input to ChatGPT
     # The last message should contain shane, but not this one
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
@@ -632,7 +632,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     # previous memory is the input to ChatGPT
     assert model._previous_messages[0]['role'] == 'system'
-    assert model._previous_messages[0]['content'] == 'You are a helpful assistant.'
+    assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'

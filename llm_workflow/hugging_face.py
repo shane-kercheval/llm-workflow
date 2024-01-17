@@ -7,6 +7,7 @@ from typing import Callable
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from llm_workflow.internal_utilities import retry_handler
 from llm_workflow.base import ChatModel, ExchangeRecord, StreamingEvent
+from llm_workflow.message_formatters import llama_message_formatter
 
 
 def query_hugging_face_endpoint(
@@ -82,44 +83,6 @@ def num_tokens(
     return len(tokens['input_ids'][0])
 
 
-def llama_message_formatter(
-        system_message: str | None,
-        history: list[ExchangeRecord] | None,
-        prompt: str | None) -> str:
-    """
-    A message formatter takes a list of messages (ExchangeRecord objects) and formats them
-    according to the best practices for interacting with the model.
-
-    For example, for Lamma-2-7b, the messages should be formatted as follows:
-        [INST] <<SYS>> You are a helpful assistant. <</SYS>> [/INST]
-        [INST] Hello, how are you? [/INST]
-        I am doing well. How are you?
-        [INST] I am doing well. How's the weather? [/INST]
-        It is sunny today.
-
-    https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
-
-    Args:
-        system_message:
-            The content of the message associated with the "system" `role`.
-        history:
-            A list of ExchangeRecord objects, containing the prompt/response pairs.
-        prompt:
-            The next prompt to be sent to the model.
-    """
-    formatted_messages = []
-    if system_message:
-        formatted_messages.append(f"[INST] <<SYS>> {system_message} <</SYS>> [/INST]\n")
-    if history:
-        for message in history:
-            formatted_messages.append(
-                f"[INST] {message.prompt} [/INST]\n" + f"{message.response}\n",
-            )
-    if prompt:
-        formatted_messages.append(f"[INST] {prompt} [/INST]\n")
-    return ''.join(formatted_messages)
-
-
 class HuggingFaceEndpointChat(ChatModel):
     """
     A wrapper around a model being served via Hugging Face Endpoints. More info here:
@@ -136,7 +99,7 @@ class HuggingFaceEndpointChat(ChatModel):
     def __init__(
             self,
             endpoint_url: str,
-            system_message: str = 'You are a helpful assistant. Be concise and clear but give good explainations.',  # noqa
+            system_message: str = 'You are a helpful AI assistant.',
             message_formatter: Callable[[str, list[ExchangeRecord]], str] = llama_message_formatter,  # noqa
             temperature: float = 0.001,
             token_calculator: Callable[[str], int] = len,

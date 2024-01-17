@@ -1,17 +1,18 @@
 """Test HuggingFace models and helpers."""
 
+import re
 from unittest.mock import patch
 
 import pytest
 from llm_workflow.hugging_face import (
     HuggingFaceEndpointChat,
     get_tokenizer,
-    llama_message_formatter,
     num_tokens,
     query_hugging_face_endpoint,
 )
 from llm_workflow.base import ExchangeRecord, StreamingEvent
 from llm_workflow.memory import LastNExchangesManager, LastNTokensMemoryManager
+from llm_workflow.message_formatters import llama_message_formatter
 from tests.conftest import is_endpoint_available, pattern_found
 
 
@@ -178,7 +179,7 @@ def test_HuggingFaceEndpointChat(hugging_face_endpoint):  # noqa
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -338,7 +339,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -362,7 +363,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{re.escape(previous_response)}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -473,7 +474,7 @@ def test_HuggingFaceEndpointChat__memory_manager__100_tokens(hugging_face_endpoi
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -583,7 +584,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
@@ -606,7 +607,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{re.escape(previous_response)}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -690,7 +691,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_0(huggin
         previous_prompt = prompt
         previous_response = response
         callback_response = ''
-        prompt = "What is my name?"
+        prompt = "Say my name."
         response = model(prompt)
         assert isinstance(response, str)
         assert len(response) > 0
