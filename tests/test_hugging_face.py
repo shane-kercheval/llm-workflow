@@ -1,5 +1,6 @@
 """Test HuggingFace models and helpers."""
 
+import re
 from unittest.mock import patch
 
 import pytest
@@ -362,7 +363,7 @@ def test_HuggingFaceEndpointChat__memory_manager__1000_tokens(hugging_face_endpo
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{re.escape(previous_response)}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
@@ -606,7 +607,7 @@ def test_HuggingFaceEndpointChat__memory_manager__LastNExchangesManager_1(huggin
         assert history[1].prompt == prompt
         assert history[1].response == response
         assert message.metadata['endpoint_url'] == hugging_face_endpoint
-        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{previous_response}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
+        pattern = fr'^\[INST\].*?<<SYS>> {model.system_message} <</SYS>>.*?\[\/INST\]\n\[INST\].*?{previous_prompt}.*?\[\/INST\]\n.*?{re.escape(previous_response)}.*?\n\[INST\].*?{prompt}.*?\[\/INST\]'  # noqa
         assert pattern_found(message.metadata['messages'], pattern)
         assert message.metadata['messages'].count('<<SYS>>') == 1
         assert message.metadata['messages'].count('<</SYS>>') == 1
