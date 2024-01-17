@@ -290,7 +290,7 @@ def hugging_face_endpoint() -> str:
 @pytest.fixture()
 def llama_cpp_endpoint() -> str:
     """Returns the endpoint for the hugging face API."""
-    return os.getenv('LLAMA_CPP_ENDPOINT_UNIT_TESTS')
+    return os.getenv('LLAMA_CPP_ENDPOINT_UNIT_TESTS') or ''
 
 
 def pattern_found(value: str, pattern: str) -> bool:
