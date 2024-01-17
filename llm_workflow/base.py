@@ -87,8 +87,7 @@ class RecordKeeper(ABC):
             return history[-1]
         return None
 
-    def sum(  # noqa: A003
-            self,
+    def sum(self,
             name: str,
             types: type | tuple[type] | None = None) -> int | float:
         """
