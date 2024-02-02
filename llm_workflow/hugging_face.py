@@ -171,7 +171,7 @@ class HuggingFaceEndpointChat(ChatModel):
         self._max_streaming_tokens = max_streaming_tokens
         self._timeout = timeout
 
-    def _run(self, messages: str) -> ExchangeRecord:
+    def _run(self, messages: str) -> tuple[str, dict]:
         """Runs the model based on the prompt and returns the response."""
         response = ""
         start = time.time()
