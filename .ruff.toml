@@ -1,10 +1,10 @@
-select = [
+lint.select = [
     "E", "W", "F", "N", "D", "ANN", "A", "COM", "C4", "UP", "PT", "RET", "SIM", "ASYNC", "ARG",
     "PD", "PL", "NPY", "RUF",
 ]
-ignore = [
+lint.ignore = [
     "ANN101", "ANN204", "ANN206",
-    "D105", "D107", "D203", "D205", "D212", "D401", "D407",
+    "D105", "D107", "D203", "D205", "D212", "D401", "D407", "D413",
     "PLR0913", "PLR2004"
 ]
 line-length = 99

@@ -1,6 +1,6 @@
 """Test the OpenAI Model classes."""
-
-from openai import OpenAI
+import os
+from openai import BadRequestError, OpenAI
 import pytest
 from llm_workflow.base import Document, EmbeddingRecord, ExchangeRecord, StreamingEvent
 from llm_workflow.memory import (
@@ -8,10 +8,10 @@ from llm_workflow.memory import (
     LastNTokensMemoryManager,
     MessageSummaryMemoryManager,
 )
-from llm_workflow.message_formatters import openai_message_formatter
 from llm_workflow.openai import (
     OpenAIChat,
     OpenAIEmbedding,
+    openai_message_formatter,
     num_tokens,
     num_tokens_from_messages,
     MODEL_COST_PER_TOKEN,
@@ -21,6 +21,7 @@ from llm_workflow.openai import (
 def test_num_tokens():  # noqa
     assert num_tokens(model_name='gpt-3.5-turbo-0613', value="This should be six tokens.") == 6
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_num_tokens_from_messages():  # noqa
     # copied from https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
     example_messages = [
@@ -73,7 +74,7 @@ def test_num_tokens_from_messages():  # noqa
     with pytest.raises(NotImplementedError):
         num_tokens_from_messages(model_name='<not implemented>', messages=example_messages)
 
-def test_openai_message_formatter():  # noqa
+def test_message_formatter():  # noqa
     assert openai_message_formatter(None, None, None) == []
     messages = openai_message_formatter('System message', None, None)
     assert messages == [{'role': 'system', 'content': 'System message'}]
@@ -92,6 +93,7 @@ def test_openai_message_formatter():  # noqa
         {'role': 'user', 'content': 'New Prompt.'},
     ]
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat():  # noqa
     model = OpenAIChat()
     assert len(model.history()) == 0
@@ -208,6 +210,44 @@ def test_OpenAIChat():  # noqa
     assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
+def test_OpenAIChat__with_parameters():  # noqa
+    # test valid parameters for non-streaming
+    model_parameters = {'temperature': 0.01, 'max_tokens': 4096}
+    model = OpenAIChat(**model_parameters)
+    assert model.model_parameters == model_parameters
+    response = model("What is the capital of France?")
+    assert 'Paris' in response
+    assert model.history()[-1].metadata['model_parameters'] == model_parameters
+
+    # test valid parameters for streaming
+    callback_response = ''
+    def streaming_callback(record: StreamingEvent) -> None:
+        nonlocal callback_response
+        callback_response += record.response
+
+    model = OpenAIChat(streaming_callback=streaming_callback, **model_parameters)
+    assert model.model_parameters == model_parameters
+    response = model("What is the capital of France?")
+    assert 'Paris' in response
+    assert response == callback_response
+    assert model.history()[-1].metadata['model_parameters'] == model_parameters
+
+    # test invalid parameters so that we know we're actually sending them
+    model_parameters = {'temperature': -10}
+    model = OpenAIChat(**model_parameters)
+    assert model.model_parameters == model_parameters
+    with pytest.raises(BadRequestError):
+        _ = model("What is the capital of France?")
+
+    # test invalid parameters for streaming
+    model_parameters = {'temperature': -10}
+    model = OpenAIChat(streaming_callback=streaming_callback, **model_parameters)
+    assert model.model_parameters == model_parameters
+    with pytest.raises(BadRequestError):
+        _ = model("What is the capital of France?")
+
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_streaming():  # noqa
     """Test the same thing as above but for streaming. All usage and history should be the same."""
     callback_response = ''
@@ -332,6 +372,7 @@ def test_OpenAIChat_streaming():  # noqa
     assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     """
     Test that we get the same final response and usage data when streaming vs not streaming.
@@ -356,6 +397,7 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
     assert non_streaming_chat.cost == streaming_chat.cost
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat__LastNExchangesManager0():  # noqa
     model = OpenAIChat(memory_manager=LastNExchangesManager(last_n_exchanges=0))
     assert model.previous_record() is None
@@ -462,6 +504,7 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat__LastNExchangesManager1():  # noqa
     model = OpenAIChat(memory_manager=LastNExchangesManager(last_n_exchanges=1))
     assert model.previous_record() is None
@@ -662,6 +705,7 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     assert model.previous_response == response
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model.model_name]
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_with_LastNTokensMemoryManager_1000_tokens():  # noqa
     model = OpenAIChat(memory_manager=LastNTokensMemoryManager(last_n_tokens=1000))
     assert len(model.history()) == 0
@@ -778,6 +822,7 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_1000_tokens():  # noqa
     assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_with_LastNTokensMemoryManager_75_tokens():  # noqa
     model = OpenAIChat(memory_manager=LastNTokensMemoryManager(last_n_tokens=45))
     assert len(model.history()) == 0
@@ -896,12 +941,14 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_75_tokens():  # noqa
     assert model.input_tokens == previous_input_tokens + message.input_tokens
     assert model.response_tokens == previous_response_tokens + message.response_tokens
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_with_LastNTokensMemoryManager__1_tokens():  # noqa
     model = OpenAIChat(memory_manager=LastNTokensMemoryManager(last_n_tokens=1))
     prompt = "My name is Shane and my favorite color is blue. What's your name?"
     with pytest.raises(AssertionError):
         _ = model(prompt)
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     summarize_instruction = 'Summarize the following while retaining the important information.'
     model = OpenAIChat(
@@ -1123,6 +1170,7 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     assert model.total_tokens == previous_total_tokens_0 + previous_total_tokens_1 + message.total_tokens + summarization_input_tokens + summarization_response_tokens  # noqa
     assert round(model.cost, 4) == round(previous_cost_0 + previous_cost_1 + message.cost + summarization_cost, 4)  # noqa
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIEmbedding():  # noqa
     model = OpenAIEmbedding(model_name='text-embedding-ada-002')
     assert model.cost == 0
@@ -1201,6 +1249,7 @@ def test_OpenAIEmbedding():  # noqa
     assert model.total_tokens == previous_tokens + previous_record.total_tokens
     assert model.cost == previous_cost + expected_cost
 
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation():  # noqa
     """We can't set cost_per_token during object creation, because the model might change."""
     model = OpenAIChat()

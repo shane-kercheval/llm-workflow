@@ -1,4 +1,5 @@
-"""Contains helper functions for formatting messages for various models."""""
+"""Contains helper functions for formatting messages for various models."""
+
 from llm_workflow.base import ExchangeRecord
 
 
