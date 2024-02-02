@@ -411,10 +411,7 @@ class PromptModel(LanguageModel):
         super().__init__()
         self._history: list[ExchangeRecord] = []
         self._token_calculator = token_calculator
-        if cost_calculator:
-            self._cost_calculator = cost_calculator
-        else:
-            self._cost_calculator = lambda _in, _out: None
+        self._cost_calculator = cost_calculator
 
     @abstractmethod
     def _run(self, prompt: str) -> tuple[str | list[str] | object, dict]:
@@ -437,7 +434,10 @@ class PromptModel(LanguageModel):
         input_tokens = self._token_calculator(prompt)
         response_tokens = self._token_calculator(response)
         total_tokens = input_tokens + response_tokens
-        cost = self._cost_calculator(input_tokens, response_tokens)
+        if self._cost_calculator:
+            cost = self._cost_calculator(input_tokens, response_tokens)
+        else:
+            cost = None
         response = ExchangeRecord(
             prompt=prompt,
             response=response.strip(),
