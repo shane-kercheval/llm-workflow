@@ -171,7 +171,7 @@ class OpenAIChat(ChatModel):
 
     def __init__(
             self,
-            model_name: str = 'gpt-3.5-turbo-1106',
+            model_name: str = 'gpt-3.5-turbo-0125',
             system_message: str = 'You are a helpful AI assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             memory_manager: MemoryManager | None = None,
@@ -197,25 +197,19 @@ class OpenAIChat(ChatModel):
             seed:
                 seed value passed to OpenAI model.
             model_kwargs:
-                Additional keyword arguments to pass to the OpenAI model.
-        """
-        def cost_calculator(input_tokens: int, response_tokens: int) -> float:
-            model_costs = MODEL_COST_PER_TOKEN[self.model_name]
-            return (input_tokens * model_costs['input']) + \
-                (response_tokens * model_costs['output'])
-
-        def token_calculator(messages: str | list[dict]) -> int:
-            if isinstance(messages, str):
-                return num_tokens(model_name=model_name, value=messages)
-            if isinstance(messages, list):
-                return num_tokens_from_messages(model_name=model_name, messages=messages)
-            raise NotImplementedError(f"""token_calculator() is not implemented for messages of type {type(messages)}.""")  # noqa
-
+                Additional keyword arguments that are forwarded to the OpenAI model. For example:
+                ```
+                **{
+                    'temperature': 0.01,
+                    'max_tokens': 4096,
+                }
+                ```
+        """  # noqa
         super().__init__(
             system_message=system_message,
             message_formatter=openai_message_formatter,
-            token_calculator=token_calculator,
-            cost_calculator=cost_calculator,
+            token_calculator=self._token_calc,
+            cost_calculator=self._cost_calc,
             memory_manager=memory_manager,
         )
         self.model_name = model_name
@@ -223,6 +217,32 @@ class OpenAIChat(ChatModel):
         self.streaming_callback = streaming_callback
         self.timeout = timeout
         self.seed = seed
+
+    def _cost_calc(self, input_tokens: int, response_tokens: int) -> float:
+        """
+        _cost_calc needs to be an instance method rather than e.g. defining inside __init__ so
+        it is picklable and can be used with multiprocessing.
+        """
+        model_costs = MODEL_COST_PER_TOKEN[self.model_name]  # TODO fixe
+        return (input_tokens * model_costs['input']) + \
+            (response_tokens * model_costs['output'])
+
+    def _token_calc(self, messages: str | list[dict]) -> int:
+        if isinstance(messages, str):
+            return num_tokens(model_name=self.model_name, value=messages)
+        if isinstance(messages, list):
+            return num_tokens_from_messages(model_name=self.model_name, messages=messages)
+        raise NotImplementedError(f"""token_calculator() is not implemented for messages of type {type(messages)}.""")  # noqa
+
+    def _create_client(self) -> object:
+        """
+        _create_client is used to create the OpenAI client. We cannot define this in __init__
+        because it is not picklable and cannot be used with multiprocessing. Additionally, this
+        function lets OpenAIServerChat override the client creation and set the base_url to use
+        with a local server.
+        """
+        from openai import OpenAI
+        return OpenAI()
 
     def _run(self, messages: list[dict]) -> tuple[str, dict]:
         """
@@ -235,8 +255,7 @@ class OpenAIChat(ChatModel):
         The use of a streaming callback does not change the output returned from calling the object
         (i.e. a ExchangeRecord object).
         """
-        from openai import OpenAI
-        client = OpenAI()
+        client = self._create_client()
         if self.streaming_callback:
             response = retry_handler()(
                 client.chat.completions.create,
@@ -285,3 +304,67 @@ class OpenAIChat(ChatModel):
         object's lifetime.
         """
         return MODEL_COST_PER_TOKEN[self.model_name]
+
+
+class OpenAIServerChat(OpenAIChat):
+    """Uses the OpenAI API to chat via local server (with same interface)."""
+
+    def __init__(
+            self,
+            base_url: str,
+            system_message: str = 'You are a helpful AI assistant.',
+            streaming_callback: Callable[[StreamingEvent], None] | None = None,
+            memory_manager: MemoryManager | None = None,
+            timeout: int = 90,
+            seed: int | None = None,
+            **model_kwargs: dict,
+            ) -> None:
+        """
+        Initializes the OpenAIServerChat object.
+
+        Args:
+            base_url:
+                The base URL of the local server.
+            system_message:
+                The content of the message associated with the "system" `role`.
+            streaming_callback:
+                Callable that takes a StreamingEvent object, which contains the streamed token (in
+                the `response` property and perhaps other metadata.
+            memory_manager:
+                MemoryManager object (or callable that takes a list of ExchangeRecord objects and
+                returns a list of ExchangeRecord objects. The underlying logic should return the
+                messages sent to the OpenAI model.
+            timeout:
+                timeout value passed to OpenAI model.
+            seed:
+                seed value passed to OpenAI model.
+            model_kwargs:
+                Additional keyword arguments that are forwarded to the OpenAI model. For example:
+                ```
+                **{
+                    'temperature': 0.01,
+                    'max_tokens': 4096,
+                }
+                ```
+        """
+        super().__init__(
+            system_message=system_message,
+            message_formatter=openai_message_formatter,
+            # token_calculator=len,
+            # cost_calculator=None,
+            memory_manager=memory_manager,
+        )
+        # override ChatGPT's token/cost calculator
+        self._token_calculator = len
+        self._cost_calculator = None
+        # model name is not applicable
+        self.model_name = 'local-model'
+        self.model_parameters = model_kwargs or {}
+        self.streaming_callback = streaming_callback
+        self.timeout = timeout
+        self.seed = seed
+        self.base_url = base_url
+
+    def _create_client(self) -> object:
+        from openai import OpenAI
+        return OpenAI(base_url=self.base_url, api_key='none')
