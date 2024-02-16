@@ -11,6 +11,7 @@ from llm_workflow.memory import (
 from llm_workflow.openai import (
     OpenAIChat,
     OpenAIEmbedding,
+    OpenAIImageChat,
     openai_message_formatter,
     num_tokens,
     num_tokens_from_messages,
@@ -1261,3 +1262,145 @@ def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation(
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model.model_name]
     model.model_name = 'gpt-4-1106-preview'
     assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4-1106-preview']
+
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
+def test_OpenAIImageChat__http__non_streaming(html_image_url_nl):  # noqa
+    model = OpenAIImageChat(image_url=html_image_url_nl, max_tokens=100)
+    assert len(model.history()) == 0
+    assert model.previous_record() is None
+    assert model.previous_prompt is None
+    assert model.previous_response is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.input_tokens == 0
+    assert model.response_tokens == 0
+
+    prompt = "What is in this picture? Give the official name and what it's known as."
+    response = model(prompt)
+    assert isinstance(response, str)
+    assert len(response) > 1
+    assert 'aurora borealis' in response.lower()
+    assert 'northern lights' in response.lower()
+
+    assert len(model.history()) == 1
+    assert len(model.chat_history) == 1
+    assert model.history() == model.chat_history
+    assert model.chat_history[0].prompt == prompt
+    assert model.chat_history[0].response == response
+
+    assert model.cost > 0
+    assert model.input_tokens > 0
+    assert model.response_tokens > 0
+    assert model.total_tokens == model.input_tokens + model.response_tokens
+
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
+def test_OpenAIImageChat__http__streaming(html_image_url_nl):  # noqa
+    # test valid parameters for streaming
+    callback_response = ''
+    def streaming_callback(record: StreamingEvent) -> None:
+        nonlocal callback_response
+        callback_response += record.response
+
+    model = OpenAIImageChat(
+        image_url=html_image_url_nl,
+        max_tokens=100,
+        streaming_callback=streaming_callback,
+        )
+    assert len(model.history()) == 0
+    assert model.previous_record() is None
+    assert model.previous_prompt is None
+    assert model.previous_response is None
+    assert model.cost is None
+    assert model.total_tokens is None
+    assert model.input_tokens is None
+    assert model.response_tokens is None
+
+    prompt = "What is in this picture? Give the official name and what it's known as."
+    response = model(prompt)
+    assert isinstance(response, str)
+    assert len(response) > 1
+    assert 'aurora borealis' in response.lower()
+    assert 'northern lights' in response.lower()
+    assert callback_response == response
+
+    assert len(model.history()) == 1
+    assert len(model.chat_history) == 1
+    assert model.history() == model.chat_history
+    assert model.chat_history[0].prompt == prompt
+    assert model.chat_history[0].response == response
+
+    assert model.cost is None
+    assert model.input_tokens is None
+    assert model.response_tokens is None
+    assert model.total_tokens is None
+
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
+def test_OpenAIImageChat__local__non_streaming(local_image_path_nl):  # noqa
+    model = OpenAIImageChat(image_url=local_image_path_nl, max_tokens=100)
+    assert len(model.history()) == 0
+    assert model.previous_record() is None
+    assert model.previous_prompt is None
+    assert model.previous_response is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.input_tokens == 0
+    assert model.response_tokens == 0
+
+    prompt = "What is in this picture? Give the official name and what it's known as."
+    response = model(prompt)
+    assert isinstance(response, str)
+    assert len(response) > 1
+    assert 'aurora borealis' in response.lower()
+    assert 'northern lights' in response.lower()
+
+    assert len(model.history()) == 1
+    assert len(model.chat_history) == 1
+    assert model.history() == model.chat_history
+    assert model.chat_history[0].prompt == prompt
+    assert model.chat_history[0].response == response
+
+    assert model.cost > 0
+    assert model.input_tokens > 0
+    assert model.response_tokens > 0
+    assert model.total_tokens == model.input_tokens + model.response_tokens
+
+@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
+def test_OpenAIImageChat__local__streaming(local_image_path_nl):  # noqa
+    # test valid parameters for streaming
+    callback_response = ''
+    def streaming_callback(record: StreamingEvent) -> None:
+        nonlocal callback_response
+        callback_response += record.response
+
+    model = OpenAIImageChat(
+        image_url=local_image_path_nl,
+        max_tokens=100,
+        streaming_callback=streaming_callback,
+        )
+    assert len(model.history()) == 0
+    assert model.previous_record() is None
+    assert model.previous_prompt is None
+    assert model.previous_response is None
+    assert model.cost is None
+    assert model.total_tokens is None
+    assert model.input_tokens is None
+    assert model.response_tokens is None
+
+    prompt = "What is in this picture? Give the official name and what it's known as."
+    response = model(prompt)
+    assert isinstance(response, str)
+    assert len(response) > 1
+    assert 'aurora borealis' in response.lower()
+    assert 'northern lights' in response.lower()
+    assert callback_response == response
+
+    assert len(model.history()) == 1
+    assert len(model.chat_history) == 1
+    assert model.history() == model.chat_history
+    assert model.chat_history[0].prompt == prompt
+    assert model.chat_history[0].response == response
+
+    assert model.cost is None
+    assert model.input_tokens is None
+    assert model.response_tokens is None
+    assert model.total_tokens is None

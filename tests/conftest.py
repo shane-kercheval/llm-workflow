@@ -303,3 +303,13 @@ def pattern_found(value: str, pattern: str) -> bool:
 def credit_data() -> pd.DataFrame:
     """Returns a dataframe with credit data."""
     return pd.read_csv('tests/test_data/data/credit.csv')
+
+@pytest.fixture()
+def html_image_url_nl() -> str:
+    """Returns a url to an image containing the northern lights."""
+    return 'https://www.w3schools.com/w3css/img_lights.jpg'
+
+@pytest.fixture()
+def local_image_path_nl() -> str:
+    """Returns a local path to an image containing the northern lights."""
+    return 'tests/test_data/images/northern_lights.png'

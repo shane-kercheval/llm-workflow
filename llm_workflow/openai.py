@@ -1,10 +1,11 @@
 """Contains helper functions for interacting with OpenAI models."""
 
+from copy import deepcopy
 from typing import Callable
 from functools import cache
 import tiktoken
 from tiktoken import Encoding
-from llm_workflow.internal_utilities import retry_handler
+from llm_workflow.internal_utilities import encode_image, retry_handler
 from llm_workflow.base import (
     ChatModel,
     Document,
@@ -51,6 +52,9 @@ MODEL_COST_PER_TOKEN = {
     'gpt-3.5-turbo-0613': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
     # GPT-3.5-Turbo 16K
     'gpt-3.5-turbo-16k-0613': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
+
+    # VISION
+    'gpt-4-vision-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
 }
 
 
@@ -256,6 +260,8 @@ class OpenAIChat(ChatModel):
         (i.e. a ExchangeRecord object).
         """
         client = self._create_client()
+        input_tokens = None
+        output_tokens = None
         if self.streaming_callback:
             response = retry_handler()(
                 client.chat.completions.create,
@@ -287,11 +293,15 @@ class OpenAIChat(ChatModel):
                 **self.model_parameters,
             )
             response_message = response.choices[0].message.content
+            input_tokens = response.usage.prompt_tokens
+            output_tokens = response.usage.completion_tokens
 
         metadata = {
             'model_name': self.model_name,
             'model_parameters': self.model_parameters,
             'timeout': self.timeout,
+            'input_tokens': input_tokens,
+            'output_tokens': output_tokens,
         }
         return response_message, metadata
 
@@ -304,6 +314,137 @@ class OpenAIChat(ChatModel):
         object's lifetime.
         """
         return MODEL_COST_PER_TOKEN[self.model_name]
+
+
+class OpenAIImageChat(OpenAIChat):
+    """A wrapper around the OpenAI chat model for vision/images."""
+
+    def __init__(
+            self,
+            image_url: str,
+            model_name: str = 'gpt-4-vision-preview',
+            system_message: str = '',
+            streaming_callback: Callable[[StreamingEvent], None] | None = None,
+            memory_manager: MemoryManager | None = None,
+            timeout: int = 90,
+            seed: int | None = None,
+            **model_kwargs: dict,
+            ) -> None:
+        """
+        Args:
+            image_url:
+                URL of the image. Can either be a URL or a local file path.
+            model_name:
+                e.g. 'gpt-4-vision-preview'
+            system_message:
+                The content of the message associated with the "system" `role`.
+            streaming_callback:
+                Callable that takes a StreamingEvent object, which contains the streamed token (in
+                the `response` property and perhaps other metadata.
+
+                NOTE: When using the streaming callback, the cost of the messages is not
+                calculated. This is because the cost is only returned from OpenAI when the
+                response is not streamed.
+            memory_manager:
+                MemoryManager object (or callable that takes a list of ExchangeRecord objects and
+                returns a list of ExchangeRecord objects. The underlying logic should return the
+                messages sent to the OpenAI model.
+            timeout:
+                timeout value passed to OpenAI model.
+            seed:
+                seed value passed to OpenAI model.
+            model_kwargs:
+                Additional keyword arguments that are forwarded to the OpenAI model. For example:
+                ```
+                **{
+                    'temperature': 0.01,
+                    'max_tokens': 4096,
+                }
+                ```
+        """
+        super().__init__(
+            model_name=model_name,
+            system_message=system_message,
+            streaming_callback=streaming_callback,
+            memory_manager=memory_manager,
+            timeout=timeout,
+            seed=seed,
+            **model_kwargs,
+        )
+        if 'http' not in image_url and 'www' not in image_url:
+            image_url = f'data:image/jpeg;base64,{encode_image(image_url)}'
+        self._image_message = {
+            'role': 'user',
+            'content': [
+                {
+                    'type': 'image_url',
+                    'image_url': {'url': image_url},
+                },
+            ],
+        }
+
+    def _run(self, messages: list[dict]) -> tuple[str, dict]:
+        """
+        `client.chat.completions.create` expects a list of messages with various roles (i.e.
+        system, user, assistant). This function builds the list of messages based on the history of
+        messages and based on an optional 'memory_manager' that filters the history based on
+        it's own logic. The `system_message` is always the first message regardless if a
+        `memory_manager` is passed in.
+
+        The use of a streaming callback does not change the output returned from calling the object
+        (i.e. a ExchangeRecord object).
+        """
+        messages = deepcopy(messages)
+        # insert the message with the image after system prompt and before everything else.
+        messages.insert(1, self._image_message)
+        return super()._run(messages=messages)
+
+    @property
+    def input_tokens(self) -> int | None:
+        """
+        Returns the number of tokens used in the input message. Only available for non-streaming
+        requests. If the request is streaming, returns None, because the number of tokens is not
+        given from OpenAI when the response is streamed.
+        """
+        if self.streaming_callback:
+            return None
+        return sum(h.metadata['input_tokens'] for h in self.history())
+
+    @property
+    def response_tokens(self) -> int | None:
+        """
+        Returns the number of tokens used in the response message. Only available for non-streaming
+        requests. If the request is streaming, returns None, because the number of tokens is not
+        given from OpenAI when the response is streamed.
+        """
+        if self.streaming_callback:
+            return None
+        return sum(h.metadata['output_tokens'] for h in self.history())
+
+    @property
+    def total_tokens(self) -> int | None:
+        """
+        Returns the total number of tokens used in the input and response messages. Only available
+        for non-streaming requests. If the request is streaming, returns None, because the number
+        of tokens is not given from OpenAI when the response is streamed.
+        """
+        if self.streaming_callback:
+            return None
+        return self.input_tokens + self.response_tokens
+
+    @property
+    def cost(self) -> float | None:
+        """
+        Returns the cost of the input and response messages. Only available for non-streaming
+        requests. If the request is streaming, returns None, because the cost is not given from
+        OpenAI when the response is streamed.
+        """
+        if self.streaming_callback:
+            return None
+        return self._cost_calc(
+            input_tokens=self.input_tokens,
+            response_tokens=self.response_tokens,
+        )
 
 
 class OpenAIServerChat(OpenAIChat):
