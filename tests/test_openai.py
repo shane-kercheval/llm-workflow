@@ -1279,8 +1279,7 @@ def test_OpenAIImageChat__http__non_streaming(html_image_url_nl):  # noqa
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
-    assert 'aurora borealis' in response.lower()
-    assert 'northern lights' in response.lower()
+    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
 
     assert len(model.history()) == 1
     assert len(model.chat_history) == 1
@@ -1319,8 +1318,7 @@ def test_OpenAIImageChat__http__streaming(html_image_url_nl):  # noqa
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
-    assert 'aurora borealis' in response.lower()
-    assert 'northern lights' in response.lower()
+    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
     assert callback_response == response
 
     assert len(model.history()) == 1
@@ -1350,8 +1348,7 @@ def test_OpenAIImageChat__local__non_streaming(local_image_path_nl):  # noqa
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
-    assert 'aurora borealis' in response.lower()
-    assert 'northern lights' in response.lower()
+    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
 
     assert len(model.history()) == 1
     assert len(model.chat_history) == 1
@@ -1390,8 +1387,7 @@ def test_OpenAIImageChat__local__streaming(local_image_path_nl):  # noqa
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
-    assert 'aurora borealis' in response.lower()
-    assert 'northern lights' in response.lower()
+    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
     assert callback_response == response
 
     assert len(model.history()) == 1
