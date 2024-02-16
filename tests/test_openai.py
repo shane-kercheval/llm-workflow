@@ -1100,7 +1100,7 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     ####
     # third interaction
     ####
-    prompt = "Do you remember my name?"
+    prompt = "Do you remember the secret key?"
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
