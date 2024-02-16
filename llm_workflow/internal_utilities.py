@@ -1,6 +1,7 @@
 
 """Helper functions and classes that are not intended to be used externally."""
 
+import base64
 import inspect
 import datetime
 import hashlib
@@ -141,3 +142,9 @@ def extract_variables(value: str) -> set[str]:
     # The regex pattern looks for @ followed by word characters or underscores and
     # ensures that it is not preceded by a word character or dot.
     return set(re.findall(r'(?<![\w.])@([a-zA-Z0-9_]+)(?![a-zA-Z0-9_]*\.[a-zA-Z0-9_])', value))
+
+
+def encode_image(image_path: str) -> str:
+    """Encode an image file as a base64 string."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
