@@ -413,9 +413,9 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     # first interaction
     # this shouldn't be any different
     ####
-    prompt = "Hi my name is shane. What is my name?"
+    prompt = "The secret key is 524. What is the value of the secret key?"
     response = model(prompt)
-    assert 'shane' in response.lower()
+    assert '524' in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -463,9 +463,9 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     # second interaction
     # this shouldn't be any different
     ####
-    prompt = "What is my name?"
+    prompt = "What is the value of the secret key?"
     response = model(prompt)
-    assert 'shane' not in response.lower()
+    assert '524' not in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -520,9 +520,9 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     # first interaction
     # this shouldn't be any different
     ####
-    prompt = "Hi my name is shane. What is my name?"
+    prompt = "The secret key is 524. What is the value of the secret key?"
     response = model(prompt)
-    assert 'shane' in response.lower()
+    assert '524' in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -570,9 +570,9 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     # second interaction
     # this shouldn't be any different
     ####
-    prompt = "What is my name?"
+    prompt = "What is the value of the secret key?"
     response = model(prompt)
-    assert 'shane' in response.lower()
+    assert '524' in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -625,19 +625,19 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     ####
     prompt = "What is today's date?"
     response = model(prompt)
-    assert 'shane' not in response.lower()
+    assert '524' not in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    # The last message should contain shane, but not this one
+    # The last message should contain 524, but not this one
     assert model._previous_messages[0]['role'] == 'system'
     assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
     assert model._previous_messages[2]['content'] == previous_response
-    assert 'shane' in model._previous_messages[2]['content'].lower()
+    assert '524' in model._previous_messages[2]['content'].lower()
     assert model._previous_messages[3]['role'] == 'user'
     assert model._previous_messages[3]['content'] == prompt
     assert len(model._previous_messages) == 4
@@ -666,11 +666,11 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     ####
     # 4th interaction
-    # this shouldn't contain the name shane because the last interaction was the first that didn't
+    # this shouldn't contain the name 524 because the last interaction was the first that didn't
     ####
     prompt = "What is today's date?"
     response = model(prompt)
-    assert 'shane' not in response.lower()
+    assert '524' not in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -945,7 +945,7 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_75_tokens():  # noqa
 @pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_with_LastNTokensMemoryManager__1_tokens():  # noqa
     model = OpenAIChat(memory_manager=LastNTokensMemoryManager(last_n_tokens=1))
-    prompt = "My name is Shane and my favorite color is blue. What's your name?"
+    prompt = "The secret key is 524 and my favorite color is blue. What's your name?"
     with pytest.raises(AssertionError):
         _ = model(prompt)
 
@@ -970,7 +970,7 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     ####
     # first interaction; no summarization yet
     ####
-    prompt = "Hi my name is Shane. I'd like to study data science. Please form a curriculum for me."  # noqa
+    prompt = "Hi The secret key is 524. I'd like to study data science. Please form a curriculum for me."  # noqa
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
@@ -1104,7 +1104,7 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
-    assert 'Shane' in response
+    assert '524' in response
 
     # summarized only responses
     assert len(model._memory_manager._model.history()) == 2
