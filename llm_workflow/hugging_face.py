@@ -7,7 +7,6 @@ from typing import Callable
 from transformers import PreTrainedTokenizer, AutoTokenizer
 from llm_workflow.internal_utilities import retry_handler
 from llm_workflow.base import ChatModel, ExchangeRecord, StreamingEvent
-from llm_workflow.message_formatters import llama_message_formatter
 
 
 def query_hugging_face_endpoint(
@@ -116,8 +115,8 @@ class HuggingFaceEndpointChat(ChatModel):
     def __init__(
             self,
             endpoint_url: str,
+            message_formatter: Callable[[str, list[ExchangeRecord]], str],
             system_message: str = 'You are a helpful AI assistant.',
-            message_formatter: Callable[[str, list[ExchangeRecord]], str] = llama_message_formatter,  # noqa
             token_calculator: Callable[[str], int] = len,
             memory_manager: Callable[[list[ExchangeRecord]], list[str]] | None = None,
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
@@ -167,11 +166,12 @@ class HuggingFaceEndpointChat(ChatModel):
         )
         self.endpoint_url = endpoint_url
         self.streaming_callback = streaming_callback
-        self.model_parameters = model_kwargs or {}
+        self.parameters = model_kwargs or {}
+        self.parameters['return_full_text'] = False
         self._max_streaming_tokens = max_streaming_tokens
         self._timeout = timeout
 
-    def _run(self, messages: str) -> tuple[str, dict]:
+    def _run(self, messages: str) -> ExchangeRecord:
         """Runs the model based on the prompt and returns the response."""
         response = ""
         start = time.time()
@@ -183,7 +183,7 @@ class HuggingFaceEndpointChat(ChatModel):
                 endpoint_url=self.endpoint_url,
                 payload={
                     "inputs": messages + response,
-                    "parameters": self.model_parameters,
+                    "parameters": self.parameters,
                 },
             )
             if isinstance(output, dict) and 'error' in output:
@@ -199,7 +199,7 @@ class HuggingFaceEndpointChat(ChatModel):
 
         metadata = {
             'endpoint_url': self.endpoint_url,
-            'model_parameters': self.model_parameters,
+            'parameters': self.parameters,
             'timeout': self._timeout,
         }
-        return response, metadata
+        return response.strip(), metadata

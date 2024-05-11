@@ -8,7 +8,7 @@ from llm_workflow.base import (
     ExchangeRecord,
     TokenUsageRecord,
 )
-from llm_workflow.hugging_face import llama_message_formatter
+from llm_workflow.message_formatters import LlamaMessageFormatter
 from tests.conftest import (
     MockChatModel,
     MockCostMemoryManager,
@@ -180,9 +180,9 @@ def test_ChatModel__no_costs():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
-    expected_message_0 = llama_message_formatter(
+    expected_message_0 = LlamaMessageFormatter()(
         system_message=model.system_message,
-        history=None,
+        messages=None,
         prompt=prompt,
     )
     assert expected_message_0.count("<<SYS>>") == 1
@@ -223,9 +223,9 @@ def test_ChatModel__no_costs():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
-    expected_message_1 = llama_message_formatter(
+    expected_message_1 = LlamaMessageFormatter()(
         system_message=model.system_message,
-        history=[model._history[0]],
+        messages=[model._history[0]],
         prompt=prompt,
     )
     assert expected_message_1.count("<<SYS>>") == 1
@@ -284,9 +284,9 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
-    expected_message_0 = llama_message_formatter(
+    expected_message_0 = LlamaMessageFormatter()(
         system_message=model.system_message,
-        history=None,
+        messages=None,
         prompt=prompt,
     )
 
@@ -332,9 +332,9 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
-    expected_message_1 = llama_message_formatter(
+    expected_message_1 = LlamaMessageFormatter()(
         system_message=model.system_message,
-        history=[model._history[0]],
+        messages=[model._history[0]],
         prompt=prompt,
     )
     expected_input_tokens = len(expected_message_1)
@@ -378,7 +378,7 @@ def test_ChatModel_memory_manager__adds_history():  # noqa
     )
     prompt = 'This is a question.'
     response = model(prompt)
-    formatted_message_0 = llama_message_formatter(model.system_message, None, prompt)
+    formatted_message_0 = LlamaMessageFormatter()(model.system_message, None, prompt)
     expected_response = f'Model Message: {formatted_message_0}'
     assert response == expected_response.strip()
     assert model.history()[0].metadata == {'model_name': 'memory'}
@@ -413,7 +413,7 @@ def test_ChatModel_memory_manager__adds_history():  # noqa
 
     prompt = 'This is another question.'
     response = model(prompt)
-    formatted_message_1 = llama_message_formatter(model.system_message, [model.chat_history[0]], prompt)  # noqa
+    formatted_message_1 = LlamaMessageFormatter()(model.system_message, [model.chat_history[0]], prompt)  # noqa
     assert response == f'Model Message: {formatted_message_1}'.strip()
     assert model.history()[0].metadata == {'model_name': 'memory'}
     assert model.history()[1].metadata['model_name'] == 'mock'

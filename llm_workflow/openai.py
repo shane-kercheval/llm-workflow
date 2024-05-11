@@ -5,6 +5,7 @@ from typing import Callable
 from functools import cache
 import tiktoken
 from tiktoken import Encoding
+import numpy as np
 from llm_workflow.internal_utilities import encode_image, retry_handler
 from llm_workflow.base import (
     ChatModel,
@@ -36,12 +37,13 @@ MODEL_COST_PER_TOKEN = {
     ####
     # LATEST MODELS
     # GPT-4-Turbo 128K
+    'gpt-4-turbo-2024-04-09': {'input': 10.00 / 1_000_000, 'output': 3.00 / 1_000_000},
     'gpt-4-0125-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
     # GPT-3.5 Turbo 16K
-    'gpt-3.5-turbo-0125': {'input': 0.0005 / 1_000, 'output': 0.0015 / 1_000},
+    'gpt-3.5-turbo-0125': {'input': 0.50 / 1_000_000, 'output': 1.50 / 1_000_000},
     # LEGACY MODELS
     # GPT-4-Turbo 128K
-    'gpt-4-1106-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
+    # 'gpt-4-1106-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
     # GPT-3.5-Turbo 16K
     'gpt-3.5-turbo-1106': {'input': 0.001 / 1_000, 'output': 0.002 / 1_000},
     # GPT-4
@@ -49,12 +51,9 @@ MODEL_COST_PER_TOKEN = {
     # GPT-4- 32K
     # 'gpt-4-32k-0613': {'input': 0.06 / 1_000, 'output': 0.12 / 1_000},
     # GPT-3.5-Turbo 4K
-    'gpt-3.5-turbo-0613': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
+    # 'gpt-3.5-turbo-0613': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
     # GPT-3.5-Turbo 16K
-    'gpt-3.5-turbo-16k-0613': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
-
-    # VISION
-    'gpt-4-vision-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
+    # 'gpt-3.5-turbo-16k-0613': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
 }
 
 
@@ -186,7 +185,7 @@ class OpenAIChat(ChatModel):
         """
         Args:
             model_name:
-                e.g. 'gpt-3.5-turbo-1106'
+                e.g. 'gpt-3.5-turbo-0125'
             system_message:
                 The content of the message associated with the "system" `role`.
             streaming_callback:
@@ -242,7 +241,7 @@ class OpenAIChat(ChatModel):
         """
         _create_client is used to create the OpenAI client. We cannot define this in __init__
         because it is not picklable and cannot be used with multiprocessing. Additionally, this
-        function lets OpenAIServerChat override the client creation and set the base_url to use
+        function lets OpenAIServerChat override the client creation and set the endpoint_url to use
         with a local server.
         """
         from openai import OpenAI
@@ -260,8 +259,6 @@ class OpenAIChat(ChatModel):
         (i.e. a ExchangeRecord object).
         """
         client = self._create_client()
-        input_tokens = None
-        output_tokens = None
         if self.streaming_callback:
             response = retry_handler()(
                 client.chat.completions.create,
@@ -269,39 +266,50 @@ class OpenAIChat(ChatModel):
                 messages=messages,
                 timeout=self.timeout,
                 stream=True,
+                logprobs=True,
                 seed=self.seed,
                 **self.model_parameters,
             )
             # extract the content/token from the streaming response and send to the callback
             # build up the message so that we can calculate usage/costs and send back the same
             # ExchangeRecord response that we would return if we weren't streaming
-            def get_delta(chunk):  # noqa
-                return chunk.choices[0].delta.content
+            def get_delta(chunk) -> tuple[str, float]:  # noqa
+                choice = chunk.choices[0]
+                content = choice.delta.content
+                log_prob = choice.logprobs.content[0].logprob if content else np.nan
+                return content, log_prob
+
             response_message = ''
+            tokens = []
+            log_probs = []
             for chunk in response:
-                delta = get_delta(chunk)
+                delta, log_prob = get_delta(chunk)
                 if delta:
-                    self.streaming_callback(StreamingEvent(response=delta))
+                    self.streaming_callback(StreamingEvent(response=delta, logprob=log_prob))
                     response_message += delta
+                    tokens.append(delta)
+                    log_probs.append(log_prob)
         else:
             response = retry_handler()(
                 client.chat.completions.create,
                 model=self.model_name,
                 messages=messages,
                 timeout=self.timeout,
+                stream=False,
+                logprobs=True,
                 seed=self.seed,
                 **self.model_parameters,
             )
+            tokens = [x.token for x in response.choices[0].logprobs.content]
+            log_probs = [x.logprob for x in response.choices[0].logprobs.content]
             response_message = response.choices[0].message.content
-            input_tokens = response.usage.prompt_tokens
-            output_tokens = response.usage.completion_tokens
 
         metadata = {
             'model_name': self.model_name,
             'model_parameters': self.model_parameters,
+            'tokens': tokens,
+            'log_probs': log_probs,
             'timeout': self.timeout,
-            'input_tokens': input_tokens,
-            'output_tokens': output_tokens,
         }
         return response_message, metadata
 
@@ -448,11 +456,16 @@ class OpenAIImageChat(OpenAIChat):
 
 
 class OpenAIServerChat(OpenAIChat):
-    """Uses the OpenAI API to chat via local server (with same interface)."""
+    """
+    Some servers (e.g. llama.cpp, hugging face endpoints) allow callers to use OpenAI's API for
+    non-OpenAI models. This wrapper allows the caller to specify the endpoint_url of the server to
+    connect to and uses OpenAI API to interact with the LLM.
+    """
 
     def __init__(
             self,
-            base_url: str,
+            endpoint_url: str,
+            api_key: str | None = None,
             system_message: str = 'You are a helpful AI assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             memory_manager: MemoryManager | None = None,
@@ -460,37 +473,9 @@ class OpenAIServerChat(OpenAIChat):
             seed: int | None = None,
             **model_kwargs: dict,
             ) -> None:
-        """
-        Initializes the OpenAIServerChat object.
-
-        Args:
-            base_url:
-                The base URL of the local server.
-            system_message:
-                The content of the message associated with the "system" `role`.
-            streaming_callback:
-                Callable that takes a StreamingEvent object, which contains the streamed token (in
-                the `response` property and perhaps other metadata.
-            memory_manager:
-                MemoryManager object (or callable that takes a list of ExchangeRecord objects and
-                returns a list of ExchangeRecord objects. The underlying logic should return the
-                messages sent to the OpenAI model.
-            timeout:
-                timeout value passed to OpenAI model.
-            seed:
-                seed value passed to OpenAI model.
-            model_kwargs:
-                Additional keyword arguments that are forwarded to the OpenAI model. For example:
-                ```
-                **{
-                    'temperature': 0.01,
-                    'max_tokens': 4096,
-                }
-                ```
-        """
+        """TODO document."""
         super().__init__(
             system_message=system_message,
-            message_formatter=openai_message_formatter,
             # token_calculator=len,
             # cost_calculator=None,
             memory_manager=memory_manager,
@@ -504,8 +489,9 @@ class OpenAIServerChat(OpenAIChat):
         self.streaming_callback = streaming_callback
         self.timeout = timeout
         self.seed = seed
-        self.base_url = base_url
+        self.endpoint_url = endpoint_url
+        self.api_key = api_key
 
     def _create_client(self) -> object:
         from openai import OpenAI
-        return OpenAI(base_url=self.base_url, api_key='none')
+        return OpenAI(base_url=self.endpoint_url, api_key=self.api_key)

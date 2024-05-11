@@ -204,7 +204,7 @@ def test_workflow_with_MockChat():  # noqa
     chat = MockChatModel(
         return_prompt="Response: ",
         token_calculator=len,
-        message_formatter=lambda system_message, history, prompt: prompt,  # noqa
+        message_formatter=lambda system_message, messages, prompt: prompt,  # noqa
     )
     workflow = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
     result = workflow(prompt)
@@ -251,7 +251,7 @@ def test_workflow_with_MockChat_tokens_costs():  # noqa
         return_prompt="Response: ",
         token_calculator=len,
         cost_calculator=lambda input_tokens, response_tokens: (input_tokens + response_tokens) * cost_per_token,  # noqa
-        message_formatter=lambda system_message, history, prompt: prompt,  # noqa
+        message_formatter=lambda system_message, messages, prompt: prompt,  # noqa
     )
     workflow = Workflow(tasks=[chat, lambda x: "Question: " + x, chat])
     result = workflow(prompt)
@@ -396,7 +396,7 @@ def test_workflow_with_MockChat_MockEmbeddings():  # noqa
         return_prompt="Response: ",
         token_calculator=len,
         cost_calculator=lambda input_tokens, response_tokens: (input_tokens + response_tokens) * cost_per_token_chat,  # noqa
-        message_formatter=lambda system_message, history, prompt: prompt,  # noqa
+        message_formatter=lambda system_message, messages, prompt: prompt,  # noqa
     )
     workflow = Workflow(tasks=[
         sleep_return,
