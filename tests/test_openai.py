@@ -1,4 +1,5 @@
 """Test the OpenAI Model classes."""
+
 import os
 from openai import BadRequestError, OpenAI
 import pytest
@@ -11,7 +12,6 @@ from llm_workflow.memory import (
 from llm_workflow.openai import (
     OpenAIChat,
     OpenAIEmbedding,
-    OpenAIImageChat,
     openai_message_formatter,
     num_tokens,
     num_tokens_from_messages,
@@ -70,7 +70,7 @@ def test_num_tokens_from_messages():  # noqa
     # above we checked that the numbers match exactly from what OpenAI returns;
     # here, let's just check that the other models run and return >0 to avoid API calls
     assert num_tokens_from_messages(model_name='gpt-3.5-turbo-0301', messages=example_messages) > 0
-    assert num_tokens_from_messages(model_name='gpt-4-1106-preview', messages=example_messages) > 0
+    assert num_tokens_from_messages(model_name='gpt-4-turbo-2024-04-09', messages=example_messages) > 0  # noqa
     assert num_tokens_from_messages(model_name='gpt-4-0314', messages=example_messages) > 0
     with pytest.raises(NotImplementedError):
         num_tokens_from_messages(model_name='<not implemented>', messages=example_messages)
@@ -79,20 +79,74 @@ def test_message_formatter():  # noqa
     assert openai_message_formatter(None, None, None) == []
     messages = openai_message_formatter('System message', None, None)
     assert messages == [{'role': 'system', 'content': 'System message'}]
-    messages = openai_message_formatter(None, [ExchangeRecord(prompt='prompt', response='response')], None)  # noqa
-    assert messages == [{'role': 'user', 'content': 'prompt'}, {'role': 'assistant', 'content': 'response'}]  # noqa
+
+    messages = openai_message_formatter(
+        None,
+        [ExchangeRecord(prompt='prompt', response='response')],
+        None,
+    )
+    expected_value = [{'role': 'user', 'content': 'prompt'}, {'role': 'assistant', 'content': 'response'}]  # noqa
+    assert messages == expected_value
+    messages = openai_message_formatter(
+        None,
+        [('prompt', 'response')],
+        None,
+    )
+    assert messages == expected_value
+
     messages = openai_message_formatter(None, None, 'prompt')
     assert messages == [{'role': 'user', 'content': 'prompt'}]
+
     messages = openai_message_formatter(
         'System message',
         [ExchangeRecord(prompt='prompt', response='response')],
         'New Prompt.',
     )
-    assert messages == [
+    expected_value = [
         {'role': 'system', 'content': 'System message'},
-        {'role': 'user', 'content': 'prompt'}, {'role': 'assistant', 'content': 'response'},
+        {'role': 'user', 'content': 'prompt'},
+        {'role': 'assistant', 'content': 'response'},
         {'role': 'user', 'content': 'New Prompt.'},
     ]
+    assert messages == expected_value
+    messages = openai_message_formatter(
+        'System message',
+        [('prompt', 'response')],
+        'New Prompt.',
+    )
+    assert messages == expected_value
+
+
+    messages = openai_message_formatter(
+        'System message 0',
+        [
+            ExchangeRecord(prompt='prompt1', response='response1'),
+            ExchangeRecord(prompt='prompt2', response='response2'),
+            ExchangeRecord(prompt='prompt3', response='response3'),
+        ],
+        'New Prompt 0',
+    )
+    expected_value = [
+        {'role': 'system', 'content': 'System message 0'},
+        {'role': 'user', 'content': 'prompt1'},
+        {'role': 'assistant', 'content': 'response1'},
+        {'role': 'user', 'content': 'prompt2'},
+        {'role': 'assistant', 'content': 'response2'},
+        {'role': 'user', 'content': 'prompt3'},
+        {'role': 'assistant', 'content': 'response3'},
+        {'role': 'user', 'content': 'New Prompt 0'},
+    ]
+    assert messages == expected_value
+    messages = openai_message_formatter(
+        'System message 0',
+        [
+            ('prompt1', 'response1'),
+            ('prompt2', 'response2'),
+            ('prompt3', 'response3'),
+        ],
+        'New Prompt 0',
+    )
+    assert messages == expected_value
 
 @pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat():  # noqa
@@ -132,6 +186,8 @@ def test_OpenAIChat():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model.model_name
     assert message.metadata['messages'] == model._previous_messages
+    assert len(message.metadata['tokens']) > 0
+    assert len(message.metadata['log_probs']) == len(message.metadata['tokens'])
     assert message.cost == (MODEL_COST_PER_TOKEN[model.model_name]['input'] * message.input_tokens) + \
         (MODEL_COST_PER_TOKEN[model.model_name]['output'] * message.response_tokens)  # noqa: E501
     assert message.input_tokens == num_tokens_from_messages(
@@ -214,12 +270,12 @@ def test_OpenAIChat():  # noqa
 @pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat__with_parameters():  # noqa
     # test valid parameters for non-streaming
-    model_parameters = {'temperature': 0.01, 'max_tokens': 4096}
-    model = OpenAIChat(**model_parameters)
-    assert model.model_parameters == model_parameters
+    parameters = {'temperature': 0.01, 'max_tokens': 4096}
+    model = OpenAIChat(**parameters)
+    assert model.model_parameters == parameters
     response = model("What is the capital of France?")
     assert 'Paris' in response
-    assert model.history()[-1].metadata['model_parameters'] == model_parameters
+    assert model.history()[-1].metadata['model_parameters'] == parameters
 
     # test valid parameters for streaming
     callback_response = ''
@@ -227,24 +283,24 @@ def test_OpenAIChat__with_parameters():  # noqa
         nonlocal callback_response
         callback_response += record.response
 
-    model = OpenAIChat(streaming_callback=streaming_callback, **model_parameters)
-    assert model.model_parameters == model_parameters
+    model = OpenAIChat(streaming_callback=streaming_callback, **parameters)
+    assert model.model_parameters == parameters
     response = model("What is the capital of France?")
     assert 'Paris' in response
     assert response == callback_response
-    assert model.history()[-1].metadata['model_parameters'] == model_parameters
+    assert model.history()[-1].metadata['model_parameters'] == parameters
 
     # test invalid parameters so that we know we're actually sending them
-    model_parameters = {'temperature': -10}
-    model = OpenAIChat(**model_parameters)
-    assert model.model_parameters == model_parameters
+    parameters = {'temperature': -10}
+    model = OpenAIChat(**parameters)
+    assert model.model_parameters == parameters
     with pytest.raises(BadRequestError):
         _ = model("What is the capital of France?")
 
     # test invalid parameters for streaming
-    model_parameters = {'temperature': -10}
-    model = OpenAIChat(streaming_callback=streaming_callback, **model_parameters)
-    assert model.model_parameters == model_parameters
+    parameters = {'temperature': -10}
+    model = OpenAIChat(streaming_callback=streaming_callback, **parameters)
+    assert model.model_parameters == parameters
     with pytest.raises(BadRequestError):
         _ = model("What is the capital of France?")
 
@@ -292,6 +348,8 @@ def test_OpenAIChat_streaming():  # noqa
     assert message.response == response
     assert message.metadata['model_name'] == model.model_name
     assert message.metadata['messages'] == model._previous_messages
+    assert len(message.metadata['tokens']) > 0
+    assert len(message.metadata['log_probs']) == len(message.metadata['tokens'])
     assert message.input_tokens == num_tokens_from_messages(
         model_name=model.model_name,
         messages=model._previous_messages,
@@ -413,9 +471,9 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     # first interaction
     # this shouldn't be any different
     ####
-    prompt = "The secret key is 524. What is the value of the secret key?"
+    prompt = "Hi my name is shane. What is my name?"
     response = model(prompt)
-    assert '524' in response.lower()
+    assert 'shane' in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -463,9 +521,9 @@ def test_OpenAIChat__LastNExchangesManager0():  # noqa
     # second interaction
     # this shouldn't be any different
     ####
-    prompt = "What is the value of the secret key?"
+    prompt = "What is my name?"
     response = model(prompt)
-    assert '524' not in response.lower()
+    assert 'shane' not in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -520,9 +578,9 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
     # first interaction
     # this shouldn't be any different
     ####
-    prompt = "The secret key is 524. What is the value of the secret key?"
+    prompt = "Hi my name is shane. What is my name?"
     response = model(prompt)
-    assert '524' in response.lower()
+    assert 'shane' in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -568,11 +626,11 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     ####
     # second interaction
-    # this shouldn't be any different
+    # It should know 'shane' since it was in the last response
     ####
-    prompt = "What is the value of the secret key?"
+    prompt = "What is my name?"
     response = model(prompt)
-    assert '524' in response.lower()
+    assert 'shane' in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -621,23 +679,24 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     ####
     # third interaction
-    # this shouldn't be any different
+    # ensure that the response doesn't contain the name shane so that we can test that the memory
+    # manager is working for the next interaction
     ####
-    prompt = "What is today's date?"
+    prompt = "What is today's date? Reply only in the format MM/DD/YYYY with no other text."
     response = model(prompt)
-    assert '524' not in response.lower()
+    assert 'shane' not in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
     # previous memory is the input to ChatGPT
-    # The last message should contain 524, but not this one
+    # The last message should contain shane, but not this one
     assert model._previous_messages[0]['role'] == 'system'
     assert model._previous_messages[0]['content'] == 'You are a helpful AI assistant.'
     assert model._previous_messages[1]['role'] == 'user'
     assert model._previous_messages[1]['content'] == previous_prompt
     assert model._previous_messages[2]['role'] == 'assistant'
     assert model._previous_messages[2]['content'] == previous_response
-    assert '524' in model._previous_messages[2]['content'].lower()
+    assert 'shane' in model._previous_messages[2]['content'].lower()
     assert model._previous_messages[3]['role'] == 'user'
     assert model._previous_messages[3]['content'] == prompt
     assert len(model._previous_messages) == 4
@@ -666,11 +725,11 @@ def test_OpenAIChat__LastNExchangesManager1():  # noqa
 
     ####
     # 4th interaction
-    # this shouldn't contain the name 524 because the last interaction was the first that didn't
+    # this shouldn't contain the name shane because the last interaction didn't
     ####
-    prompt = "What is today's date?"
+    prompt = "What is my name?"
     response = model(prompt)
-    assert '524' not in response.lower()
+    assert 'shane' not in response.lower()
     assert isinstance(response, str)
     assert len(response) > 1
 
@@ -945,7 +1004,7 @@ def test_OpenAIChat_with_LastNTokensMemoryManager_75_tokens():  # noqa
 @pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
 def test_OpenAIChat_with_LastNTokensMemoryManager__1_tokens():  # noqa
     model = OpenAIChat(memory_manager=LastNTokensMemoryManager(last_n_tokens=1))
-    prompt = "The secret key is 524 and my favorite color is blue. What's your name?"
+    prompt = "My name is Shane and my favorite color is blue. What's your name?"
     with pytest.raises(AssertionError):
         _ = model(prompt)
 
@@ -970,7 +1029,7 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     ####
     # first interaction; no summarization yet
     ####
-    prompt = "Hi The secret key is 524. I'd like to study data science. Please form a curriculum for me."  # noqa
+    prompt = "Hi my name is Shane. I'd like to study data science. Please form a curriculum for me."  # noqa
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
@@ -1100,11 +1159,11 @@ def test_OpenAIChat_with_MessageSummaryMemoryManager():  # noqa
     ####
     # third interaction
     ####
-    prompt = "Do you remember the secret key?"
+    prompt = "Do you remember my name?"
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
-    assert '524' in response
+    assert 'Shane' in response
 
     # summarized only responses
     assert len(model._memory_manager._model.history()) == 2
@@ -1255,148 +1314,11 @@ def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation(
     """We can't set cost_per_token during object creation, because the model might change."""
     model = OpenAIChat()
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model.model_name]
-    model.model_name = 'gpt-4-1106-preview'
-    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4-1106-preview']
+    model.model_name = 'gpt-4-turbo-2024-04-09'
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4-turbo-2024-04-09']
 
     model = OpenAIEmbedding()
     assert model.cost_per_token == MODEL_COST_PER_TOKEN[model.model_name]
-    model.model_name = 'gpt-4-1106-preview'
-    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4-1106-preview']
+    model.model_name = 'gpt-4-turbo-2024-04-09'
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4-turbo-2024-04-09']
 
-@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
-def test_OpenAIImageChat__http__non_streaming(html_image_url_nl):  # noqa
-    model = OpenAIImageChat(image_url=html_image_url_nl, max_tokens=100)
-    assert len(model.history()) == 0
-    assert model.previous_record() is None
-    assert model.previous_prompt is None
-    assert model.previous_response is None
-    assert model.cost == 0
-    assert model.total_tokens == 0
-    assert model.input_tokens == 0
-    assert model.response_tokens == 0
-
-    prompt = "What is in this picture? Give the official name and what it's known as."
-    response = model(prompt)
-    assert isinstance(response, str)
-    assert len(response) > 1
-    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
-
-    assert len(model.history()) == 1
-    assert len(model.chat_history) == 1
-    assert model.history() == model.chat_history
-    assert model.chat_history[0].prompt == prompt
-    assert model.chat_history[0].response == response
-
-    assert model.cost > 0
-    assert model.input_tokens > 0
-    assert model.response_tokens > 0
-    assert model.total_tokens == model.input_tokens + model.response_tokens
-
-@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
-def test_OpenAIImageChat__http__streaming(html_image_url_nl):  # noqa
-    # test valid parameters for streaming
-    callback_response = ''
-    def streaming_callback(record: StreamingEvent) -> None:
-        nonlocal callback_response
-        callback_response += record.response
-
-    model = OpenAIImageChat(
-        image_url=html_image_url_nl,
-        max_tokens=100,
-        streaming_callback=streaming_callback,
-        )
-    assert len(model.history()) == 0
-    assert model.previous_record() is None
-    assert model.previous_prompt is None
-    assert model.previous_response is None
-    assert model.cost is None
-    assert model.total_tokens is None
-    assert model.input_tokens is None
-    assert model.response_tokens is None
-
-    prompt = "What is in this picture? Give the official name and what it's known as."
-    response = model(prompt)
-    assert isinstance(response, str)
-    assert len(response) > 1
-    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
-    assert callback_response == response
-
-    assert len(model.history()) == 1
-    assert len(model.chat_history) == 1
-    assert model.history() == model.chat_history
-    assert model.chat_history[0].prompt == prompt
-    assert model.chat_history[0].response == response
-
-    assert model.cost is None
-    assert model.input_tokens is None
-    assert model.response_tokens is None
-    assert model.total_tokens is None
-
-@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
-def test_OpenAIImageChat__local__non_streaming(local_image_path_nl):  # noqa
-    model = OpenAIImageChat(image_url=local_image_path_nl, max_tokens=100)
-    assert len(model.history()) == 0
-    assert model.previous_record() is None
-    assert model.previous_prompt is None
-    assert model.previous_response is None
-    assert model.cost == 0
-    assert model.total_tokens == 0
-    assert model.input_tokens == 0
-    assert model.response_tokens == 0
-
-    prompt = "What is in this picture? Give the official name and what it's known as."
-    response = model(prompt)
-    assert isinstance(response, str)
-    assert len(response) > 1
-    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
-
-    assert len(model.history()) == 1
-    assert len(model.chat_history) == 1
-    assert model.history() == model.chat_history
-    assert model.chat_history[0].prompt == prompt
-    assert model.chat_history[0].response == response
-
-    assert model.cost > 0
-    assert model.input_tokens > 0
-    assert model.response_tokens > 0
-    assert model.total_tokens == model.input_tokens + model.response_tokens
-
-@pytest.mark.skipif(not os.environ.get('OPENAI_API_KEY'), reason="OPENAI_API_KEY is not set")
-def test_OpenAIImageChat__local__streaming(local_image_path_nl):  # noqa
-    # test valid parameters for streaming
-    callback_response = ''
-    def streaming_callback(record: StreamingEvent) -> None:
-        nonlocal callback_response
-        callback_response += record.response
-
-    model = OpenAIImageChat(
-        image_url=local_image_path_nl,
-        max_tokens=100,
-        streaming_callback=streaming_callback,
-        )
-    assert len(model.history()) == 0
-    assert model.previous_record() is None
-    assert model.previous_prompt is None
-    assert model.previous_response is None
-    assert model.cost is None
-    assert model.total_tokens is None
-    assert model.input_tokens is None
-    assert model.response_tokens is None
-
-    prompt = "What is in this picture? Give the official name and what it's known as."
-    response = model(prompt)
-    assert isinstance(response, str)
-    assert len(response) > 1
-    assert 'aurora borealis' in response.lower() or 'northern lights' in response.lower()
-    assert callback_response == response
-
-    assert len(model.history()) == 1
-    assert len(model.chat_history) == 1
-    assert model.history() == model.chat_history
-    assert model.chat_history[0].prompt == prompt
-    assert model.chat_history[0].response == response
-
-    assert model.cost is None
-    assert model.input_tokens is None
-    assert model.response_tokens is None
-    assert model.total_tokens is None

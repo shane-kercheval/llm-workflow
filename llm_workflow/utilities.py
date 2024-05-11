@@ -105,7 +105,13 @@ class DuckDuckGoSearch(RecordKeeper):
                 return search.results
 
         with DDGS() as ddgs:
-            ddgs_generator = ddgs.text(query, region='wt-wt', safesearch='Off', timelimit='y')
+            ddgs_generator = ddgs.text(
+                query,
+                region='wt-wt',
+                safesearch='Off',
+                timelimit='y',
+                max_results=self.top_n,
+            )
             results = list(islice(ddgs_generator, self.top_n))
         self._history.append(SearchRecord(
             query=query,

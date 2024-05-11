@@ -594,7 +594,7 @@ class ChatModel(PromptModel):
         else:
             messages = self._message_formatter(
                 system_message=self.system_message,
-                history=self._chat_history,
+                messages=self._chat_history,
                 prompt=prompt,
             )
         self._previous_messages = messages

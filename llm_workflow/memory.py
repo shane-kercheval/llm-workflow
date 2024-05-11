@@ -93,7 +93,7 @@ class LastNTokensMemoryManager(MemoryManager):
         # it to a list so that we can iterate over it and reverse it
         message_formatter = kwargs['message_formatter']
         token_calculator = kwargs['token_calculator']
-        test_formatting = message_formatter(system_message=None, history=None, prompt='test')
+        test_formatting = message_formatter(system_message=None, messages=None, prompt='test')
         if isinstance(test_formatting, str):
             is_list = False
         elif isinstance(test_formatting, list):

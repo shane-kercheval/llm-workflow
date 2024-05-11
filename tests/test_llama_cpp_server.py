@@ -3,7 +3,7 @@ import os
 import pytest
 from llm_workflow.base import ExchangeRecord, StreamingEvent
 from llm_workflow.llama_cpp_endpoint import LlamaCppEndpointChat
-from llm_workflow.message_formatters import mistral_message_formatter
+from llm_workflow.message_formatters import MistralMessageFormatter
 from tests.conftest import pattern_found
 
 @pytest.mark.skipif(not os.environ.get('LLAMA_CPP_ENDPOINT_UNIT_TESTS'), reason="LLAMA_CPP_ENDPOINT_UNIT_TESTS is not set")  # noqa
@@ -12,7 +12,7 @@ def test__LlamaCppEndpointChat__no_params_no_streaming(llama_cpp_endpoint):  # n
     chat = LlamaCppEndpointChat(
         endpoint_url=llama_cpp_endpoint,
         system_message=system_message,
-        message_formatter=mistral_message_formatter,
+        message_formatter=MistralMessageFormatter,
     )
     question = "Write a python function to mask emails called `mask_email`."
     response = chat(question)
@@ -42,7 +42,7 @@ def test__LlamaCppEndpointChat__no_params_streaming(llama_cpp_endpoint):  # noqa
     chat = LlamaCppEndpointChat(
         endpoint_url=llama_cpp_endpoint,
         system_message=system_message,
-        message_formatter=mistral_message_formatter,
+        message_formatter=MistralMessageFormatter,
         streaming_callback=streaming_callback,
     )
     question = "Write a python function to mask emails called `mask_email`."
@@ -73,7 +73,7 @@ def test__LlamaCppEndpointChat__params__no_streaming(llama_cpp_endpoint):  # noq
         endpoint_url=llama_cpp_endpoint,
         system_message=system_message,
         # streaming_callback=streaming_callback,
-        message_formatter=mistral_message_formatter,
+        message_formatter=MistralMessageFormatter,
         parameters={
             'temperature': 0.2,
             'n_predict': -1,
@@ -107,7 +107,7 @@ def test_LlamaCppEndpointChat__no_token_calculator(llama_cpp_endpoint):  # noqa
     model = LlamaCppEndpointChat(
         endpoint_url=llama_cpp_endpoint,
         streaming_callback=streaming_callback,
-        message_formatter=mistral_message_formatter,
+        message_formatter=MistralMessageFormatter,
     )
     assert len(model.history()) == 0
     assert model.previous_record() is None
@@ -162,7 +162,7 @@ def test_LlamaCppEndpointChat(llama_cpp_endpoint):  # noqa
     model = LlamaCppEndpointChat(
         endpoint_url=llama_cpp_endpoint,
         token_calculator=calc_num_tokens,
-        message_formatter=mistral_message_formatter,
+        message_formatter=MistralMessageFormatter,
         streaming_callback=streaming_callback,
     )
     assert len(model.history()) == 0
