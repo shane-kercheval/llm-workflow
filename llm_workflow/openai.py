@@ -276,7 +276,10 @@ class OpenAIChat(ChatModel):
             def get_delta(chunk) -> tuple[str, float]:  # noqa
                 choice = chunk.choices[0]
                 content = choice.delta.content
-                log_prob = choice.logprobs.content[0].logprob if content else np.nan
+                if hasattr(choice, 'logprobs'):
+                    log_prob = choice.logprobs.content[0].logprob if content else np.nan
+                else:
+                    log_prob = np.nan
                 return content, log_prob
 
             response_message = ''
@@ -300,8 +303,12 @@ class OpenAIChat(ChatModel):
                 seed=self.seed,
                 **self.model_parameters,
             )
-            tokens = [x.token for x in response.choices[0].logprobs.content]
-            log_probs = [x.logprob for x in response.choices[0].logprobs.content]
+            if hasattr(response.choices[0], 'logprobs'):
+                tokens = [x.token for x in response.choices[0].logprobs.content]
+                log_probs = [x.logprob for x in response.choices[0].logprobs.content]
+            else:
+                tokens = []
+                log_probs = []
             response_message = response.choices[0].message.content
 
         metadata = {
