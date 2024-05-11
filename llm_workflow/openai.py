@@ -276,7 +276,7 @@ class OpenAIChat(ChatModel):
             def get_delta(chunk) -> tuple[str, float]:  # noqa
                 choice = chunk.choices[0]
                 content = choice.delta.content
-                if hasattr(choice, 'logprobs'):
+                if hasattr(choice, 'logprobs') and choice.logprobs is not None:
                     log_prob = choice.logprobs.content[0].logprob if content else np.nan
                 else:
                     log_prob = np.nan
@@ -303,7 +303,7 @@ class OpenAIChat(ChatModel):
                 seed=self.seed,
                 **self.model_parameters,
             )
-            if hasattr(response.choices[0], 'logprobs'):
+            if hasattr(response.choices[0], 'logprobs') and response.choices[0].logprobs is not None:  # noqa
                 tokens = [x.token for x in response.choices[0].logprobs.content]
                 log_probs = [x.logprob for x in response.choices[0].logprobs.content]
             else:
