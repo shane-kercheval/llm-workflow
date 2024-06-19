@@ -420,7 +420,7 @@ from llm_workflow.compare import CompareModels, ModelDefinition
 # Comparing GPT-3.5 Turbo, GPT-4, and Mistral 7B
 model_definitions = [
     ModelDefinition(
-        create=lambda: OpenAIChat(model_name='gpt-3.5-turbo-1106'),
+        create=lambda: OpenAIChat(model_name='gpt-3.5-turbo-0125'),
         description='GPT-3.5 Turbo',
     ),
     ModelDefinition(

@@ -192,14 +192,14 @@ class OpenAIFunctions(LanguageModel):
     def __init__(
             self,
             tools: list[Tool],
-            model_name: str = 'gpt-3.5-turbo-1106',
+            model_name: str = 'gpt-3.5-turbo-0125',
             system_message: str = "Decide which function to use. Only use the functions you have been provided with. Don't make assumptions about what values to plug into functions.",  # noqa
             timeout: int = 10,
         ) -> dict | None:
         """
         Args:
             model_name:
-                e.g. 'gpt-3.5-turbo-1106'
+                e.g. 'gpt-3.5-turbo-0125'
             tools:
                 a list of Tool objects (created with the `Tool` class or `tool` decorator).
             system_message:
