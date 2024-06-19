@@ -372,6 +372,10 @@ def test_RequestError():  # noqa
     response = requests.get("https://example.com/asdf")
     assert RequestError(status_code=response.status_code, reason=response.reason)
 
+# skip test
+# this test will fail due to rate limits, other people are experiencing the same issue
+# https://github.com/joaomdmoura/crewAI/issues/136
+@pytest.mark.skip(reason="Test is failing due to rate limit")
 def test_DuckDuckGoSearch():  # noqa
     query = "What is an agent in langworkflow?"
     search = DuckDuckGoSearch(top_n=1)
