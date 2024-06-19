@@ -17,8 +17,30 @@ from llm_workflow.base import (
 )
 from llm_workflow.message_formatters import openai_message_formatter
 
+CHAT_MODEL_COST_PER_TOKEN = {
+    # LATEST MODELS
+    'gpt-4o-2024-05-13': {'input': 5.00 / 1_000_000, 'output': 15.00 / 1_000_000},
+    # GPT-4-Turbo 128K
+    'gpt-4-turbo-2024-04-09': {'input': 10.00 / 1_000_000, 'output': 30.00 / 1_000_000},
+    'gpt-4-0125-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
+    # GPT-3.5 Turbo 16K
+    'gpt-3.5-turbo-0125': {'input': 0.50 / 1_000_000, 'output': 1.50 / 1_000_000},
+    # LEGACY MODELS
+    # GPT-4-Turbo 128K
+    # 'gpt-4-1106-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
+    # GPT-3.5-Turbo 16K
+    # 'gpt-3.5-turbo-1106': {'input': 0.001 / 1_000, 'output': 0.002 / 1_000},
+    # GPT-4
+    'gpt-4-0613': {'input': 0.03 / 1_000, 'output': 0.06 / 1_000},
+    # GPT-4- 32K
+    # 'gpt-4-32k-0613': {'input': 0.06 / 1_000, 'output': 0.12 / 1_000},
+    # GPT-3.5-Turbo 4K
+    # 'gpt-3.5-turbo-0613': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
+    # GPT-3.5-Turbo 16K
+    # 'gpt-3.5-turbo-16k-0613': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
+}
 
-MODEL_COST_PER_TOKEN = {
+EMBEDDING_MODEL_COST_PER_TOKEN = {
     # "Prices are per 1,000 tokens. You can think of tokens as pieces of words, where 1,000 tokens
     # is about 750 words. This paragraph is 35 tokens."
     # https://openai.com/pricing
@@ -32,29 +54,9 @@ MODEL_COST_PER_TOKEN = {
     'text-embedding-3-large': 0.00013 / 1_000,
     # LEGACY MODELS
     'text-embedding-ada-002': 0.0001 / 1_000,
-    ####
-    # Chat Models
-    ####
-    # LATEST MODELS
-    # GPT-4-Turbo 128K
-    'gpt-4-turbo-2024-04-09': {'input': 10.00 / 1_000_000, 'output': 3.00 / 1_000_000},
-    'gpt-4-0125-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
-    # GPT-3.5 Turbo 16K
-    'gpt-3.5-turbo-0125': {'input': 0.50 / 1_000_000, 'output': 1.50 / 1_000_000},
-    # LEGACY MODELS
-    # GPT-4-Turbo 128K
-    # 'gpt-4-1106-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
-    # GPT-3.5-Turbo 16K
-    'gpt-3.5-turbo-1106': {'input': 0.001 / 1_000, 'output': 0.002 / 1_000},
-    # GPT-4
-    'gpt-4-0613': {'input': 0.03 / 1_000, 'output': 0.06 / 1_000},
-    # GPT-4- 32K
-    # 'gpt-4-32k-0613': {'input': 0.06 / 1_000, 'output': 0.12 / 1_000},
-    # GPT-3.5-Turbo 4K
-    # 'gpt-3.5-turbo-0613': {'input': 0.0015 / 1_000, 'output': 0.002 / 1_000},
-    # GPT-3.5-Turbo 16K
-    # 'gpt-3.5-turbo-16k-0613': {'input': 0.003 / 1_000, 'output': 0.004 / 1_000},
 }
+
+MODEL_COST_PER_TOKEN = CHAT_MODEL_COST_PER_TOKEN | EMBEDDING_MODEL_COST_PER_TOKEN
 
 
 @cache

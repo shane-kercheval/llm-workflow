@@ -185,7 +185,7 @@ def test_OpenAIToolAgent__tool_decorator():  # noqa
     assert isinstance(fake_stock, Tool)
 
     agent = OpenAIFunctionAgent(
-        model_name='gpt-3.5-turbo-1106',
+        model_name='gpt-3.5-turbo-0125',
         tools=[fake_weather, fake_stock],
     )
 
@@ -252,7 +252,7 @@ def test_OpenAIToolAgent__tools_via_yaml():  # noqa
     assert tools['ask_stock_price'].to_dict() == fake_stock.to_dict()
 
     tools = OpenAIFunctions(
-        model_name='gpt-3.5-turbo-1106',
+        model_name='gpt-3.5-turbo-0125',
         tools=tools.values(),
     )
 
