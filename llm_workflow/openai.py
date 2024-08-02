@@ -17,14 +17,22 @@ from llm_workflow.base import (
 )
 from llm_workflow.message_formatters import openai_message_formatter
 
+
 CHAT_MODEL_COST_PER_TOKEN = {
-    # LATEST MODELS
+    # major versions
+    'gpt-4o': {'input': 5.00 / 1_000_000, 'output': 15.00 / 1_000_000},
+    'gpt-4o-mini':  {'input': 0.15 / 1_000_000, 'output': 0.60 / 1_000_000},
+    'gpt-4-turbo': {'input': 10.00 / 1_000_000, 'output': 30.00 / 1_000_000},
+    'gpt-3.5-turbo': {'input': 0.50 / 1_000_000, 'output': 1.50 / 1_000_000},
+    # minor versions
     'gpt-4o-2024-05-13': {'input': 5.00 / 1_000_000, 'output': 15.00 / 1_000_000},
+    'gpt-4o-mini-2024-07-18':  {'input': 0.15 / 1_000_000, 'output': 0.60 / 1_000_000},
     # GPT-4-Turbo 128K
     'gpt-4-turbo-2024-04-09': {'input': 10.00 / 1_000_000, 'output': 30.00 / 1_000_000},
     'gpt-4-0125-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
     # GPT-3.5 Turbo 16K
     'gpt-3.5-turbo-0125': {'input': 0.50 / 1_000_000, 'output': 1.50 / 1_000_000},
+
     # LEGACY MODELS
     # GPT-4-Turbo 128K
     # 'gpt-4-1106-preview': {'input': 0.01 / 1_000, 'output': 0.03 / 1_000},
@@ -50,10 +58,10 @@ EMBEDDING_MODEL_COST_PER_TOKEN = {
     ####
     # LATEST MODELS
     # https://openai.com/blog/new-embedding-models-and-api-updates
-    'text-embedding-3-small': 0.00002 / 1_000,
-    'text-embedding-3-large': 0.00013 / 1_000,
+    'text-embedding-3-small': 0.02 / 1_000_000,
+    'text-embedding-3-large': 0.13 / 1_000_000,
     # LEGACY MODELS
-    'text-embedding-ada-002': 0.0001 / 1_000,
+    'text-embedding-ada-002': 0.1 / 1_000_000,
 }
 
 MODEL_COST_PER_TOKEN = CHAT_MODEL_COST_PER_TOKEN | EMBEDDING_MODEL_COST_PER_TOKEN
@@ -94,10 +102,10 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
     elif "gpt-3.5-turbo" in model_name:
         # Warning: gpt-3.5-turbo may update over time.
         # Returning num tokens assuming gpt-3.5-turbo-0613
-        return num_tokens_from_messages(model_name="gpt-3.5-turbo-1106", messages=messages)
+        return num_tokens_from_messages(model_name="gpt-3.5-turbo-0613", messages=messages)
     elif "gpt-4" in model_name:
         # Warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.
-        return num_tokens_from_messages(model_name="gpt-4-1106-preview", messages=messages)
+        return num_tokens_from_messages(model_name="gpt-4-0613", messages=messages)
     else:
         raise NotImplementedError(f"""num_tokens_from_messages() is not implemented for model {model_name}. See https://github.com/openai/openai-python/blob/main/chatml.md for information on how messages are converted to tokens.""")  # noqa
     num_tokens = 0
@@ -176,7 +184,7 @@ class OpenAIChat(ChatModel):
 
     def __init__(
             self,
-            model_name: str = 'gpt-3.5-turbo-0125',
+            model_name: str = 'gpt-4o-mini',
             system_message: str = 'You are a helpful AI assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
             memory_manager: MemoryManager | None = None,
@@ -187,7 +195,7 @@ class OpenAIChat(ChatModel):
         """
         Args:
             model_name:
-                e.g. 'gpt-3.5-turbo-0125'
+                e.g. 'gpt-4o-mini'
             system_message:
                 The content of the message associated with the "system" `role`.
             streaming_callback:
