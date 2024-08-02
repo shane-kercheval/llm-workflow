@@ -162,10 +162,10 @@ class ChromaDocumentIndex(RecordKeeper, DocumentIndex):
         metadatas = results['metadatas'][0]
         distances = results['distances'][0]
         similar_docs = []
-        for doc, meta, dist in zip(documents, metadatas, distances, strict=True):
+        for _doc, meta, dist in zip(documents, metadatas, distances, strict=True):
             meta['distance'] = dist
             similar_docs.append(Document(
-                content=doc,
+                content=_doc,
                 metadata=meta,
             ))
         return similar_docs
